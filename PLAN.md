@@ -17,29 +17,33 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 
 | ✓ | Packet | Issue | Milestone | Status | Delivered by | PR |
 |---|---|---|---|---|---|---|
-| [x] | P00: Repo skeleton, harness, CI + Pages deploy | [#21](https://github.com/shalevhoch/asteroid-shooter-3d/issues/21) | tracer bullet | ✅ live | Coder Bot (manual, skip-pipeline) | direct push (pre-protection) |
-| [ ] | P01: SPEC.md v1 — core rules and defaults | [#1](https://github.com/shalevhoch/asteroid-shooter-3d/issues/1) | tracer bullet | 📋 | | |
-| [ ] | P02: Asset import and model gallery | [#2](https://github.com/shalevhoch/asteroid-shooter-3d/issues/2) | tracer bullet | 📋 | | |
-| [ ] | P03: Sim skeleton and flight model | [#3](https://github.com/shalevhoch/asteroid-shooter-3d/issues/3) | tracer bullet | 📋 | | |
-| [ ] | P04: Renderer loop and keyboard/mouse input | [#4](https://github.com/shalevhoch/asteroid-shooter-3d/issues/4) | tracer bullet | 📋 | | |
-| [ ] | P05: Asteroids, Earth and collisions | [#5](https://github.com/shalevhoch/asteroid-shooter-3d/issues/5) | MVP | 📋 | | |
-| [ ] | P06: Weapons and base scoring | [#6](https://github.com/shalevhoch/asteroid-shooter-3d/issues/6) | MVP | 📋 | | |
-| [ ] | P07: Game loop, HUD v0 and audio ★ playable | [#7](https://github.com/shalevhoch/asteroid-shooter-3d/issues/7) | MVP | 📋 | | |
-| [ ] | P08: Waves, objectives and difficulty presets | [#8](https://github.com/shalevhoch/asteroid-shooter-3d/issues/8) | shippable | 📋 | | |
-| [ ] | P09: Threat awareness (off-screen arrows, time-to-impact, radar) | [#9](https://github.com/shalevhoch/asteroid-shooter-3d/issues/9) | shippable | 📋 | | |
-| [ ] | P10: Scoring v2 and run summary | [#10](https://github.com/shalevhoch/asteroid-shooter-3d/issues/10) | shippable | 📋 | | |
-| [ ] | P11: FX foundation (instanced billboard batches) | [#11](https://github.com/shalevhoch/asteroid-shooter-3d/issues/11) | shippable | 📋 | | |
-| [ ] | P12: Line sprites and full explosion | [#12](https://github.com/shalevhoch/asteroid-shooter-3d/issues/12) | shippable | 📋 | | |
-| [ ] | P13: Pause, help and settings overlay | [#13](https://github.com/shalevhoch/asteroid-shooter-3d/issues/13) | shippable | 📋 | | |
-| [ ] | P14: Portal look and portal entry | [#14](https://github.com/shalevhoch/asteroid-shooter-3d/issues/14) | shippable | 📋 | | |
-| [ ] | P15: Touch controls | [#15](https://github.com/shalevhoch/asteroid-shooter-3d/issues/15) | shippable | 📋 | | |
-| [ ] | P16: Achievements | [#16](https://github.com/shalevhoch/asteroid-shooter-3d/issues/16) | nice to have | 📋 | | |
-| [ ] | P17: Craft select | [#17](https://github.com/shalevhoch/asteroid-shooter-3d/issues/17) | nice to have | 📋 | | |
-| [ ] | P18: Space station landmark and second reload point | [#18](https://github.com/shalevhoch/asteroid-shooter-3d/issues/18) | nice to have | 📋 | | |
-| [ ] | P19: Gamepad support | [#19](https://github.com/shalevhoch/asteroid-shooter-3d/issues/19) | nice to have | 📋 | | |
-| [ ] | P20: Low-end tablet performance pass | [#20](https://github.com/shalevhoch/asteroid-shooter-3d/issues/20) | nice to have | 📋 | | |
+| [x] | P00: Repo skeleton, harness, CI + Pages deploy | #21 (hidden) | tracer bullet | ✅ live | Coder Bot (manual, skip-pipeline) | direct push (pre-protection) |
+| [ ] | P01: SPEC.md v1 — core rules and defaults | [#22](https://github.com/shalevhoch/asteroid-shooter-3d/issues/22) (was #1) | tracer bullet | 📋 | | |
+| [ ] | P02: Asset import and model gallery | [#23](https://github.com/shalevhoch/asteroid-shooter-3d/issues/23) (was #2) | tracer bullet | 📋 | | |
+| [ ] | P03: Sim skeleton and flight model | [#24](https://github.com/shalevhoch/asteroid-shooter-3d/issues/24) (was #3) | tracer bullet | 📋 | | |
+| [ ] | P04: Renderer loop and keyboard/mouse input | [#25](https://github.com/shalevhoch/asteroid-shooter-3d/issues/25) (was #4) | tracer bullet | 📋 | | |
+| [ ] | P05: Asteroids, Earth and collisions | [#26](https://github.com/shalevhoch/asteroid-shooter-3d/issues/26) (was #5) | MVP | 📋 | | |
+| [ ] | P06: Weapons and base scoring | [#27](https://github.com/shalevhoch/asteroid-shooter-3d/issues/27) (was #6) | MVP | 📋 | | |
+| [ ] | P07: Game loop, HUD v0 and audio ★ playable | [#28](https://github.com/shalevhoch/asteroid-shooter-3d/issues/28) (was #7) | MVP | 📋 | | |
+| [ ] | P08: Waves, objectives and difficulty presets | [#29](https://github.com/shalevhoch/asteroid-shooter-3d/issues/29) (was #8) | shippable | 📋 | | |
+| [ ] | P09: Threat awareness (off-screen arrows, time-to-impact, radar) | [#30](https://github.com/shalevhoch/asteroid-shooter-3d/issues/30) (was #9) | shippable | 📋 | | |
+| [ ] | P10: Scoring v2 and run summary | [#31](https://github.com/shalevhoch/asteroid-shooter-3d/issues/31) (was #10) | shippable | 📋 | | |
+| [ ] | P11: FX foundation (instanced billboard batches) | [#32](https://github.com/shalevhoch/asteroid-shooter-3d/issues/32) (was #11) | shippable | 📋 | | |
+| [ ] | P12: Line sprites and full explosion | [#33](https://github.com/shalevhoch/asteroid-shooter-3d/issues/33) (was #12) | shippable | 📋 | | |
+| [ ] | P13: Pause, help and settings overlay | [#34](https://github.com/shalevhoch/asteroid-shooter-3d/issues/34) (was #13) | shippable | 📋 | | |
+| [ ] | P14: Portal look and portal entry | [#35](https://github.com/shalevhoch/asteroid-shooter-3d/issues/35) (was #14) | shippable | 📋 | | |
+| [ ] | P15: Touch controls | [#36](https://github.com/shalevhoch/asteroid-shooter-3d/issues/36) (was #15) | shippable | 📋 | | |
+| [ ] | P16: Achievements | [#37](https://github.com/shalevhoch/asteroid-shooter-3d/issues/37) (was #16) | nice to have | 📋 | | |
+| [ ] | P17: Craft select | [#38](https://github.com/shalevhoch/asteroid-shooter-3d/issues/38) (was #17) | nice to have | 📋 | | |
+| [ ] | P18: Space station landmark and second reload point | [#39](https://github.com/shalevhoch/asteroid-shooter-3d/issues/39) (was #18) | nice to have | 📋 | | |
+| [ ] | P19: Gamepad support | [#40](https://github.com/shalevhoch/asteroid-shooter-3d/issues/40) (was #19) | nice to have | 📋 | | |
+| [ ] | P20: Low-end tablet performance pass | [#41](https://github.com/shalevhoch/asteroid-shooter-3d/issues/41) (was #20) | nice to have | 📋 | | |
 
 New packets get the next free `PNN`, an issue, and a row here, in the PR that discovers them.
+
+_Issues #1–#21 were authored by `conquarrow-dev` and are hidden while GitHub has that account flagged. P01–P20 were
+recreated under Shalev's account as #22–#41 (the original numbers are shown as "was #N"). The originals are closed as not planned,
+with a link to their replacements, so only one live copy shows. Agents file new issues with Shalev's token._
 
 ## 2. Facts from the original (reference, not contract)
 
