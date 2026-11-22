@@ -1,7 +1,7 @@
 /** docs/spec/flight/flight.core.feature: SPEC.md §3. */
 import { describe, expect, it } from 'vitest';
 import { FUEL_MAX, SHIP_START, TURBO_STEP, initialState, run, step, type GameState, type SimEvent } from '../src/index.js';
-import { expectVec, forwardOf, input, repeat, rightOf, upOf } from './helpers.js';
+import { expectVec, forwardOf, input, openSpace, repeat, rightOf, upOf } from './helpers.js';
 
 const start = () => initialState(1);
 const runEvents = (s: GameState, inputs: ReturnType<typeof input>[]) => {
@@ -34,7 +34,7 @@ describe('ship flight', () => {
   });
 
   it('turbo overrides the throttle and burns 1 fuel per tick', () => {
-    const throttled = run(start(), repeat(2, input({ throttle: 1 })));
+    const throttled = run(openSpace(), repeat(2, input({ throttle: 1 })));
     const z0 = throttled.ship.pos[2];
     const { state, events } = runEvents(throttled, repeat(5, input({ turbo: true })));
     expect(state.ship.pos[2] - z0).toBeCloseTo(5 * TURBO_STEP, 9);

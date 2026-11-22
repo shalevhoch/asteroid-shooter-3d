@@ -22,3 +22,27 @@ export const FUEL_MAX = 600;
 export const STRAFE_STEP = 1;
 export const HULL_MAX = 100;
 export const SHIP_RADIUS = 20;
+export const ATMOSPHERE_BURN = 1;
+export const EARTH_MAX_HEALTH = 100;
+
+// §4 Asteroids
+export const BIG_RADIUS = 100;
+export const BIG_HP = 20;
+export const SMALL_RADIUS = 20;
+export const SMALL_HP = 8;
+export const SPAWN_INTERVAL = 200;
+export const SPAWN_X = -800;
+export const SPAWN_SPREAD_MIN = -500;
+export const SPAWN_SPREAD_MAX = 500;
+export const BIG_CHANCE = 1 / 5;
+export const ASTEROID_SPEED = 3;
+export const BIG_EARTH_DAMAGE = 10;
+export const SMALL_EARTH_DAMAGE = 2;
+/** The original's split offsets (BigAsteroid.java), one small asteroid per entry. */
+export const SPLIT_OFFSETS: readonly Vec3[] = [
+  [20, 20, 20],
+  [0, 20, 20],
+  [20, -20, 20],
+  [-20, 20, 0],
+];
+export const SPLIT_COUNT = SPLIT_OFFSETS.length;

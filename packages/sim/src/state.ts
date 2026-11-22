@@ -1,5 +1,5 @@
 /** Game state, input and events: the sim's whole public data model (ADR 0001). */
-import { SHIP_START, FUEL_MAX, HULL_MAX } from './constants.js';
+import { EARTH_MAX_HEALTH, SHIP_START, FUEL_MAX, HULL_MAX } from './constants.js';
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
@@ -20,10 +20,30 @@ export interface ShipState {
   readonly turbo: boolean;
 }
 
+export type AsteroidSize = 'big' | 'small';
+
+export interface AsteroidState {
+  /** Unique and increasing; every iteration over asteroids goes in id order (SPEC §4). */
+  readonly id: number;
+  readonly size: AsteroidSize;
+  readonly pos: Vec3;
+  /** Unit direction toward Earth's centre, fixed at spawn. */
+  readonly dir: Vec3;
+  readonly hp: number;
+}
+
+export type RunEndReason = 'earthDestroyed' | 'shipDestroyed';
+
 export interface GameState {
   readonly tick: number;
   readonly rng: RngState;
   readonly ship: ShipState;
+  /** Sorted by id. */
+  readonly asteroids: readonly AsteroidState[];
+  readonly nextId: number;
+  readonly earthHealth: number;
+  /** Set on the tick the run ends; `step` is then a no-op. */
+  readonly ended: RunEndReason | null;
 }
 
 /** One tick of player intent. Axes are clamped to [−1, 1]; anything non-finite counts as 0. */
@@ -46,8 +66,16 @@ export interface Input {
 
 export const NO_INPUT: Input = { pitch: 0, yaw: 0, roll: 0, throttle: 0, turbo: false, strafeX: 0, strafeY: 0, reverse: false };
 
+export type KillCause = 'photon' | 'rocket';
+
 export type SimEvent =
   | { readonly type: 'mothershipBump' }
+  | { readonly type: 'shipReloaded' }
+  | { readonly type: 'hullBurning' }
+  | { readonly type: 'asteroidSpawned'; readonly id: number; readonly size: AsteroidSize }
+  | { readonly type: 'earthHit'; readonly id: number; readonly size: AsteroidSize; readonly damage: number; readonly pos: Vec3 }
+  | { readonly type: 'asteroidDestroyed'; readonly id: number; readonly size: AsteroidSize; readonly by: KillCause; readonly pos: Vec3 }
+  | { readonly type: 'runEnded'; readonly reason: RunEndReason }
   | { readonly type: 'turboStarted' }
   | { readonly type: 'turboEnded' }
   | { readonly type: 'fuelEmpty' };
@@ -65,5 +93,9 @@ export function initialState(seed: number): GameState {
     tick: 0,
     rng: seedRng(seed),
     ship: { pos: SHIP_START, rot: START_ROT, throttle: 0, fuel: FUEL_MAX, hull: HULL_MAX, turbo: false },
+    asteroids: [],
+    nextId: 1,
+    earthHealth: EARTH_MAX_HEALTH,
+    ended: null,
   };
 }

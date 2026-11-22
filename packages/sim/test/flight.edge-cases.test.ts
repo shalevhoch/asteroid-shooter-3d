@@ -1,7 +1,7 @@
 /** docs/spec/flight/flight.edge-cases.feature */
 import { describe, expect, it } from 'vitest';
 import { initialState, run, step, type GameState } from '../src/index.js';
-import { input, repeat } from './helpers.js';
+import { input, openSpace, repeat } from './helpers.js';
 
 const withFuel = (s: GameState, fuel: number): GameState => ({ ...s, ship: { ...s.ship, fuel } });
 
@@ -13,7 +13,7 @@ describe('flight edge cases', () => {
   });
 
   it('turbo with an empty tank falls back to the throttle', () => {
-    let s = withFuel(run(initialState(1), repeat(1, input({ throttle: 1 }))), 1);
+    let s = withFuel(run(openSpace(), repeat(1, input({ throttle: 1 }))), 1);
     const first = step(s, input({ turbo: true }));
     expect(first.state.ship.fuel).toBe(0);
     expect(first.events).toEqual([{ type: 'turboStarted' }, { type: 'fuelEmpty' }]);
