@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Asteroid Shooter 3D — defend Earth. A browser port of a classic university JOGL game." />
+    <title>Asteroid Shooter 3D</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E☄️%3C/text%3E%3C/svg%3E" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; }
+      #app { position: fixed; inset: 0; }
+      #overlay { position: fixed; left: 0; right: 0; bottom: 8%; text-align: center; color: #f0d9a8; pointer-events: none; text-shadow: 0 2px 8px #000; }
+      #overlay h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: 0.04em; }
+      #overlay p { margin: 4px 0; color: #a8c9b0; }
+      #overlay a { color: #f0d9a8; pointer-events: auto; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="overlay">
+      <h1>☄️ Asteroid Shooter 3D</h1>
+      <p>Coming soon: defend Earth from the incoming asteroids.</p>
+      <p><a href="/">← all games</a> · <a href="https://github.com/hochgi/astroid-shooter-3D">the original Java game</a></p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

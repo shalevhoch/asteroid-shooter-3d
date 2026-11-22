@@ -1,0 +1,35 @@
+# Packet PRs (title "🤖: PNN: …", branch packet/*, or label packet) must tick their PLAN.md row
+# and close their issue. Runs on every PR so it can be a required check; non-packet PRs pass.
+name: packet-pr
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  packet-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List changed files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo 'list<<EOF'
+            gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename'
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+      - name: Check PLAN.md sync
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          CHANGED_FILES: ${{ steps.files.outputs.list }}
+        run: node scripts/check-packet-pr.mjs

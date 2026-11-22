@@ -1,0 +1,23 @@
+{
+  "name": "@asteroid/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:pages": "tsc -p tsconfig.json --noEmit && vite build --mode pages",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@asteroid/sim": "workspace:*",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.3.3",
+    "vitest": "^2.1.8"
+  }
+}
