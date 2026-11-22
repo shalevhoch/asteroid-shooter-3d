@@ -46,3 +46,29 @@ export const SPLIT_OFFSETS: readonly Vec3[] = [
   [-20, 20, 0],
 ];
 export const SPLIT_COUNT = SPLIT_OFFSETS.length;
+
+// §5 Weapons
+export const PHOTON_COOLDOWN = 5;
+export const PHOTON_SPEED = 36;
+export const PHOTON_LIFE = 20;
+/** Muzzle offset in ship-local terms: ahead, to the side (alternating), and down. */
+export const MUZZLE_FORWARD = 50;
+export const MUZZLE_SIDE = 12;
+export const MUZZLE_DOWN = 8;
+export const ROCKET_MAX = 3;
+export const ROCKET_SPEED = 15;
+export const ROCKET_LIFE = 400;
+/** At launch, a rocket locks the asteroid closest to the crosshair within this angle of the ship's forward. */
+export const ROCKET_LOCK_CONE = (30 * Math.PI) / 180;
+/** The original's steering: dir += toTarget × ROCKET_STEER / distance … */
+export const ROCKET_STEER = 6;
+/** … but never weaker than this, so far targets don't take a huge loop. */
+export const ROCKET_MIN_STEER = 0.15;
+/** Inside this range the rocket aims straight at its target every tick, so it can't orbit it. */
+export const ROCKET_TERMINAL_RANGE = 200;
+
+// §6 Scoring
+export const BIG_PHOTON_POINTS = 20;
+export const BIG_ROCKET_POINTS = 15;
+export const SMALL_PHOTON_POINTS = 10;
+export const SMALL_ROCKET_POINTS = 8;

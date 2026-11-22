@@ -1,5 +1,5 @@
 /** Ship hazards (SPEC §3, tick step 2): mothership push-out, hangar refill, atmosphere burn, Earth contact. */
-import { ATMOSPHERE_BURN, ATMOSPHERE_RADIUS, EARTH_POS, EARTH_RADIUS, FUEL_MAX, HANGAR_OFFSET, HANGAR_RADIUS, HULL_MAX, MOTHERSHIP_POS, SHIP_RADIUS } from './constants.js';
+import { ATMOSPHERE_BURN, ATMOSPHERE_RADIUS, EARTH_POS, EARTH_RADIUS, FUEL_MAX, HANGAR_OFFSET, HANGAR_RADIUS, HULL_MAX, MOTHERSHIP_POS, ROCKET_MAX, SHIP_RADIUS } from './constants.js';
 import { resolveMothership } from './mothership.js';
 import type { ShipState, SimEvent } from './state.js';
 import { add, distance } from './vec3.js';
@@ -9,9 +9,10 @@ export const HANGAR_CENTRE = add(MOTHERSHIP_POS, HANGAR_OFFSET);
 export interface Refill {
   readonly fuel: number;
   readonly hull: number;
+  readonly rockets: number;
 }
-/** What the hangar tops up. P06 adds rockets. */
-export const REFILL: Refill = { fuel: FUEL_MAX, hull: HULL_MAX };
+/** What the hangar tops up. */
+export const REFILL: Refill = { fuel: FUEL_MAX, hull: HULL_MAX, rockets: ROCKET_MAX };
 
 export function applyHazards(input: ShipState, events: SimEvent[]): ShipState {
   let ship = input;
@@ -20,8 +21,8 @@ export function applyHazards(input: ShipState, events: SimEvent[]): ShipState {
     ship = { ...ship, pos: hull.pos, throttle: Math.max(0, ship.throttle - 1) };
     events.push({ type: 'mothershipBump' });
   }
-  if (distance(ship.pos, HANGAR_CENTRE) < HANGAR_RADIUS && (ship.fuel < REFILL.fuel || ship.hull < REFILL.hull)) {
-    ship = { ...ship, fuel: REFILL.fuel, hull: REFILL.hull };
+  if (distance(ship.pos, HANGAR_CENTRE) < HANGAR_RADIUS && (ship.fuel < REFILL.fuel || ship.hull < REFILL.hull || ship.rockets < REFILL.rockets)) {
+    ship = { ...ship, fuel: REFILL.fuel, hull: REFILL.hull, rockets: REFILL.rockets };
     events.push({ type: 'shipReloaded' });
   }
   const toEarth = distance(ship.pos, EARTH_POS);

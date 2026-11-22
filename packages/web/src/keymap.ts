@@ -108,8 +108,8 @@ export const ACTION_LABELS: Readonly<Record<Action, string>> = {
   strafeUp: 'strafe up',
   strafeDown: 'strafe down',
   reverse: 'reverse (hold)',
-  firePhoton: 'photons (hold, from P06)',
-  fireRocket: 'rocket (from P06)',
+  firePhoton: 'photons (hold)',
+  fireRocket: 'homing rocket (locks the asteroid nearest the crosshair)',
   toggleCamera: 'camera: chase / classic',
   toggleLayout: 'layout: modern / classic',
   toggleInvertY: 'invert mouse Y',
@@ -151,6 +151,8 @@ export interface TickControls {
   readonly held: ReadonlySet<Action>;
   /** Net throttle presses since the last tick (each tick applies at most one; the rest wait). */
   readonly throttleSteps: number;
+  /** Rocket presses not yet sent (one rocket per tick). */
+  readonly rocketPresses: number;
   /** Mouse-derived axes in [−1, 1]: x = right, y = down (screen convention). */
   readonly mouseX: number;
   readonly mouseY: number;
@@ -173,6 +175,8 @@ export function toInput(c: TickControls): Input {
     strafeX: both(held, 'strafeRight', 'strafeLeft'),
     strafeY: both(held, 'strafeUp', 'strafeDown'),
     reverse: held.has('reverse'),
+    firePhoton: held.has('firePhoton'),
+    fireRocket: c.rocketPresses > 0,
   };
 }
 

@@ -4,6 +4,10 @@ import {
   BIG_CHANCE,
   BIG_EARTH_DAMAGE,
   BIG_HP,
+  BIG_PHOTON_POINTS,
+  BIG_ROCKET_POINTS,
+  SMALL_PHOTON_POINTS,
+  SMALL_ROCKET_POINTS,
   BIG_RADIUS,
   EARTH_POS,
   EARTH_RADIUS,
@@ -23,6 +27,12 @@ import { add, addScaled, distance, normalize, sub, type Vec3 } from './vec3.js';
 export const radiusOf = (size: AsteroidSize): number => (size === 'big' ? BIG_RADIUS : SMALL_RADIUS);
 export const hpOf = (size: AsteroidSize): number => (size === 'big' ? BIG_HP : SMALL_HP);
 export const earthDamageOf = (size: AsteroidSize): number => (size === 'big' ? BIG_EARTH_DAMAGE : SMALL_EARTH_DAMAGE);
+
+/** Points for a kill (SPEC §6). Earth impacts score nothing. */
+export function pointsFor(size: AsteroidSize, by: KillCause): number {
+  if (size === 'big') return by === 'photon' ? BIG_PHOTON_POINTS : BIG_ROCKET_POINTS;
+  return by === 'photon' ? SMALL_PHOTON_POINTS : SMALL_ROCKET_POINTS;
+}
 
 export function makeAsteroid(id: number, size: AsteroidSize, pos: Vec3): AsteroidState {
   return { id, size, pos, dir: normalize(sub(EARTH_POS, pos)), hp: hpOf(size) };
@@ -56,15 +66,17 @@ export function moveAsteroids(state: GameState, events: SimEvent[]): GameState {
 }
 
 /**
- * Removes asteroid `id`, emitting `asteroidDestroyed`. A big asteroid destroyed by photons splits into SPLIT_COUNT
+ * Removes asteroid `id`, adds its points to the score, and emits `asteroidDestroyed`. A big asteroid destroyed by photons splits into SPLIT_COUNT
  * small ones at the original's offsets, each aimed at Earth, with fresh ids appended in offset order.
  */
 export function destroyAsteroid(state: GameState, id: number, by: KillCause, events: SimEvent[]): GameState {
   const target = state.asteroids.find((a) => a.id === id);
   if (!target) return state;
-  events.push({ type: 'asteroidDestroyed', id, size: target.size, by, pos: target.pos });
+  const points = pointsFor(target.size, by);
+  events.push({ type: 'asteroidDestroyed', id, size: target.size, by, pos: target.pos, points });
   const rest = state.asteroids.filter((a) => a.id !== id);
-  if (target.size !== 'big' || by !== 'photon') return { ...state, asteroids: rest };
+  const score = state.score + points;
+  if (target.size !== 'big' || by !== 'photon') return { ...state, asteroids: rest, score };
   const pieces = SPLIT_OFFSETS.map((o, i) => makeAsteroid(state.nextId + i, 'small', add(target.pos, o)));
-  return { ...state, asteroids: [...rest, ...pieces], nextId: state.nextId + pieces.length };
+  return { ...state, asteroids: [...rest, ...pieces], nextId: state.nextId + pieces.length, score };
 }

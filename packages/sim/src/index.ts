@@ -32,3 +32,6 @@ export { MOTHERSHIP_WORLD_BOXES, resolveMothership, sphereHitsBox, pushOut, type
 export { step, run } from './step.js';
 export { makeAsteroid, spawn, moveAsteroids, destroyAsteroid, radiusOf, hpOf, earthDamageOf } from './asteroids.js';
 export { applyHazards, HANGAR_CENTRE } from './hazards.js';
+export { pointsFor } from './asteroids.js';
+export { fire, moveProjectiles, crosshairTarget, nearestTarget } from './weapons.js';
+export { segmentHitsSphere, segmentHitsBox } from './collide.js';

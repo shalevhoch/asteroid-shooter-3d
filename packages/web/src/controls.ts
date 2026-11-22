@@ -10,6 +10,7 @@ export interface ControlSettings {
 export class Controls {
   private readonly heldCodes = new Set<string>();
   private throttleSteps = 0;
+  private rocketPresses = 0;
   private mouseXPx = 0;
   private mouseYPx = 0;
   private readonly toggles: Action[] = [];
@@ -68,6 +69,7 @@ export class Controls {
   private press(action: Action): void {
     if (action === 'throttleUp') this.throttleSteps += 1;
     else if (action === 'throttleDown') this.throttleSteps -= 1;
+    else if (action === 'fireRocket') this.rocketPresses = Math.min(this.rocketPresses + 1, 3);
     else this.toggles.push(action);
   }
 
@@ -87,8 +89,9 @@ export class Controls {
     const my = consumeMouse(this.mouseYPx);
     this.mouseXPx = mx.bufferPx;
     this.mouseYPx = my.bufferPx;
-    const input = toInput({ held, throttleSteps: this.throttleSteps, mouseX: mx.axis, mouseY: my.axis, invertY: this.settings.invertY });
+    const input = toInput({ held, throttleSteps: this.throttleSteps, rocketPresses: this.rocketPresses, mouseX: mx.axis, mouseY: my.axis, invertY: this.settings.invertY });
     this.throttleSteps -= input.throttle;
+    if (input.fireRocket) this.rocketPresses--;
     return input;
   }
 }

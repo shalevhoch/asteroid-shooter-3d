@@ -1,5 +1,5 @@
 /** Game state, input and events: the sim's whole public data model (ADR 0001). */
-import { EARTH_MAX_HEALTH, SHIP_START, FUEL_MAX, HULL_MAX } from './constants.js';
+import { EARTH_MAX_HEALTH, ROCKET_MAX, SHIP_START, FUEL_MAX, HULL_MAX } from './constants.js';
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
@@ -18,6 +18,25 @@ export interface ShipState {
   readonly hull: number;
   /** True on ticks the turbo actually moved the ship (the renderer widens the FOV). */
   readonly turbo: boolean;
+  readonly rockets: number;
+  /** Ticks until the photon guns can fire again. */
+  readonly photonCooldown: number;
+  /** Which wing fires the next photon: +1 right, −1 left. */
+  readonly photonSide: 1 | -1;
+}
+
+export type ProjectileKind = 'photon' | 'rocket';
+
+export interface ProjectileState {
+  readonly id: number;
+  readonly kind: ProjectileKind;
+  readonly pos: Vec3;
+  /** Unit direction of travel. */
+  readonly dir: Vec3;
+  /** Ticks of flight so far. */
+  readonly age: number;
+  /** Rockets: the locked asteroid id, or null while searching. Photons: always null. */
+  readonly target: number | null;
 }
 
 export type AsteroidSize = 'big' | 'small';
@@ -42,6 +61,10 @@ export interface GameState {
   readonly asteroids: readonly AsteroidState[];
   readonly nextId: number;
   readonly earthHealth: number;
+  /** Sorted by id. */
+  readonly projectiles: readonly ProjectileState[];
+  readonly nextProjectileId: number;
+  readonly score: number;
   /** Set on the tick the run ends; `step` is then a no-op. */
   readonly ended: RunEndReason | null;
 }
@@ -62,9 +85,24 @@ export interface Input {
   /** +1 = up, −1 = down. */
   readonly strafeY: number;
   readonly reverse: boolean;
+  /** Held: photons fire every PHOTON_COOLDOWN ticks. */
+  readonly firePhoton: boolean;
+  /** One rocket per tick this is true (the renderer sends one tick per press). */
+  readonly fireRocket: boolean;
 }
 
-export const NO_INPUT: Input = { pitch: 0, yaw: 0, roll: 0, throttle: 0, turbo: false, strafeX: 0, strafeY: 0, reverse: false };
+export const NO_INPUT: Input = {
+  pitch: 0,
+  yaw: 0,
+  roll: 0,
+  throttle: 0,
+  turbo: false,
+  strafeX: 0,
+  strafeY: 0,
+  reverse: false,
+  firePhoton: false,
+  fireRocket: false,
+};
 
 export type KillCause = 'photon' | 'rocket';
 
@@ -74,7 +112,12 @@ export type SimEvent =
   | { readonly type: 'hullBurning' }
   | { readonly type: 'asteroidSpawned'; readonly id: number; readonly size: AsteroidSize }
   | { readonly type: 'earthHit'; readonly id: number; readonly size: AsteroidSize; readonly damage: number; readonly pos: Vec3 }
-  | { readonly type: 'asteroidDestroyed'; readonly id: number; readonly size: AsteroidSize; readonly by: KillCause; readonly pos: Vec3 }
+  | { readonly type: 'asteroidDestroyed'; readonly id: number; readonly size: AsteroidSize; readonly by: KillCause; readonly pos: Vec3; readonly points: number }
+  | { readonly type: 'asteroidHit'; readonly id: number; readonly hp: number; readonly pos: Vec3 }
+  | { readonly type: 'photonFired'; readonly id: number; readonly pos: Vec3 }
+  | { readonly type: 'rocketFired'; readonly id: number; readonly pos: Vec3; readonly target: number | null }
+  | { readonly type: 'rocketLocked'; readonly id: number; readonly target: number }
+  | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3 }
   | { readonly type: 'runEnded'; readonly reason: RunEndReason }
   | { readonly type: 'turboStarted' }
   | { readonly type: 'turboEnded' }
@@ -92,8 +135,11 @@ export function initialState(seed: number): GameState {
   return {
     tick: 0,
     rng: seedRng(seed),
-    ship: { pos: SHIP_START, rot: START_ROT, throttle: 0, fuel: FUEL_MAX, hull: HULL_MAX, turbo: false },
+    ship: { pos: SHIP_START, rot: START_ROT, throttle: 0, fuel: FUEL_MAX, hull: HULL_MAX, turbo: false, rockets: ROCKET_MAX, photonCooldown: 0, photonSide: 1 },
     asteroids: [],
+    projectiles: [],
+    nextProjectileId: 1,
+    score: 0,
     nextId: 1,
     earthHealth: EARTH_MAX_HEALTH,
     ended: null,

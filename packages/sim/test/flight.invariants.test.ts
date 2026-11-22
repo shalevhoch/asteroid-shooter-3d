@@ -35,6 +35,8 @@ function randomInputs(seed: number, n: number): Input[] {
     strafeX: tri(),
     strafeY: tri(),
     reverse: next() < 0.1,
+    firePhoton: next() < 0.3,
+    fireRocket: next() < 0.01,
   }));
 }
 

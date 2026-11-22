@@ -23,7 +23,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P03: Sim skeleton and flight model | [#24](https://github.com/shalevhoch/asteroid-shooter-3d/issues/24) (was #3) | tracer bullet | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#45](https://github.com/shalevhoch/asteroid-shooter-3d/pull/45) |
 | [x] | P04: Renderer loop and keyboard/mouse input | [#25](https://github.com/shalevhoch/asteroid-shooter-3d/issues/25) (was #4) | tracer bullet | ✅ live | Coder Bot (spec-to-ship, self-merged per Gilad) | [#46](https://github.com/shalevhoch/asteroid-shooter-3d/pull/46) |
 | [x] | P05: Asteroids, Earth and collisions | [#26](https://github.com/shalevhoch/asteroid-shooter-3d/issues/26) (was #5) | MVP | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#47](https://github.com/shalevhoch/asteroid-shooter-3d/pull/47) |
-| [ ] | P06: Weapons and base scoring | [#27](https://github.com/shalevhoch/asteroid-shooter-3d/issues/27) (was #6) | MVP | 📋 | | |
+| [x] | P06: Weapons and base scoring | [#27](https://github.com/shalevhoch/asteroid-shooter-3d/issues/27) (was #6) | MVP | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#48](https://github.com/shalevhoch/asteroid-shooter-3d/pull/48) |
 | [ ] | P07: Game loop, HUD v0 and audio ★ playable | [#28](https://github.com/shalevhoch/asteroid-shooter-3d/issues/28) (was #7) | MVP | 📋 | | |
 | [ ] | P08: Waves, objectives and difficulty presets | [#29](https://github.com/shalevhoch/asteroid-shooter-3d/issues/29) (was #8) | shippable | 📋 | | |
 | [ ] | P09: Threat awareness (off-screen arrows, time-to-impact, radar) | [#30](https://github.com/shalevhoch/asteroid-shooter-3d/issues/30) (was #9) | shippable | 📋 | | |
