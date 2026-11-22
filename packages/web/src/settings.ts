@@ -26,9 +26,12 @@ export const VOLUME_STEP = 0.1;
 export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1 };
 export const SETTINGS_KEY = 'asteroid-shooter-3d.settings.v1';
 
-/** `reducedMotion` (the browser's prefers-reduced-motion) turns shake off by default; a stored choice wins. */
-export function parseSettings(raw: string | null, reducedMotion = false): Settings {
-  const s: Settings = { ...DEFAULT_SETTINGS, shake: !reducedMotion };
+/**
+ * `reducedMotion` (the browser's prefers-reduced-motion) turns shake off by default; `touch` (a touch device, P15) makes
+ * Kid / Easy the default difficulty. A stored choice wins either way.
+ */
+export function parseSettings(raw: string | null, reducedMotion = false, touch = false): Settings {
+  const s: Settings = { ...DEFAULT_SETTINGS, shake: !reducedMotion, difficulty: touch ? 'kid' : DEFAULT_SETTINGS.difficulty };
   if (!raw) return s;
   let v: unknown;
   try {

@@ -21,6 +21,8 @@ import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
+import { mergeTouch, wantsTouch } from './touch.js';
+import { TouchControls } from './touchControls.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
 
@@ -63,9 +65,12 @@ const storage = {
     }
   },
 };
+/** Touch controls (P15): on a touch-first device, or with `?touch`. */
+const touchMode = wantsTouch({ coarse: window.matchMedia('(pointer: coarse)').matches, maxTouchPoints: navigator.maxTouchPoints, search: location.search });
+if (touchMode) document.body.classList.add('touch-mode');
 const settings = (() => {
   try {
-    return parseSettings(storage.get(SETTINGS_KEY), window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    return parseSettings(storage.get(SETTINGS_KEY), window.matchMedia('(prefers-reduced-motion: reduce)').matches, touchMode);
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -98,7 +103,21 @@ const hud = new Hud(el('hud'));
 const threat = new ThreatView(el('threat') as HTMLCanvasElement);
 const viewProj = new THREE.Matrix4();
 
+const TOUCH_HELP = [
+  ['left side', 'drag to aim (a stick appears under your finger)'],
+  ['right slider', 'throttle 0–4'],
+  ['FIRE', 'photons (hold)'],
+  ['ROCKET', 'homing rocket (tap)'],
+  ['TURBO', 'turbo (hold)'],
+  ['Ⅱ', 'pause'],
+];
+
 function renderHelp(): void {
+  if (touchMode) {
+    help.innerHTML = `<h2>Touch controls</h2><table>${TOUCH_HELP.map(([k, v]) => `<tr><td>${k ?? ''}</td><td>${v ?? ''}</td></tr>`).join('')}</table><p>Landscape works best</p>`;
+    help.style.display = phase === 'title' || phase === 'paused' ? 'block' : 'none';
+    return;
+  }
   const rows = bindings(settings.layout)
     .map(([action, codes]) => `<tr><td>${[...new Set(codes.map(keyLabel))].join(' / ')}</td><td>${ACTION_LABELS[action]}</td></tr>`)
     .join('');
@@ -131,6 +150,11 @@ const atlas = await buildAtlas((p) => assetUrl(base, p));
 const batch = new BillboardBatch(atlas, MAX_PARTICLES + 64);
 const shockwaves = new ShockwaveLayer(world.scene, atlas);
 const hitFlash = el('hitflash');
+const touchUi = touchMode
+  ? new TouchControls(document.body, () => {
+      dispatch('pause');
+    })
+  : null;
 let jolt: Jolt | null = null;
 world.scene.add(batch.mesh);
 const fx = new FxEngine();
@@ -187,9 +211,9 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
       <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}
-      <button id="go">Click to start</button><p class="dim">Enter also starts · Esc or P pauses · H shows the controls · M mutes</p>${settingsPanel(false)}${PORTAL_LINK}</div>`;
+      <button id="go">${touchMode ? "Tap" : "Click"} to start</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">Click to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
+    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${touchMode ? "Tap" : "Click"} to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
     overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
       <div class="final">${String(curr.score)}</div>
@@ -270,7 +294,8 @@ function dispatch(action: FlowAction) {
     controls.reset();
     lastMs = performance.now();
     accMs = 0;
-    if (settings.layout === 'modern') Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => undefined);
+    touchUi?.reset();
+    if (settings.layout === 'modern' && !touchMode) Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => undefined);
   }
   if (phase !== 'playing' && document.pointerLockElement) document.exitPointerLock();
   if (phase !== 'playing') bannerEl.classList.remove('on');
@@ -342,7 +367,8 @@ renderer.setAnimationLoop((nowMs: number) => {
     const { ticks, remainderMs } = ticksFor(accMs + frameMs);
     for (let i = 0; i < ticks && isPlaying(); i++) {
       prev = curr;
-      const r = step(curr, controls.nextInput());
+      const input = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
+      const r = step(curr, input);
       curr = r.state;
       onEvents(r.events, nowMs);
       fx.ambient(curr);
@@ -387,6 +413,8 @@ renderer.setAnimationLoop((nowMs: number) => {
     threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets });
   }
   hud.show(phase !== 'title');
+  touchUi?.show(phase === 'playing');
+  touchUi?.syncThrottle(curr.ship.throttle);
   hud.render(hudModel(curr, best));
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
   hud.aim(v.z < 1 ? { x: v.x, y: v.y } : null);
