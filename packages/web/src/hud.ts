@@ -1,7 +1,7 @@
 /** HUD v0 (P07): a clean DOM HUD. `hudModel` is the pure part (what to show); `Hud` writes it to the page. */
 import { waveLine } from './waveUi.js';
 import { formatImpact, urgency, type Urgency } from './threat.js';
-import { mostUrgent, EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, ROCKET_MAX, THROTTLE_MAX, type GameState } from '@asteroid/sim';
+import { comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, ROCKET_MAX, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
   readonly score: number;
@@ -18,6 +18,8 @@ export interface HudModel {
   readonly turbo: boolean;
   /** "WAVE 3/10 · Rocket kills 1/2" (P08). */
   readonly wave: string;
+  /** "COMBO 3 · next ×2" while a chain of 2+ kills is live (P10); empty otherwise. */
+  readonly combo: string;
   /** The soonest Earth impact (P09), or null with no asteroids. */
   readonly impact: { readonly text: string; readonly urgency: Urgency } | null;
   /** Warnings worth flashing. */
@@ -50,6 +52,7 @@ export function hudModel(s: GameState, best: number): HudModel {
     turbo: s.ship.turbo,
     wave: waveLine(s),
     impact: impactOf(s),
+    combo: comboLive(s.combo, s.tick) && s.combo.count >= 2 ? `COMBO ${String(s.combo.count)} · next ×${String(comboMultiplier(s.combo.count + 1))}` : '',
     warnings,
   };
 }
@@ -57,7 +60,7 @@ export function hudModel(s: GameState, best: number): HudModel {
 export class Hud {
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
-      <div class="tl"><div class="score">0</div><div class="best">best 0</div><div class="wave"></div></div>
+      <div class="tl"><div class="score">0</div><div class="best">best 0</div><div class="wave"></div><div class="combo"></div></div>
       <div class="bars">
         <div class="bar earth"><span>EARTH</span><i></i></div>
         <div class="bar hull"><span>HULL</span><i></i></div>
@@ -79,6 +82,7 @@ export class Hud {
     this.q('.score').textContent = String(m.score);
     this.q('.best').textContent = `best ${String(m.best)}`;
     this.q('.wave').textContent = m.wave;
+    this.q('.combo').textContent = m.combo;
     for (const k of ['earth', 'hull', 'fuel'] as const) {
       const bar = this.q(`.bar.${k} i`);
       bar.style.width = `${String(Math.round(m[k] * 100))}%`;

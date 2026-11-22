@@ -1,6 +1,6 @@
 /** docs/spec/weapons/weapons.md: "a rocket always reaches its target" and score/projectile invariants. */
 import { describe, expect, it } from 'vitest';
-import { ROCKET_LIFE, makeAsteroid, nextFloat, step, type GameState, type RngState, type SimEvent } from '../src/index.js';
+import { ROCKET_LIFE, makeAsteroid, nextFloat, pointsIn, step, type GameState, type RngState, type SimEvent } from '../src/index.js';
 import { input, openSpace } from './helpers.js';
 
 function rng(seed: number) {
@@ -43,7 +43,7 @@ describe('rocket always reaches its target', () => {
 });
 
 describe('weapon invariants', () => {
-  it('over a random dogfight: score = sum of kill points, projectiles stay sorted and alive within their life', () => {
+  it('over a random dogfight: score = sum of scored events (kills, objectives, clear bonuses), projectiles stay sorted and alive within their life', () => {
     const next = rng(77);
     let s = openSpace(77);
     s = { ...s, asteroids: [1, 2, 3, 4, 5].map((id) => makeAsteroid(id, id % 2 ? 'big' : 'small', [-600 + id * 100, (next() - 0.5) * 400, 400 + id * 80])), nextId: 6 };
@@ -51,7 +51,7 @@ describe('weapon invariants', () => {
     for (let t = 0; t < 4000 && !s.ended; t++) {
       const r = step(s, input({ pitch: next() * 2 - 1, yaw: next() * 2 - 1, firePhoton: next() < 0.7, fireRocket: next() < 0.01, throttle: next() < 0.05 ? 1 : 0 }));
       s = r.state;
-      for (const e of r.events) if (e.type === 'asteroidDestroyed') points += e.points;
+      points += pointsIn(r.events);
       expect(s.score).toBe(points);
       const ids = s.projectiles.map((p) => p.id);
       expect(ids).toEqual([...ids].sort((a, b) => a - b));

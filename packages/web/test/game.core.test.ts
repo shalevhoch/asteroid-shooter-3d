@@ -6,7 +6,7 @@ import { burstsFor } from '../src/fx.js';
 import { EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase } from '../src/game.js';
 import { hudModel } from '../src/hud.js';
 
-const kill = (size: 'big' | 'small', by: 'photon' | 'rocket'): SimEvent => ({ type: 'asteroidDestroyed', id: 1, size, by, pos: [0, 0, 0], points: 10 });
+const kill = (size: 'big' | 'small', by: 'photon' | 'rocket'): SimEvent => ({ type: 'asteroidDestroyed', id: 1, size, by, pos: [0, 0, 0], points: 10, base: 10, combo: 1, multiplier: 1 });
 
 describe('run flow', () => {
   it('goes title → playing ⇄ paused → over → playing', () => {
@@ -48,7 +48,7 @@ describe('run stats', () => {
       { type: 'rocketFired', id: 5, pos: [0, 0, 0], target: 1 },
       { type: 'earthHit', id: 2, size: 'small', damage: 2, pos: [0, 0, 0] },
     ]);
-    expect(s).toEqual({ kills: 2, bigKills: 1, photonsFired: 4, photonHits: 2, rocketsFired: 1, earthHits: 1, wavesCleared: 0, objectivesMet: 0 });
+    expect(s).toEqual({ ...EMPTY_STATS, kills: 2, bigKills: 1, photonsFired: 4, photonHits: 2, rocketsFired: 1, earthHits: 1, killPoints: 20, bestCombo: 1 });
     expect(accuracy(s)).toBe(50);
     expect(accuracy(EMPTY_STATS)).toBe(0);
   });

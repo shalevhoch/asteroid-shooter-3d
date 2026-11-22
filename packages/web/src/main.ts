@@ -9,6 +9,7 @@ import { AsteroidView } from './asteroidView.js';
 import { AudioBank, cuesFor } from './audio.js';
 import { Controls } from './controls.js';
 import { FxLayer, burstsFor } from './fx.js';
+import { TOP_KEY, insertScore, localDate, parseTop, type ScoreEntry } from './leaderboard.js';
 import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase, type RunStats } from './game.js';
 import { Hud, hudModel } from './hud.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
@@ -68,7 +69,11 @@ const settings = (() => {
 const saveSettings = () => {
   storage.set(SETTINGS_KEY, JSON.stringify(settings));
 };
-let best = parseBest(storage.get(BEST_KEY));
+let top: ScoreEntry[] = parseTop(storage.get(TOP_KEY));
+/** The best score: the stored best, or the top-10's first run if that is higher. */
+let best = Math.max(parseBest(storage.get(BEST_KEY)), top[0]?.score ?? 0);
+/** The finished run's top-10 rank, or null. */
+let rank: number | null = null;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -157,10 +162,9 @@ function renderOverlay() {
       <div class="final">${String(curr.score)}</div>
       <div class="row"><button id="go">Keep going: endless mode</button><button id="finish">Finish the run</button></div></div>`;
   } else {
-    overlay.innerHTML = `<div class="card"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
+    overlay.innerHTML = `<div class="card wide"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
       <div class="final">${String(curr.score)}</div>${newBest ? '<div class="newbest">NEW BEST!</div>' : `<p class="dim">Best ${String(best)}</p>`}
-      <table class="stats"><tr><td>Difficulty</td><td>${DIFFICULTY_LABELS[curr.difficulty].name}</td></tr><tr><td>Time</td><td>${formatTime(curr.tick)}</td></tr><tr><td>Waves cleared</td><td>${String(stats.wavesCleared)} (${String(stats.objectivesMet)} objectives)</td></tr><tr><td>Asteroids destroyed</td><td>${String(stats.kills)} (${String(stats.bigKills)} big)</td></tr>
-      <tr><td>Photon accuracy</td><td>${String(accuracy(stats))}%</td></tr><tr><td>Rockets fired</td><td>${String(stats.rocketsFired)}</td></tr><tr><td>Earth hits taken</td><td>${String(stats.earthHits)}</td></tr></table>
+      <div class="summary">${summaryTable()}${topTable()}</div>
       <button id="go">Play again</button><p><a href="/">← all games</a></p></div>`;
   }
   document.getElementById('go')?.addEventListener('click', (e) => {
@@ -180,6 +184,33 @@ function renderOverlay() {
       renderOverlay();
     });
   }
+}
+
+const row = (label: string, value: string): string => `<tr><td>${label}</td><td>${value}</td></tr>`;
+
+/** The run breakdown (P10): how the score was made, then the run's stats. */
+function summaryTable(): string {
+  const pts = (n: number) => String(n);
+  return `<table class="stats"><tr><th colspan="2">This run</th></tr>${[
+    row(`Kills (${String(stats.kills)}, ${String(stats.bigKills)} big)`, pts(stats.killPoints)),
+    row(`Combo bonus (best chain ${String(stats.bestCombo)})`, pts(stats.comboPoints)),
+    row(`Objectives (${String(stats.objectivesMet)})`, pts(stats.objectivePoints)),
+    row(`Wave clears (${String(stats.wavesCleared)})`, pts(stats.clearPoints)),
+    row('Earth bonus', pts(stats.earthPoints)),
+    `<tr class="total"><td>Total</td><td>${String(curr.score)}</td></tr>`,
+    row('Difficulty', DIFFICULTY_LABELS[curr.difficulty].name),
+    row('Time', formatTime(curr.tick)),
+    row('Photon accuracy', `${String(accuracy(stats))}%`),
+    row('Rockets fired', String(stats.rocketsFired)),
+    row('Earth hits taken', String(stats.earthHits)),
+  ].join('')}</table>`;
+}
+
+/** The local top-10, this run highlighted. */
+function topTable(): string {
+  if (top.length === 0) return '';
+  const rows = top.map((e, i) => `<tr class="${i + 1 === rank ? 'me' : ''}"><td>${String(i + 1)}.</td><td>${String(e.score)}</td><td>${DIFFICULTY_LABELS[e.difficulty].name}</td><td>${e.won ? '🌍' : `W${String(e.waves)}`}</td><td class="dim">${e.date}</td></tr>`).join('');
+  return `<table class="stats top"><tr><th colspan="5">Top 10${rank ? ` · you placed #${String(rank)}` : ''}</th></tr>${rows}</table>`;
 }
 
 function dispatch(action: FlowAction) {
@@ -202,6 +233,7 @@ function newRun() {
   prev = curr = initialState(Date.now() >>> 0, settings.difficulty);
   stats = EMPTY_STATS;
   newBest = false;
+  rank = null;
   wonRun = false;
   asteroids.clear();
   shots.clear();
@@ -306,6 +338,10 @@ function recordBest() {
   best = r.best;
   newBest = r.isNew;
   if (r.isNew) storage.set(BEST_KEY, String(best));
+  const t = insertScore(top, { score: curr.score, difficulty: curr.difficulty, waves: stats.wavesCleared, won: wonRun, date: localDate(new Date()) });
+  top = t.list;
+  rank = t.rank;
+  if (t.rank) storage.set(TOP_KEY, JSON.stringify(top));
 }
 
 /** Ending a won campaign from the win screen: a game over without a loss. */

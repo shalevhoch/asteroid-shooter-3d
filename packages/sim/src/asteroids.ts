@@ -15,6 +15,7 @@ import {
   SMALL_RADIUS,
   SPLIT_OFFSETS,
 } from './constants.js';
+import { NO_COMBO, comboAfterKill, comboMultiplier } from './scoring.js';
 import type { AsteroidSize, AsteroidState, GameState, KillCause, SimEvent } from './state.js';
 import { add, addScaled, distance, normalize, sub, type Vec3 } from './vec3.js';
 
@@ -32,19 +33,21 @@ export function makeAsteroid(id: number, size: AsteroidSize, pos: Vec3, speed = 
   return { id, size, pos, dir: normalize(sub(EARTH_POS, pos)), hp: hpOf(size), speed };
 }
 
-/** Moves every asteroid its speed along its direction, then resolves Earth impacts in id order (damage × the preset's scale). */
+/** Moves every asteroid its speed along its direction, then resolves Earth impacts in id order (damage × the preset's scale). An impact breaks the combo. */
 export function moveAsteroids(state: GameState, events: SimEvent[], earthDamageScale = 1): GameState {
   let earthHealth = state.earthHealth;
+  let hit = false;
   const survivors: AsteroidState[] = [];
   for (const a of state.asteroids) {
     const pos = addScaled(a.pos, a.dir, a.speed);
     if (distance(pos, EARTH_POS) <= EARTH_RADIUS + radiusOf(a.size)) {
       const damage = Math.max(1, Math.round(earthDamageOf(a.size) * earthDamageScale));
       earthHealth = Math.max(0, earthHealth - damage);
+      hit = true;
       events.push({ type: 'earthHit', id: a.id, size: a.size, damage, pos });
     } else survivors.push({ ...a, pos });
   }
-  return { ...state, asteroids: survivors, earthHealth };
+  return { ...state, asteroids: survivors, earthHealth, combo: hit ? NO_COMBO : state.combo };
 }
 
 /**
@@ -54,13 +57,16 @@ export function moveAsteroids(state: GameState, events: SimEvent[], earthDamageS
 export function destroyAsteroid(state: GameState, id: number, by: KillCause, events: SimEvent[]): GameState {
   const target = state.asteroids.find((a) => a.id === id);
   if (!target) return state;
-  const points = pointsFor(target.size, by);
-  events.push({ type: 'asteroidDestroyed', id, size: target.size, by, pos: target.pos, points });
+  const base = pointsFor(target.size, by);
+  const combo = comboAfterKill(state.combo, state.tick);
+  const multiplier = comboMultiplier(combo.count);
+  const points = base * multiplier;
+  events.push({ type: 'asteroidDestroyed', id, size: target.size, by, pos: target.pos, points, base, combo: combo.count, multiplier });
   const rest = state.asteroids.filter((a) => a.id !== id);
   const score = state.score + points;
-  if (target.size !== 'big' || by !== 'photon') return { ...state, asteroids: rest, score };
+  if (target.size !== 'big' || by !== 'photon') return { ...state, asteroids: rest, score, combo };
   const pieces = SPLIT_OFFSETS.map((o, i) => makeAsteroid(state.nextId + i, 'small', add(target.pos, o), target.speed));
-  return { ...state, asteroids: [...rest, ...pieces], nextId: state.nextId + pieces.length, score };
+  return { ...state, asteroids: [...rest, ...pieces], nextId: state.nextId + pieces.length, score, combo };
 }
 
 /**

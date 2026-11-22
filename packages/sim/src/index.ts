@@ -36,3 +36,4 @@ export { pointsFor } from './asteroids.js';
 export { fire, moveProjectiles, crosshairTarget, nearestTarget } from './weapons.js';
 export { segmentHitsSphere, segmentHitsBox } from './collide.js';
 export * from './waves.js';
+export * from './scoring.js';

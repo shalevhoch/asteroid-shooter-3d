@@ -16,10 +16,10 @@ describe('wave banners', () => {
   it('reports a clear with the objective bonus and regen', () => {
     const b = bannerFor([
       { type: 'objectiveMet', wave: 2, points: 70, repair: 10 },
-      { type: 'waveCleared', wave: 2, objectiveMet: true, regen: 20 },
+      { type: 'waveCleared', wave: 2, objectiveMet: true, regen: 20, clearBonus: 40, earthBonus: 30 },
     ]);
-    expect(b).toEqual({ title: 'Wave 2 cleared', subtitle: 'Objective met: +70 points, Earth +10 · Earth regenerates +20', durationMs: 3500 });
-    expect(bannerFor([{ type: 'waveCleared', wave: 1, objectiveMet: false, regen: 0 }])?.subtitle).toBe('Get ready…');
+    expect(b).toEqual({ title: 'Wave 2 cleared', subtitle: 'Clear bonus +40 · Earth bonus +30 · Objective met: +70 points, Earth +10 · Earth regenerates +20', durationMs: 3500 });
+    expect(bannerFor([{ type: 'waveCleared', wave: 1, objectiveMet: false, regen: 0, clearBonus: 20, earthBonus: 12 }])?.subtitle).toBe('Clear bonus +20 · Earth bonus +12');
     expect(bannerFor([{ type: 'mothershipBump' }])).toBeNull();
   });
 });
