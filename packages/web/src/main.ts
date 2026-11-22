@@ -22,6 +22,7 @@ import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
+import { GamepadInput, mergePad, type PadPress } from './gamepad.js';
 import { mergeTouch, wantsTouch } from './touch.js';
 import { TouchControls } from './touchControls.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
@@ -118,6 +119,21 @@ window.addEventListener('resize', () => {
 });
 
 const controls = new Controls(renderer.domElement, settings);
+const gamepad = new GamepadInput();
+const PAD_ACTIONS = { rocket: 'fireRocket', throttleUp: 'throttleUp', throttleDown: 'throttleDown', camera: 'toggleCamera' } as const;
+const PAD_HELP = [
+  ['left stick', 'aim (pitch / yaw)'],
+  ['right stick', 'strafe'],
+  ['LB / RB', 'roll'],
+  ['RT', 'photons (hold)'],
+  ['A', 'homing rocket'],
+  ['LT', 'turbo (hold)'],
+  ['B', 'reverse (hold)'],
+  ['Y / X, d-pad', 'throttle + / −'],
+  ['Back', 'camera'],
+  ['Start', 'start · pause · resume'],
+];
+let padShown = false;
 const audio = new AudioBank(base);
 audio.muted = settings.muted;
 audio.volume = settings.volume;
@@ -134,9 +150,11 @@ const TOUCH_HELP = [
   ['Ⅱ', 'pause'],
 ];
 
+const padRows = (): string => (gamepad.connected ? `<tr><th colspan="2">Gamepad</th></tr>${PAD_HELP.map(([k, v]) => `<tr><td>${k ?? ''}</td><td>${v ?? ''}</td></tr>`).join('')}` : '');
+
 function renderHelp(): void {
   if (touchMode) {
-    help.innerHTML = `<h2>Touch controls</h2><table>${TOUCH_HELP.map(([k, v]) => `<tr><td>${k ?? ''}</td><td>${v ?? ''}</td></tr>`).join('')}</table><p>Landscape works best</p>`;
+    help.innerHTML = `<h2>Touch controls</h2><table>${TOUCH_HELP.map(([k, v]) => `<tr><td>${k ?? ''}</td><td>${v ?? ''}</td></tr>`).join('')}${padRows()}</table><p>Landscape works best</p>`;
     help.style.display = phase === 'title' || phase === 'paused' ? 'block' : 'none';
     return;
   }
@@ -147,7 +165,7 @@ function renderHelp(): void {
     settings.layout === 'modern'
       ? `<tr><td>mouse</td><td>aim (pitch / yaw)${settings.invertY ? ', Y inverted' : ''}</td></tr><tr><td>wheel</td><td>throttle ±</td></tr>`
       : '';
-  help.innerHTML = `<h2>Controls: ${settings.layout}${settings.muted ? ' · muted' : ''}</h2><table>${mouse}${rows}</table><p>Esc or P pauses</p>`;
+  help.innerHTML = `<h2>Controls: ${settings.layout}${settings.muted ? ' · muted' : ''}</h2><table>${mouse}${rows}${padRows()}</table><p>Esc or P pauses</p>`;
   // Always on the title and pause screens; in play only when toggled on.
   help.style.display = settings.help || phase === 'title' || phase === 'paused' ? 'block' : 'none';
 }
@@ -428,12 +446,18 @@ const v = new THREE.Vector3();
 renderer.setAnimationLoop((nowMs: number) => {
   const frameMs = Math.min(Math.max(nowMs - lastMs, 0), 250);
   lastMs = nowMs;
+  for (const p of gamepad.poll(settings.invertY)) onPadPress(p);
+  if (gamepad.connected !== padShown) {
+    padShown = gamepad.connected;
+    renderHelp();
+  }
   applyToggles();
   if (phase === 'playing') {
     const { ticks, remainderMs } = ticksFor(accMs + frameMs);
     for (let i = 0; i < ticks && isPlaying(); i++) {
       prev = curr;
-      const input = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
+      const base = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
+      const input = mergePad(base, gamepad.nextHeld(), settings.sensitivity);
       const r = step(curr, input);
       curr = r.state;
       onEvents(r.events, nowMs);
@@ -492,6 +516,14 @@ renderer.setAnimationLoop((nowMs: number) => {
   shockwaves.sync(fx.shockwaves);
   renderer.render(world.scene, camera);
 });
+
+/** Gamepad presses (P19): Start starts, pauses and resumes; the rest go through the keyboard's edge actions. */
+function onPadPress(p: PadPress) {
+  if (p === 'start') {
+    if (phase === 'playing') dispatch('pause');
+    else advance();
+  } else controls.press(PAD_ACTIONS[p]);
+}
 
 function recordBest() {
   const r = updateBest(best, curr.score);

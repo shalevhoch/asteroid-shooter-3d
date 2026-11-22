@@ -201,6 +201,16 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - No pointer lock in touch mode. In portrait, a "turn your device sideways" card covers the game.
   - **Decisions**: touch devices default to Kid / Easy (a stored difficulty wins). No gyro aim for now. Touch
     controls ship in the shippable milestone, for Shalev's tablet.
+- **Gamepad** (P19), any pad the browser reports (the W3C *standard* mapping, so Xbox and PlayStation pads alike;
+  a standard pad is preferred when several are connected). It works alongside the keyboard, mouse and touch:
+  - **Held**: left stick aims (up is nose up; invert-Y applies, a 15 % radial dead zone, full deflection is a
+    full-rate turn), right stick strafes (past the dead zone), LB / RB roll, RT holds photons, LT holds the turbo
+    and B holds reverse. Triggers count past half way.
+  - **Presses** (once per push): A launches a rocket, Y or d-pad up throttles up, X or d-pad down throttles down,
+    Back cycles the camera and Start starts, pauses and resumes.
+  - Stick axes add to the keyboard and mouse and clamp to [−1, 1]; buttons OR with the keys.
+  - The controls list adds a gamepad section while a pad is connected. Disconnecting releases everything.
+  - **Decisions**: no rebinding, rumble or menu navigation by d-pad for now; the mapping is fixed and documented.
 - **Pause and settings overlay** (P13):
   - Esc (leaving pointer lock, or a plain keypress in the classic layout) or P pauses; click, Enter or P resumes.
     The sim doesn't tick while paused.

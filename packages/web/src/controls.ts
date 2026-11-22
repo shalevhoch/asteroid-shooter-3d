@@ -68,7 +68,8 @@ export class Controls {
     return document.pointerLockElement === this.canvas;
   }
 
-  private press(action: Action): void {
+  /** One press of an edge action, from a key, the mouse or the gamepad (P19). */
+  press(action: Action): void {
     if (action === 'throttleUp') this.throttleSteps += 1;
     else if (action === 'throttleDown') this.throttleSteps -= 1;
     else if (action === 'fireRocket') this.rocketPresses = Math.min(this.rocketPresses + 1, 3);
