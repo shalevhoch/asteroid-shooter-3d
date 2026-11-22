@@ -5,7 +5,7 @@
  * - Lock brackets: dashed on what a rocket fired now would lock, solid on what in-flight rockets are chasing.
  * - A ship-relative radar disc (forward is up; filled = above the wings, hollow = below).
  */
-import { BIG_RADIUS, EARTH_POS, EARTH_RADIUS, MOTHERSHIP_POS, SMALL_RADIUS, timeToImpact, type AsteroidState, type Quat, type Vec3 } from '@asteroid/sim';
+import { BIG_RADIUS, EARTH_POS, EARTH_RADIUS, MOTHERSHIP_POS, SMALL_RADIUS, STATION_POS, timeToImpact, type AsteroidState, type Quat, type Vec3 } from '@asteroid/sim';
 import { URGENCY_COLORS, edgeArrow, onScreen, project, radarBlip, urgency } from './threat.js';
 
 export const RADAR_RANGE = 4000;
@@ -115,6 +115,16 @@ export class ThreatView {
     const ms = at(MOTHERSHIP_POS);
     ctx.fillStyle = '#c8d0dc';
     ctx.fillRect(ms.x - 3, ms.y - 3, 6, 6);
+    // The space station (P18): a green diamond.
+    const st = at(STATION_POS);
+    ctx.fillStyle = '#5dff9a';
+    ctx.beginPath();
+    ctx.moveTo(st.x, st.y - 4);
+    ctx.lineTo(st.x + 4, st.y);
+    ctx.lineTo(st.x, st.y + 4);
+    ctx.lineTo(st.x - 4, st.y);
+    ctx.closePath();
+    ctx.fill();
     for (const a of f.asteroids) {
       const b = at(a.pos);
       const size = a.size === 'big' ? 3.5 : 2;

@@ -62,6 +62,14 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
   - Every model is scaled to the Fighter's length, so the 20-unit collision sphere fits them all.
   - **Decisions**: real trade-offs, with the Fighter unchanged as the default, so no existing tuning knob moves. The
     g_ship models are left out: they're LWO, whose three.js loader is deprecated (a follow-up can bake them to GLB).
+- **Space station** (P18): a second reload point and landmark at `STATION_POS = (1000, 1000, 0)`, above the
+  asteroid lane between the spawn line and Earth, on the opposite side from the mothership.
+  - Inside `STATION_DOCK_RADIUS = 150` of it, the ship refills exactly as in the hangar. `shipReloaded` carries
+    `at: 'mothership' | 'station'`.
+  - The web draws the station above its landing dock, with the graving dock and barrack as dressing and a pulsing
+    green ring around the dock. It shows on the radar as a green diamond.
+  - **Decisions**: the station has no collision boxes (it's a fly-through landmark) and never comes under threat:
+    asteroids aim at Earth, and its position is clear of their lane.
 
 ## 4. Asteroids
 

@@ -19,7 +19,7 @@ import { TOP_KEY, insertScore, localDate, parseTop, type ScoreEntry } from './le
 import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase, type RunStats } from './game.js';
 import { Hud, hudModel } from './hud.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
-import { buildWorld } from './scene.js';
+import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { mergeTouch, wantsTouch } from './touch.js';
@@ -167,6 +167,11 @@ function applyToggles() {
 }
 
 const world = await buildWorld(base);
+let stationRing: Awaited<ReturnType<typeof addStation>> | null = null;
+// The station is dressing plus a reload point: load it behind the title card, not before it.
+void addStation(world.scene, base).then((r) => {
+  stationRing = r;
+}).catch(() => undefined);
 void world.setCraft(settings.craft);
 const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
 const atlas = await buildAtlas((p) => assetUrl(base, p));
@@ -462,6 +467,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   camera.updateProjectionMatrix();
   world.sky.position.copy(camera.position);
   world.earth.rotation.y = nowMs / 1000 / 120;
+  if (stationRing) stationRing.material.opacity = 0.35 + 0.3 * Math.sin(nowMs / 400);
   asteroids.update(prev.asteroids, curr.asteroids, alpha, curr.tick);
 
   camera.updateMatrixWorld();
