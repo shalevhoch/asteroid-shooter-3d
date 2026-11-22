@@ -132,7 +132,7 @@ Each tick, in this order:
 6. Expire projectiles whose life ran out, fold the tick's events into the wave's objective tallies, and check the run's end.
 
 The sim emits **events** for anything the renderer, audio or HUD react to (`turboStarted`, `turboEnded`,
-`fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired {target}`, `rocketLocked`, `projectileSpent`, `asteroidHit {hp}`,
+`fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired {target}`, `rocketLocked`, `projectileSpent {on: asteroid | earth | mothership}`, `asteroidHit {hp}`,
 `asteroidDestroyed {by, size, pos, points}`,
 `asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`, `runEnded`, `waveStarted {wave, count, objective}`,
 `waveCleared {wave, objectiveMet, regen}`, `objectiveMet {wave, points, repair}`, `campaignWon`).
@@ -247,6 +247,33 @@ every asteroid is a threat and all of them are shown.
   above the wing plane and hollow below; points beyond the range sit on the rim. Earth and the mothership are shown
   too.
 - The overlay is drawn on a 2D canvas over the 3D view, outside the sim. It is hidden on the title screen.
+
+## 12. Effects (FX)
+
+P11: the original's sprite particles, drawn by the web layer from sim events. Nothing here feeds back into the sim.
+
+- **One batch**: every sprite (particles and shots) is one instanced draw from one texture atlas, sorted farthest first
+  each frame, with premultiplied alpha and one blend (`ONE, ONE_MINUS_SRC_ALPHA`). Additive sprites write α = 0.
+- **View-plane flattening**: each quad faces the eye ray to its centre and is then slid, corner by corner along the
+  eye rays, onto the plane through its centre parallel to the view plane. Its screen image is unchanged and its depth
+  is constant, so sprites don't cut into asteroids or each other.
+- **Particles** update on a 25 Hz FX clock (paused with the game, running behind the end cards), ported rule for rule
+  from the Java sprites: Flash, Flame, Flare and Glint. Shots keep their P06 sizes (the original photon was a
+  2-unit dot).
+- **Cap**: at most `MAX_PARTICLES = 4000` live particles. Past it, the oldest are dropped first.
+- **Event → effect** (from the original collision handlers):
+
+  | Sim event or state | Effect |
+  |---|---|
+  | `asteroidDestroyed`, `earthHit` | explosion, size 3 (big) or 0.25 (small): 10 flashes + 40 flames |
+  | `projectileSpent` on Earth or the mothership | explosion, size 0.25 (photon) or 1 (rocket) |
+  | `asteroidHit` (photon chip) | 2 small flashes (P12 replaces these with sparks and smoke) |
+  | `hullBurning` | 2 glints at the ship |
+  | `runEnded: shipDestroyed` | explosion, size 3, at the ship |
+  | each tick, per flying rocket | 8 trail flares |
+  | each tick, per asteroid in the atmosphere | a flare tail (16 big / 4 small) and, for a big one, 3 flames |
+- A visual test page at `fx.html` triggers each effect next to a big asteroid and has a 2000-particle stress mode
+  with an fps readout.
 
 ## Open
 

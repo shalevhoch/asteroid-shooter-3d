@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import { EARTH_MAX_HEALTH, initialState, type GameState, type SimEvent } from '@asteroid/sim';
 import { MAX_CUES_PER_TICK, cuesFor } from '../src/audio.js';
-import { burstsFor } from '../src/fx.js';
 import { EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase } from '../src/game.js';
 import { hudModel } from '../src/hud.js';
 
@@ -105,11 +104,3 @@ describe('audio cues', () => {
   });
 });
 
-describe('fx bursts', () => {
-  it('bursts on kills, Earth hits and photon hits, sized by asteroid', () => {
-    const b = burstsFor([kill('big', 'photon'), kill('small', 'rocket'), { type: 'asteroidHit', id: 1, hp: 2, pos: [1, 2, 3] }, { type: 'photonFired', id: 1, pos: [0, 0, 0] }]);
-    expect(b).toHaveLength(3);
-    expect(b[0]?.size).toBeGreaterThan(b[1]?.size ?? Infinity);
-    expect(b[2]?.pos).toEqual([1, 2, 3]);
-  });
-});

@@ -13,6 +13,6 @@ export default defineConfig(({ mode }) => ({
   server: { port: 5175 },
   build: {
     target: 'es2022', sourcemap: true, assetsDir: 'static', chunkSizeWarningLimit: 800,
-    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), gallery: resolve(import.meta.dirname, 'gallery.html') } },
+    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), gallery: resolve(import.meta.dirname, 'gallery.html'), fx: resolve(import.meta.dirname, 'fx.html') } },
   },
 }));

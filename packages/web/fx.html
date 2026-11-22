@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asteroid Shooter 3D: FX test</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #05060a; color: #d8dce6; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+      #app { position: fixed; inset: 0; }
+      #side { position: fixed; top: 10px; left: 10px; background: #0d1018cc; border: 1px solid #222838; border-radius: 8px; padding: 10px; width: 210px; }
+      #side h1 { font-size: 1rem; margin: 0 0 8px; }
+      #side button { display: block; width: 100%; margin: 4px 0; background: #1b2030; color: inherit; border: 1px solid #2b3550; border-radius: 4px; padding: 5px; cursor: pointer; font: inherit; font-size: 0.85rem; }
+      #side button.on { background: #2b3550; color: #fff; }
+      #side a { color: #f0d9a8; font-size: 0.8rem; }
+      #info { position: fixed; right: 10px; bottom: 10px; font: 13px monospace; color: #8b94a8; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="side">
+      <h1>☄️ FX test (P11)</h1>
+      <a href="./">← back to the game</a>
+      <button data-fx="big">Big asteroid explosion</button>
+      <button data-fx="small">Small asteroid explosion</button>
+      <button data-fx="impact">Photon impact</button>
+      <button data-fx="rocket">Rocket fly-by (trail)</button>
+      <button data-fx="atmosphere">Asteroid in the atmosphere</button>
+      <button data-fx="embers">Ship embers</button>
+      <button data-fx="stress" id="stress">Stress: hold 2000 particles</button>
+      <button data-fx="clear">Clear</button>
+    </div>
+    <div id="info"></div>
+    <script type="module" src="/src/fxTest.ts"></script>
+  </body>
+</html>

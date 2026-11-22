@@ -125,7 +125,7 @@ export type SimEvent =
   | { readonly type: 'photonFired'; readonly id: number; readonly pos: Vec3 }
   | { readonly type: 'rocketFired'; readonly id: number; readonly pos: Vec3; readonly target: number | null }
   | { readonly type: 'rocketLocked'; readonly id: number; readonly target: number }
-  | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3 }
+  | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3; readonly on: 'asteroid' | 'earth' | 'mothership' }
   | { readonly type: 'runEnded'; readonly reason: RunEndReason }
   | { readonly type: 'waveStarted'; readonly wave: number; readonly count: number; readonly objective: Objective | null }
   | { readonly type: 'waveCleared'; readonly wave: number; readonly objectiveMet: boolean; readonly regen: number; readonly clearBonus: number; readonly earthBonus: number }

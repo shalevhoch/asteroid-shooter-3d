@@ -104,12 +104,13 @@ export function moveProjectiles(state: GameState, events: SimEvent[]): GameState
     const to = addScaled(p.pos, p.dir, speedOf(p));
     const hit = s.asteroids.find((a) => segmentHitsSphere(p.pos, to, a.pos, radiusOf(a.size)));
     if (hit) {
-      events.push({ type: 'projectileSpent', id: p.id, kind: p.kind, pos: to });
+      events.push({ type: 'projectileSpent', id: p.id, kind: p.kind, pos: to, on: 'asteroid' });
       s = damage(s, hit, p, events);
       continue;
     }
-    if (segmentHitsSphere(p.pos, to, EARTH_POS, EARTH_RADIUS) || MOTHERSHIP_WORLD_BOXES.some((b) => segmentHitsBox(p.pos, to, b))) {
-      events.push({ type: 'projectileSpent', id: p.id, kind: p.kind, pos: to });
+    const on = segmentHitsSphere(p.pos, to, EARTH_POS, EARTH_RADIUS) ? 'earth' : MOTHERSHIP_WORLD_BOXES.some((b) => segmentHitsBox(p.pos, to, b)) ? 'mothership' : null;
+    if (on) {
+      events.push({ type: 'projectileSpent', id: p.id, kind: p.kind, pos: to, on });
       continue;
     }
     const age = p.age + 1;

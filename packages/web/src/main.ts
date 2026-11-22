@@ -8,12 +8,14 @@ import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
 import { AudioBank, cuesFor } from './audio.js';
 import { Controls } from './controls.js';
-import { FxLayer, burstsFor } from './fx.js';
+import { buildAtlas } from './fx/atlas.js';
+import { BillboardBatch } from './fx/batch.js';
+import { recipesFor } from './fx/bus.js';
+import { FxEngine, MAX_PARTICLES } from './fx/engine.js';
 import { TOP_KEY, insertScore, localDate, parseTop, type ScoreEntry } from './leaderboard.js';
 import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase, type RunStats } from './game.js';
 import { Hud, hudModel } from './hud.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
-import { ProjectileView } from './projectileView.js';
 import { buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, cycle, parseSettings } from './settings.js';
 import { ThreatView } from './threatView.js';
@@ -120,10 +122,12 @@ function applyToggles() {
 }
 
 const world = await buildWorld(base);
-const textures = new THREE.TextureLoader();
 const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
-const shots = new ProjectileView(world.scene, await textures.loadAsync(assetUrl(base, 'textures/particle_32x32.png')));
-const fx = new FxLayer(world.scene, await textures.loadAsync(assetUrl(base, 'textures/flash_burst_1_128x128.png')));
+const batch = new BillboardBatch(await buildAtlas((p) => assetUrl(base, p)), MAX_PARTICLES + 64);
+world.scene.add(batch.mesh);
+const fx = new FxEngine();
+/** FX run on their own 25 Hz clock, so explosions finish behind the game-over card. */
+let fxAccMs = 0;
 
 let phase: Phase = 'title';
 let prev: GameState = initialState(Date.now() >>> 0);
@@ -236,7 +240,6 @@ function newRun() {
   rank = null;
   wonRun = false;
   asteroids.clear();
-  shots.clear();
   fx.clear();
 }
 
@@ -293,9 +296,17 @@ renderer.setAnimationLoop((nowMs: number) => {
       prev = curr;
       const r = step(curr, controls.nextInput());
       curr = r.state;
-      onEvents(r.events, nowMs);
+      onEvents(r.events);
+      fx.ambient(curr);
     }
     accMs = remainderMs;
+  }
+  if (phase !== 'paused' && phase !== 'title') {
+    fxAccMs += frameMs;
+    while (fxAccMs >= TICK_MS) {
+      fx.tick();
+      fxAccMs -= TICK_MS;
+    }
   }
   const alpha = phase === 'playing' ? accMs / TICK_MS : 1;
 
@@ -313,8 +324,6 @@ renderer.setAnimationLoop((nowMs: number) => {
   world.sky.position.copy(camera.position);
   world.earth.rotation.y = nowMs / 1000 / 120;
   asteroids.update(prev.asteroids, curr.asteroids, alpha, curr.tick);
-  shots.update(prev.projectiles, curr.projectiles, alpha);
-  fx.update(nowMs);
 
   camera.updateMatrixWorld();
   if (phase === 'title') threat.clear();
@@ -330,6 +339,9 @@ renderer.setAnimationLoop((nowMs: number) => {
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
   hud.aim(v.z < 1 ? { x: v.x, y: v.y } : null);
   status.textContent = `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
+  batch.begin();
+  fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
+  batch.end(camera);
   renderer.render(world.scene, camera);
 });
 
@@ -351,15 +363,14 @@ function finishWon() {
   dispatch('finish');
 }
 
-function onEvents(events: readonly SimEvent[], nowMs: number) {
+function onEvents(events: readonly SimEvent[]) {
   stats = addStats(stats, events);
   const banner = bannerFor(events);
   if (banner) showBanner(banner);
   if (events.some((e) => e.type === 'campaignWon')) dispatch('win');
   audio.play(cuesFor(events));
-  fx.spawn(burstsFor(events), nowMs);
+  fx.apply(recipesFor(events, curr));
   if (events.some((e) => e.type === 'runEnded')) {
-    if (curr.ended === 'shipDestroyed') fx.spawn([{ pos: curr.ship.pos, size: 300, durationMs: 1400, color: 0xffb060 }], nowMs);
     recordBest();
     dispatch('end');
   }
