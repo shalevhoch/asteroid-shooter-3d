@@ -18,7 +18,7 @@ host.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 5000);
-camera.position.set(0, 0, 120);
+camera.position.set(0, 0, 85);
 
 scene.add(new THREE.AmbientLight(0x404050, 1.2));
 const sun = new THREE.DirectionalLight(0xfff2dd, 2.2);
