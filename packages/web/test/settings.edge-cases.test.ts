@@ -17,3 +17,10 @@ describe('settings edge cases', () => {
     expect(parseSettings('{"volume":0}').volume).toBe(0);
   });
 });
+
+describe('craft setting (P17)', () => {
+  it('a stored craft survives; an unknown one falls back to the Fighter', () => {
+    expect(parseSettings('{"craft":"shuttle"}').craft).toBe('shuttle');
+    expect(parseSettings('{"craft":"g-ship"}').craft).toBe('fighter');
+  });
+});

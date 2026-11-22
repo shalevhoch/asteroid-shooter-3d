@@ -14,15 +14,16 @@ export interface Refill {
 /** What the hangar tops up. */
 export const REFILL: Refill = { fuel: FUEL_MAX, hull: HULL_MAX, rockets: ROCKET_MAX };
 
-export function applyHazards(input: ShipState, events: SimEvent[]): ShipState {
+/** `refill` is what the hangar tops up to: the craft's maxima (P17). */
+export function applyHazards(input: ShipState, events: SimEvent[], refill: Refill = REFILL): ShipState {
   let ship = input;
   const hull = resolveMothership(ship.pos);
   if (hull.bumped) {
     ship = { ...ship, pos: hull.pos, throttle: Math.max(0, ship.throttle - 1) };
     events.push({ type: 'mothershipBump' });
   }
-  if (distance(ship.pos, HANGAR_CENTRE) < HANGAR_RADIUS && (ship.fuel < REFILL.fuel || ship.hull < REFILL.hull || ship.rockets < REFILL.rockets)) {
-    ship = { ...ship, fuel: REFILL.fuel, hull: REFILL.hull, rockets: REFILL.rockets };
+  if (distance(ship.pos, HANGAR_CENTRE) < HANGAR_RADIUS && (ship.fuel < refill.fuel || ship.hull < refill.hull || ship.rockets < refill.rockets)) {
+    ship = { ...ship, fuel: refill.fuel, hull: refill.hull, rockets: refill.rockets };
     events.push({ type: 'shipReloaded' });
   }
   const toEarth = distance(ship.pos, EARTH_POS);

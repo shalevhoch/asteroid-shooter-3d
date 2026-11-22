@@ -1,5 +1,5 @@
 /** Player settings kept per browser (P04, P08, P12, P13): layout, invert-Y, camera, help, sound, volume, mouse sensitivity, difficulty, shake. Unknown or corrupt values fall back to defaults. */
-import { DIFFICULTIES, type Difficulty } from '@asteroid/sim';
+import { CRAFT_IDS, DIFFICULTIES, type CraftId, type Difficulty } from '@asteroid/sim';
 import { LAYOUTS, type Layout } from './keymap.js';
 import { CAMERA_MODES, type CameraMode } from './view.js';
 
@@ -16,6 +16,8 @@ export interface Settings {
   sensitivity: number;
   /** Master volume (P13), 0..1. */
   volume: number;
+  /** The ship flown (P17). */
+  craft: CraftId;
 }
 
 export const SENSITIVITY_MIN = 0.25;
@@ -23,7 +25,7 @@ export const SENSITIVITY_MAX = 3;
 export const SENSITIVITY_STEP = 0.25;
 export const VOLUME_STEP = 0.1;
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1 };
+export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1, craft: 'fighter' };
 export const SETTINGS_KEY = 'asteroid-shooter-3d.settings.v1';
 
 /**
@@ -40,7 +42,7 @@ export function parseSettings(raw: string | null, reducedMotion = false, touch =
     return s;
   }
   if (typeof v !== 'object' || v === null) return s;
-  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown; difficulty?: unknown; shake?: unknown; sensitivity?: unknown; volume?: unknown };
+  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown; difficulty?: unknown; shake?: unknown; sensitivity?: unknown; volume?: unknown; craft?: unknown };
   if (LAYOUTS.includes(o.layout as Layout)) s.layout = o.layout as Layout;
   if (CAMERA_MODES.includes(o.camera as CameraMode)) s.camera = o.camera as CameraMode;
   if (typeof o.invertY === 'boolean') s.invertY = o.invertY;
@@ -49,6 +51,7 @@ export function parseSettings(raw: string | null, reducedMotion = false, touch =
   if (DIFFICULTIES.includes(o.difficulty as Difficulty)) s.difficulty = o.difficulty as Difficulty;
   if (typeof o.shake === 'boolean') s.shake = o.shake;
   if (typeof o.sensitivity === 'number' && Number.isFinite(o.sensitivity)) s.sensitivity = clampStep(o.sensitivity, SENSITIVITY_MIN, SENSITIVITY_MAX, SENSITIVITY_STEP);
+  if (CRAFT_IDS.includes(o.craft as CraftId)) s.craft = o.craft as CraftId;
   if (typeof o.volume === 'number' && Number.isFinite(o.volume)) s.volume = clampStep(o.volume, 0, 1, VOLUME_STEP);
   return s;
 }

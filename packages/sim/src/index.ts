@@ -38,3 +38,4 @@ export { segmentHitsSphere, segmentHitsBox } from './collide.js';
 export * from './waves.js';
 export * from './scoring.js';
 export * from './achievements.js';
+export * from './crafts.js';

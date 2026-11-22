@@ -1,7 +1,7 @@
 /** HUD v0 (P07): a clean DOM HUD. `hudModel` is the pure part (what to show); `Hud` writes it to the page. */
 import { waveLine } from './waveUi.js';
 import { formatImpact, urgency, type Urgency } from './threat.js';
-import { comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, ROCKET_MAX, THROTTLE_MAX, type GameState } from '@asteroid/sim';
+import { CRAFTS, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
   readonly score: number;
@@ -35,18 +35,19 @@ function impactOf(s: GameState): HudModel['impact'] {
 
 export function hudModel(s: GameState, best: number): HudModel {
   const warnings: string[] = [];
+  const { hullMax, fuelMax, rocketMax } = CRAFTS[s.craft];
   if (s.earthHealth <= EARTH_MAX_HEALTH * 0.3) warnings.push('EARTH CRITICAL');
-  if (s.ship.hull < HULL_MAX) warnings.push(s.ship.hull <= HULL_MAX * 0.3 ? 'HULL CRITICAL' : 'HULL DAMAGED');
+  if (s.ship.hull < hullMax) warnings.push(s.ship.hull <= hullMax * 0.3 ? 'HULL CRITICAL' : 'HULL DAMAGED');
   if (s.ship.fuel === 0) warnings.push('NO FUEL');
   if (s.ship.rockets === 0) warnings.push('NO ROCKETS: RELOAD AT THE MOTHERSHIP');
   return {
     score: s.score,
     best: Math.max(best, s.score),
     earth: frac(s.earthHealth, EARTH_MAX_HEALTH),
-    hull: frac(s.ship.hull, HULL_MAX),
-    fuel: frac(s.ship.fuel, FUEL_MAX),
+    hull: frac(s.ship.hull, hullMax),
+    fuel: frac(s.ship.fuel, fuelMax),
     rockets: s.ship.rockets,
-    rocketMax: ROCKET_MAX,
+    rocketMax,
     speed: s.ship.turbo ? THROTTLE_MAX + 1 : s.ship.throttle,
     speedMax: THROTTLE_MAX + 1,
     turbo: s.ship.turbo,

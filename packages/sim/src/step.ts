@@ -1,6 +1,7 @@
 /** `step(state, input) → { state, events }`: one 40 ms tick (SPEC §7). Pure and deterministic. */
 import { moveAsteroids } from './asteroids.js';
 import { fly } from './flight.js';
+import { CRAFTS } from './crafts.js';
 import { applyHazards } from './hazards.js';
 import { fire, moveProjectiles } from './weapons.js';
 import { PRESETS, trackWave, updateWaves } from './waves.js';
@@ -12,11 +13,12 @@ export function step(state: GameState, input: Input): StepResult {
   const tick = state.tick + 1;
   // 1. Apply input.
   const preset = PRESETS[state.difficulty];
-  const flown = fly(state.ship, input, preset.fuelDrain);
+  const craft = CRAFTS[state.craft];
+  const flown = fly(state.ship, input, preset.fuelDrain, craft);
   events.push(...flown.events);
   let s: GameState = fire({ ...state, tick, ship: flown.ship }, input, events, preset.rocketLockCone);
   // 2. Ship hazards.
-  s = { ...s, ship: applyHazards(s.ship, events) };
+  s = { ...s, ship: applyHazards(s.ship, events, { fuel: craft.fuelMax, hull: craft.hullMax, rockets: craft.rocketMax }) };
   // 3. Waves: lead-in, spawns, wave clear. 4. Move asteroids, resolve Earth impacts.
   s = moveAsteroids(updateWaves(s, events), events, preset.earthDamageScale);
   // 5. Move projectiles, resolve hits, expire. 6. Objective tallies, run end.
