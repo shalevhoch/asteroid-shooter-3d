@@ -3,7 +3,8 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { CAMPAIGN_WAVES, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
 import { AudioBank, cuesFor } from './audio.js';
@@ -81,6 +82,27 @@ const saveSettings = () => {
 let top: ScoreEntry[] = parseTop(storage.get(TOP_KEY));
 /** The best score: the stored best, or the top-10's first run if that is higher. */
 let best = Math.max(parseBest(storage.get(BEST_KEY)), top[0]?.score ?? 0);
+let unlocks = parseUnlocks(storage.get(ACHIEVEMENTS_KEY));
+let achRun: AchievementRun = NEW_RUN;
+/** Achievements first unlocked during this run, for the game-over card. */
+let runUnlocks: AchievementId[] = [];
+const toastEl = el('toast');
+const toastQueue: AchievementId[] = [];
+let toastBusy = false;
+function nextToast() {
+  const id = toastQueue.shift();
+  if (!id) {
+    toastBusy = false;
+    return;
+  }
+  toastBusy = true;
+  toastEl.innerHTML = `<b>🏆 ${ACHIEVEMENTS[id].name}</b><span>${ACHIEVEMENTS[id].how}</span>`;
+  toastEl.classList.add('on');
+  setTimeout(() => {
+    toastEl.classList.remove('on');
+    setTimeout(nextToast, 450);
+  }, 2600);
+}
 /** The finished run's top-10 rank, or null. */
 let rank: number | null = null;
 
@@ -196,6 +218,15 @@ function settingsPanel(open: boolean): string {
 
 const DIFFICULTY_NAMES = Object.fromEntries(DIFFICULTIES.map((d) => [d, DIFFICULTY_LABELS[d].name])) as Record<(typeof DIFFICULTIES)[number], string>;
 
+/** Every achievement, unlocked ones first marked with their date (P16). */
+function achievementsPanel(): string {
+  const rows = ACHIEVEMENT_IDS.map((id) => {
+    const d = unlocks[id];
+    return `<tr class="${d ? 'got' : 'locked'}"><td>${d ? '🏆' : '·'}</td><td><b>${ACHIEVEMENTS[id].name}</b><br><span class="dim">${ACHIEVEMENTS[id].how}</span></td><td class="dim">${d ?? ''}</td></tr>`;
+  }).join('');
+  return `<details class="settings ach"><summary>Achievements ${String(unlockedCount(unlocks))}/${String(ACHIEVEMENT_IDS.length)}</summary><table>${rows}</table></details>`;
+}
+
 /** A function, so TypeScript doesn't narrow `phase` across calls that change it. */
 const isPlaying = (): boolean => phase === 'playing';
 /** Whether the title card's settings panel is unfolded (kept across re-renders). */
@@ -211,7 +242,7 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
       <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}
-      <button id="go">${touchMode ? "Tap" : "Click"} to start</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${PORTAL_LINK}</div>`;
+      <button id="go">${touchMode ? "Tap" : "Click"} to start</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${touchMode ? "Tap" : "Click"} to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
@@ -221,6 +252,7 @@ function renderOverlay() {
   } else {
     overlay.innerHTML = `<div class="card wide"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
       <div class="final">${String(curr.score)}</div>${newBest ? '<div class="newbest">NEW BEST!</div>' : `<p class="dim">Best ${String(best)}</p>`}
+      ${runUnlocks.length ? `<p class="unlocked">🏆 Unlocked: ${runUnlocks.map((id) => ACHIEVEMENTS[id].name).join(' · ')}</p>` : ''}
       <div class="summary">${summaryTable()}${topTable()}</div>
       <button id="go">Play again</button>${PORTAL_LINK}</div>`;
   }
@@ -232,7 +264,7 @@ function renderOverlay() {
     e.stopPropagation();
     finishWon();
   });
-  const details = overlay.querySelector('details');
+  const details = overlay.querySelector<HTMLDetailsElement>('details:not(.ach)');
   details?.addEventListener('toggle', () => {
     settingsOpen = details.open;
   });
@@ -312,6 +344,8 @@ function newRun() {
   asteroids.clear();
   fx.clear();
   jolt = null;
+  achRun = NEW_RUN;
+  runUnlocks = [];
 }
 
 /** The overlay's main button / Enter: start, resume or play again. */
@@ -453,6 +487,18 @@ function onEvents(events: readonly SimEvent[], nowMs: number) {
   const e = camera.matrixWorld.elements;
   fx.apply(recipesFor(events, curr), [e[4], e[5], e[6]]);
   jolt = addJolt(jolt, hitStrength(events), nowMs);
+  const a = trackAchievements(achRun, events, curr);
+  achRun = a.run;
+  if (a.unlocked.length) {
+    const r = recordUnlocks(unlocks, a.unlocked, localDate(new Date()));
+    if (r.fresh.length) {
+      unlocks = r.store;
+      storage.set(ACHIEVEMENTS_KEY, JSON.stringify(unlocks));
+      runUnlocks.push(...r.fresh);
+      toastQueue.push(...r.fresh);
+      if (!toastBusy) nextToast();
+    }
+  }
   if (events.some((e) => e.type === 'runEnded')) {
     recordBest();
     dispatch('end');
