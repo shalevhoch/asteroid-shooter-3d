@@ -1,18 +1,25 @@
 /**
- * The FX engine (P11): live particles, the original's emitters, a particle cap, and the hand-off to the batch.
+ * The FX engine (P11, P12): live particles and shockwaves, the original's emitters, a particle cap, and the hand-off to the batch.
  * Particles update on the sim's 25 Hz tick, as the Java particle timer did, and are drawn interpolated.
  */
 import { ROCKET_SPEED, type AsteroidState, type GameState, type ProjectileState, type Vec3 } from '@asteroid/sim';
 import { inAtmosphere, type Recipe } from './bus.js';
-import { flame, flare, flash, glint, noisyDir, updateParticle, type Particle, type Rnd } from './particles.js';
+import { flame, flare, flash, glint, noisyDir, rocketSmoke, smoke, spark, updateParticle, type Particle, type Rnd } from './particles.js';
+import { MAX_SHOCKWAVES, shockwave, updateShockwave, type Shockwave } from './shockwave.js';
+import type { V3 } from './billboard.js';
 import type { BillboardBatch } from './batch.js';
 
 /** Live particles at most; past it the oldest go first, so new effects always show. */
 export const MAX_PARTICLES = 4000;
 
-/** Explosion emitter counts (original `Explosion`): 10 flashes, 40 flames. */
+/** Explosion emitter counts (original `Explosion`): a shockwave (size × 10), 10 flashes, 40 flames, 50 smoke trails, 100 sparks. */
 export const EXPLOSION_FLASHES = 10;
 export const EXPLOSION_FLAMES = 40;
+export const EXPLOSION_SMOKE = 50;
+export const EXPLOSION_SPARKS = 100;
+/** A photon chipping a big asteroid (original `BigAsteroid` PHOTON hit): 3 sparks, 5 smoke trails. */
+export const IMPACT_SPARKS = 3;
+export const IMPACT_SMOKE = 5;
 /** Flares a flying rocket sheds per tick (original `Shot.update`). */
 export const ROCKET_TRAIL_FLARES = 8;
 
@@ -22,21 +29,34 @@ const ROCKET_LOOK = { size: 13, r: 1, g: 0.63, b: 0.25 };
 
 export class FxEngine {
   readonly particles: Particle[] = [];
+  readonly shockwaves: Shockwave[] = [];
 
   constructor(private readonly rnd: Rnd = Math.random) {}
 
-  /** Spawns the particles for a tick's recipes. */
-  apply(recipes: readonly Recipe[]): void {
+  /** Spawns the particles for a tick's recipes. `camUp` is the camera's world up (it orients new shockwaves, as in the original). */
+  apply(recipes: readonly Recipe[], camUp: V3 = [0, 1, 0]): void {
     for (const r of recipes) {
-      if (r.kind === 'explosion') {
-        for (let i = 0; i < EXPLOSION_FLASHES; i++) this.add(flash(r.pos, r.size, this.rnd));
-        for (let i = 0; i < EXPLOSION_FLAMES; i++) this.add(flame(r.pos, r.size, this.rnd));
-      } else if (r.kind === 'impact') {
-        // Until P12's sparks and smoke: a small double flash.
-        for (let i = 0; i < 2; i++) this.add(flash(r.pos, 0.25, this.rnd));
+      if (r.kind === 'explosion') this.explode(r.pos, r.size, r.normal, camUp);
+      else if (r.kind === 'impact') {
+        // A small flash on top of the original's sparks and smoke, which are a few units long and vanish at range.
+        this.add(flash(r.pos, 0.25, this.rnd));
+        for (let i = 0; i < IMPACT_SPARKS; i++) this.add(spark(r.pos, this.rnd));
+        for (let i = 0; i < IMPACT_SMOKE; i++) this.add(smoke(r.pos, this.rnd));
       } else for (let i = 0; i < 2; i++) this.add(glint(r.pos, this.rnd));
     }
     this.enforceCap();
+  }
+
+  /** The original `Explosion`: the shockwave first (when there is a normal), then the emitters. */
+  private explode(pos: Vec3, size: number, normal: Vec3 | null, camUp: V3): void {
+    if (normal) {
+      this.shockwaves.push(shockwave(pos, normal, camUp, size * 10));
+      if (this.shockwaves.length > MAX_SHOCKWAVES) this.shockwaves.shift();
+    }
+    for (let i = 0; i < EXPLOSION_FLASHES; i++) this.add(flash(pos, size, this.rnd));
+    for (let i = 0; i < EXPLOSION_FLAMES; i++) this.add(flame(pos, size, this.rnd));
+    for (let i = 0; i < EXPLOSION_SMOKE; i++) this.add(smoke(pos, this.rnd));
+    for (let i = 0; i < EXPLOSION_SPARKS; i++) this.add(spark(pos, this.rnd));
   }
 
   /** Per-tick emitters driven by state: rocket trails and asteroids burning through the atmosphere. */
@@ -57,6 +77,8 @@ export class FxEngine {
 
   /** One tick of a flying rocket's trail (original `Shot.update`). */
   rocketTrail(p: ProjectileState): void {
+    const from: Vec3 = [p.pos[0] - p.dir[0] * ROCKET_SPEED, p.pos[1] - p.dir[1] * ROCKET_SPEED, p.pos[2] - p.dir[2] * ROCKET_SPEED];
+    this.add(rocketSmoke(from, p.pos, this.rnd));
     for (let i = 0; i < ROCKET_TRAIL_FLARES; i++)
       this.add(flare(p.pos, ROCKET_SPEED * (this.rnd() * 0.45 + 0.45), noisyDir(p.dir, 0.005, this.rnd), 0.25, 'roundParticle', this.rnd));
   }
@@ -69,16 +91,28 @@ export class FxEngine {
       if (!p.dead) this.particles[w++] = p;
     }
     this.particles.length = w;
+    let k = 0;
+    for (const s of this.shockwaves) {
+      updateShockwave(s);
+      if (!s.dead) this.shockwaves[k++] = s;
+    }
+    this.shockwaves.length = k;
   }
 
   clear(): void {
     this.particles.length = 0;
+    this.shockwaves.length = 0;
   }
 
   /** Queues every particle (interpolated by `alpha`), then the projectiles (by `shotAlpha`, the sim's), into the batch. */
   draw(batch: BillboardBatch, alpha: number, prev: readonly ProjectileState[], curr: readonly ProjectileState[], shotAlpha = alpha): void {
     for (const p of this.particles) {
-      batch.push(p.px + (p.x - p.px) * alpha, p.py + (p.y - p.py) * alpha, p.pz + (p.z - p.pz) * alpha, p.size + p.jitter, p.angle, p.r, p.g, p.b, p.a, p.additive, p.cell);
+      const x = p.px + (p.x - p.px) * alpha;
+      const y = p.py + (p.y - p.py) * alpha;
+      const z = p.pz + (p.z - p.pz) * alpha;
+      if (p.ratio > 0) {
+        batch.pushLine(x, y, z, p.ptx + (p.tx - p.ptx) * alpha, p.pty + (p.ty - p.pty) * alpha, p.ptz + (p.tz - p.ptz) * alpha, p.ratio, p.r, p.g, p.b, p.a, p.additive, p.cell);
+      } else batch.push(x, y, z, p.size + p.jitter, p.angle, p.r, p.g, p.b, p.a, p.additive, p.cell);
     }
     const before = new Map(prev.map((p) => [p.id, p.pos]));
     for (const p of curr) {

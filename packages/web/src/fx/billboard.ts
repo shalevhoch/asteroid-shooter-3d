@@ -39,6 +39,23 @@ const norm = (v: V3): V3 => {
 };
 
 /**
+ * The four view-space corners of a line sprite (the original `LineSprite.getQuadBillboard`): head side then tail side, its width
+ * ⊥ both the line and the eye ray to its middle, `ratio × length` wide; flattened onto the plane through the head (its position).
+ */
+export function lineCorners(h: V3, t: V3, ratio: number): V3[] {
+  const line: V3 = [h[0] - t[0], h[1] - t[1], h[2] - t[2]];
+  const m: V3 = [-(h[0] + t[0]) / 2, -(h[1] + t[1]) / 2, -(h[2] + t[2]) / 2];
+  const cr: V3 = [m[1] * line[2] - m[2] * line[1], m[2] * line[0] - m[0] * line[2], m[0] * line[1] - m[1] * line[0]];
+  const n = norm(cr);
+  const w = (ratio * Math.hypot(...line)) / 2;
+  const p: V3 = [n[0] * w, n[1] * w, n[2] * w];
+  return ([[-1, -1], [1, -1], [1, 1], [-1, 1]] as const).map(([x, y]) => {
+    const k = (x + 1) / 2;
+    return flatten([h[0] + (t[0] - h[0]) * k + p[0] * y, h[1] + (t[1] - h[1]) * k + p[1] * y, h[2] + (t[2] - h[2]) * k + p[2] * y], h[2]);
+  });
+}
+
+/**
  * The four view-space corners (−,−) (+,−) (+,+) (−,+) of a sprite centred at view-space `c`, half-size `size`, turned `angle`
  * about its eye ray, flattened onto the plane z = c.z.
  */

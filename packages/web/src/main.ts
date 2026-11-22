@@ -12,6 +12,8 @@ import { buildAtlas } from './fx/atlas.js';
 import { BillboardBatch } from './fx/batch.js';
 import { recipesFor } from './fx/bus.js';
 import { FxEngine, MAX_PARTICLES } from './fx/engine.js';
+import { ShockwaveLayer } from './fx/shockwave.js';
+import { addJolt, hitStrength, joltAt, type Jolt } from './shake.js';
 import { TOP_KEY, insertScore, localDate, parseTop, type ScoreEntry } from './leaderboard.js';
 import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase, type RunStats } from './game.js';
 import { Hud, hudModel } from './hud.js';
@@ -63,7 +65,7 @@ const storage = {
 };
 const settings = (() => {
   try {
-    return parseSettings(storage.get(SETTINGS_KEY));
+    return parseSettings(storage.get(SETTINGS_KEY), window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -123,7 +125,11 @@ function applyToggles() {
 
 const world = await buildWorld(base);
 const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
-const batch = new BillboardBatch(await buildAtlas((p) => assetUrl(base, p)), MAX_PARTICLES + 64);
+const atlas = await buildAtlas((p) => assetUrl(base, p));
+const batch = new BillboardBatch(atlas, MAX_PARTICLES + 64);
+const shockwaves = new ShockwaveLayer(world.scene, atlas);
+const hitFlash = el('hitflash');
+let jolt: Jolt | null = null;
 world.scene.add(batch.mesh);
 const fx = new FxEngine();
 /** FX run on their own 25 Hz clock, so explosions finish behind the game-over card. */
@@ -241,6 +247,7 @@ function newRun() {
   wonRun = false;
   asteroids.clear();
   fx.clear();
+  jolt = null;
 }
 
 /** The overlay's main button / Enter: start, resume or play again. */
@@ -296,7 +303,7 @@ renderer.setAnimationLoop((nowMs: number) => {
       prev = curr;
       const r = step(curr, controls.nextInput());
       curr = r.state;
-      onEvents(r.events);
+      onEvents(r.events, nowMs);
       fx.ambient(curr);
     }
     accMs = remainderMs;
@@ -318,6 +325,10 @@ renderer.setAnimationLoop((nowMs: number) => {
   camera.position.set(...cam.eye);
   camera.up.set(...cam.up);
   camera.lookAt(v.set(...cam.look));
+  const j = joltAt(jolt, nowMs, settings.shake);
+  camera.rotateY(j.yaw);
+  camera.rotateX(j.pitch);
+  hitFlash.style.opacity = j.flash.toFixed(3);
   fov = nextFov(fov, curr.ship, frameMs / 1000);
   camera.fov = fov;
   camera.updateProjectionMatrix();
@@ -342,6 +353,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   batch.begin();
   fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
   batch.end(camera);
+  shockwaves.sync(fx.shockwaves);
   renderer.render(world.scene, camera);
 });
 
@@ -363,13 +375,15 @@ function finishWon() {
   dispatch('finish');
 }
 
-function onEvents(events: readonly SimEvent[]) {
+function onEvents(events: readonly SimEvent[], nowMs: number) {
   stats = addStats(stats, events);
   const banner = bannerFor(events);
   if (banner) showBanner(banner);
   if (events.some((e) => e.type === 'campaignWon')) dispatch('win');
   audio.play(cuesFor(events));
-  fx.apply(recipesFor(events, curr));
+  const e = camera.matrixWorld.elements;
+  fx.apply(recipesFor(events, curr), [e[4], e[5], e[6]]);
+  jolt = addJolt(jolt, hitStrength(events), nowMs);
   if (events.some((e) => e.type === 'runEnded')) {
     recordBest();
     dispatch('end');
