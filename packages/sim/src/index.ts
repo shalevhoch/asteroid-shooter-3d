@@ -1,7 +1,7 @@
 /**
  * @asteroid/sim — the pure game core (ADR 0001).
  *
- * `step(state, input) → { state, events }` lands in P03. Until then this module only fixes the
+ * `step(state, input) → { state, events }` advances one fixed tick. This module also fixes the
  * tick contract every later packet builds on. No DOM, no three.js, no clock, no Math.random here.
  */
 
@@ -22,3 +22,11 @@ export function ticksFor(accumulatedMs: number): { ticks: number; remainderMs: n
 }
 
 export { MOTHERSHIP_BOXES } from './data/mothershipBoxes.js';
+export * from './constants.js';
+export * from './state.js';
+export * from './vec3.js';
+export * from './quat.js';
+export * from './rng.js';
+export { fly, turn, axis } from './flight.js';
+export { MOTHERSHIP_WORLD_BOXES, resolveMothership, sphereHitsBox, pushOut, type Box } from './mothership.js';
+export { step, run } from './step.js';

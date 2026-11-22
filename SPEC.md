@@ -27,10 +27,13 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 ## 3. Ship
 
 - **Pose**: position plus an orthonormal frame (forward, up, right = forward × up). Start: position
-  `SHIP_START = (0, −960, 0)` (inside the hangar bay), facing −X toward incoming asteroids (Earth behind), with up +Y.
-- **Turning**: input axes pitch, yaw and roll each in [−1, 1]. Each tick the frame rotates by
-  `axis × TURN_RATE` (`TURN_RATE = 2°`) about the ship's own right, up and forward axes, in the order pitch → yaw → roll.
-  The frame is re-orthonormalised every tick.
+  `SHIP_START = (0, −960, 0)` inside the hangar bay, facing +Z out of the bay's open end, with up +Y. From there the
+  incoming asteroids are to the right (−X) and Earth is to the left (+X).
+- **Turning**: input axes pitch (+ = nose up), yaw (+ = nose right) and roll (+ = right wing down), each clamped to
+  [−1, 1], with non-finite input counting as 0. Each tick the frame rotates by `axis × TURN_RATE` (`TURN_RATE = 2°`)
+  about the ship's own right, up and forward axes, in the order pitch → yaw → roll. The frame is re-orthonormalised
+  every tick.
+- **No inertia**: the ship moves exactly the per-tick steps below. There is no velocity carried between ticks.
 - **Throttle**: an integer level `0..THROTTLE_MAX` (`THROTTLE_MAX = 4`), changed by ±1 per throttle input. Each tick the
   ship moves `level × THROTTLE_STEP` along forward (`THROTTLE_STEP = 1`).
 - **Turbo**: while turbo is held and `fuel > 0`, the ship moves `TURBO_STEP = 8` along forward *instead of* the throttle
@@ -102,9 +105,9 @@ Each tick, in this order:
 5. Move projectiles and resolve hits (rockets home before moving).
 6. Expire projectiles whose life ran out, and check the run's end.
 
-The sim emits **events** for anything the renderer, audio or HUD react to (`photonFired`, `rocketFired`,
-`asteroidHit`, `asteroidDestroyed {by, size, pos}`, `asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`,
-`runEnded`).
+The sim emits **events** for anything the renderer, audio or HUD react to (`turboStarted`, `turboEnded`,
+`fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired`, `asteroidHit`, `asteroidDestroyed {by, size, pos}`,
+`asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`, `runEnded`).
 
 ## Open
 
