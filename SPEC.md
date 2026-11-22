@@ -109,12 +109,41 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
 `fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired`, `asteroidHit`, `asteroidDestroyed {by, size, pos}`,
 `asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`, `runEnded`).
 
+## 8. Controls and camera
+
+- **Layouts**: **modern** is the default; **classic** is the alternative. The choice is kept per browser.
+- **Modern layout**:
+  - Aim: mouse (pointer lock) for pitch and yaw. Arrow keys also aim.
+  - Throttle: W/S or the mouse wheel.
+  - Strafe and roll: A/D strafe, R/F strafe up/down, Q/E roll.
+  - Turbo: hold Shift. Reverse: hold X.
+  - Photons: hold LMB or Space. Rocket: RMB.
+- **Classic layout** (the original's keys):
+  - I/K pitch, J/L yaw, U/O roll.
+  - W turbo, S reverse.
+  - A/D strafe, E/Q strafe up/down.
+  - 0/9 throttle.
+  - Space photons, R rocket.
+- **Toggles**:
+  - C switches the camera.
+  - L switches the layout (T in classic, where L is yaw).
+  - Y inverts the mouse's Y axis.
+  - H or F1 shows the controls.
+- **Mouse aim**: `MOUSE_PX_PER_TICK = 6` px of movement in one tick is a full-rate turn (axis 1).
+  - Faster movement queues up, to at most `MOUSE_BUFFER_TICKS = 4` ticks of full-rate turn, and turns over the next ticks.
+  - Mouse up is nose up; invert-Y defaults to off.
+- **Throttle presses**: each press is one level. Presses made between ticks apply one per tick.
+- **Cameras**:
+  - **chase** (the default): behind and above the ship.
+  - **classic**: the original's eye point, just behind the ship with the ship low in view.
+- **FOV**: 50°, easing toward 80° while the turbo is moving the ship.
+- The renderer draws the state interpolated between the last two ticks. It never feeds rendering back into the sim.
+
 ## Open
 
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P04**: the default key and mouse bindings and the camera (cockpit vs chase).
 - **P05**: whether ship–asteroid collisions exist (off in v1, as in the original), and what they cost.
 - **P07**: the end-of-run flow, and how the best score is stored.
 - **P08**: waves, objectives and difficulty presets that replace the steady spawn of §4.
