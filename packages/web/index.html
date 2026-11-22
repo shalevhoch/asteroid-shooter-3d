@@ -76,6 +76,18 @@
       #overlay .top td:last-child { color: #8890a0; font-size: 12px; }
       #overlay .top tr.me td { color: #7fffd4; font-weight: 600; }
       #overlay a { color: #a8c9b0; }
+      /* Narrow / short screens (P21): the card moves left and the controls list narrows, so they never overlap. */
+      @media (max-width: 1240px) {
+        #overlay { justify-content: flex-start; padding-left: 12px; box-sizing: border-box; }
+        #overlay .card { max-width: min(460px, calc(100vw - 404px)); padding: 16px 18px; box-sizing: border-box; }
+        #help { width: 340px; box-sizing: border-box; font-size: 11px; }
+        #help td:last-child { white-space: normal; }
+      }
+      @media (max-height: 720px) {
+        #help { padding: 6px 10px; font-size: 10px; max-height: calc(100vh - 24px); overflow: hidden; }
+        #help td { padding: 0 6px 0 0; line-height: 1.2; }
+        #help h2 { margin-bottom: 2px; }
+      }
       /* Loading screen (P20) */
       body.loading #hud, body.loading #help, body.loading #status, body.loading #threat { display: none; }
       #loading .loadbar { width: 260px; height: 8px; margin: 10px auto; background: rgba(255, 255, 255, 0.12); border-radius: 4px; overflow: hidden; }
