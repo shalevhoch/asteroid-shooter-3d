@@ -34,7 +34,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P14: Portal look and portal entry | [#35](https://github.com/shalevhoch/asteroid-shooter-3d/issues/35) (was #14) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad; portal tile PR shalevhoch.github.io#1 awaits Shalev) | [#56](https://github.com/shalevhoch/asteroid-shooter-3d/pull/56) |
 | [x] | P15: Touch controls | [#36](https://github.com/shalevhoch/asteroid-shooter-3d/issues/36) (was #15) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#57](https://github.com/shalevhoch/asteroid-shooter-3d/pull/57) |
 | [x] | P16: Achievements | [#37](https://github.com/shalevhoch/asteroid-shooter-3d/issues/37) (was #16) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#58](https://github.com/shalevhoch/asteroid-shooter-3d/pull/58) |
-| [ ] | P17: Craft select | [#38](https://github.com/shalevhoch/asteroid-shooter-3d/issues/38) (was #17) | nice to have | 📋 | | |
+| [x] | P17: Craft select | [#38](https://github.com/shalevhoch/asteroid-shooter-3d/issues/38) (was #17) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#59](https://github.com/shalevhoch/asteroid-shooter-3d/pull/59) |
 | [ ] | P18: Space station landmark and second reload point | [#39](https://github.com/shalevhoch/asteroid-shooter-3d/issues/39) (was #18) | nice to have | 📋 | | |
 | [ ] | P19: Gamepad support | [#40](https://github.com/shalevhoch/asteroid-shooter-3d/issues/40) (was #19) | nice to have | 📋 | | |
 | [ ] | P20: Low-end tablet performance pass | [#41](https://github.com/shalevhoch/asteroid-shooter-3d/issues/41) (was #20) | nice to have | 📋 | | |
