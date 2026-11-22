@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Asteroid Shooter 3D — defend Earth. A browser port of a classic university JOGL game." />
     <title>Asteroid Shooter 3D</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E☄️%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="theme-color" content="#0f1a14" />
     <style>
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; color: #f0d9a8; }
       #app { position: fixed; inset: 0; }
       #app canvas { display: block; cursor: crosshair; }
       #status { position: fixed; left: 12px; bottom: 8px; z-index: 1; font-size: 11px; color: #6f7a8e; pointer-events: none; }
-      #help { position: fixed; right: 12px; top: 12px; background: rgba(8, 10, 18, 0.78); border: 1px solid #2a3148; border-radius: 8px; padding: 8px 12px; font-size: 12px; pointer-events: none; }
+      #help { position: fixed; right: 12px; top: 12px; background: rgba(15, 26, 20, 0.78); border: 1px solid #3a9d6e; border-radius: 8px; padding: 8px 12px; font-size: 12px; pointer-events: none; }
       #help h2 { font-size: 13px; margin: 0 0 6px; }
       #help td { padding: 1px 8px 1px 0; color: #d8dce6; }
       #help td:first-child { color: #f0d9a8; white-space: nowrap; }
-      #help p { margin: 6px 0 0; color: #8b94a8; }
+      #help p { margin: 6px 0 0; color: #a8c9b0; }
       #hud { position: fixed; inset: 0; pointer-events: none; text-shadow: 0 1px 4px #000; font-variant-numeric: tabular-nums; }
       #hud .tl { position: absolute; left: 16px; top: 12px; }
       #hud .score { font-size: 34px; font-weight: 600; letter-spacing: 0.03em; }
@@ -27,14 +28,14 @@
       #banner h2 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: 0.06em; }
       #banner p { margin: 6px 0 0; color: #a8c9b0; font-size: 15px; }
       #overlay .diff { display: flex; gap: 8px; justify-content: center; margin: 10px 0 2px; }
-      #overlay .diff button { margin: 0; font-size: 14px; padding: 6px 12px; background: transparent; border-color: #4a5470; color: #c8d0dc; }
+      #overlay .diff button { margin: 0; font-size: 14px; padding: 6px 12px; background: transparent; border-color: #3a9d6e; color: #c8d0dc; }
       #overlay .diff button.on { background: #2b2416; border-color: #f0d9a8; color: #f0d9a8; }
       #overlay details.settings { margin: 12px auto 0; text-align: left; font-size: 14px; }
       #overlay details.settings summary { cursor: pointer; color: #f0d9a8; text-align: center; }
       #overlay details.settings table { margin: 8px auto 0; border-collapse: collapse; }
       #overlay details.settings td { padding: 2px 10px; color: #d8dce6; }
       #overlay details.settings td.ctl { text-align: right; white-space: nowrap; }
-      #overlay details.settings button { margin: 0 2px; font-size: 13px; padding: 2px 10px; background: transparent; border-color: #4a5470; color: #f0d9a8; }
+      #overlay details.settings button { margin: 0 2px; font-size: 13px; padding: 2px 10px; background: transparent; border-color: #3a9d6e; color: #f0d9a8; }
       #overlay details.settings button.val { min-width: 84px; }
       #overlay details.settings span.val { display: inline-block; min-width: 52px; text-align: center; }
       #overlay .row { display: flex; gap: 10px; justify-content: center; }
@@ -56,11 +57,11 @@
       @keyframes blink { 50% { opacity: 0.45; } }
       #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
       #overlay[data-phase='playing'] { display: none; }
-      #overlay .card { max-height: 94vh; overflow-y: auto; background: rgba(6, 8, 16, 0.82); border: 1px solid #2a3148; border-radius: 12px; padding: 22px 30px; text-align: center; max-width: 460px; }
+      #overlay .card { max-height: 94vh; overflow-y: auto; background: rgba(15, 26, 20, 0.86); border: 2px solid #3a9d6e; border-radius: 16px; padding: 22px 30px; text-align: center; max-width: 460px; }
       #overlay .card.wide { max-width: 800px; }
       #overlay h1 { margin: 0 0 10px; font-size: clamp(1.4rem, 3.4vw, 2.2rem); }
       #overlay p { color: #c8d0dc; margin: 8px 0; }
-      #overlay .dim { color: #8b94a8; font-size: 13px; }
+      #overlay .dim { color: #a8c9b0; font-size: 13px; }
       #overlay button { margin: 12px 0 4px; font: inherit; font-size: 17px; padding: 9px 26px; border-radius: 8px; border: 1px solid #f0d9a8; background: #2b2416; color: #f0d9a8; cursor: pointer; }
       #overlay button:hover { background: #3d331f; }
       #overlay .final { font-size: 52px; font-weight: 700; }
@@ -74,7 +75,7 @@
       #overlay .top td { padding: 1px 6px; text-align: right; }
       #overlay .top td:last-child { color: #8890a0; font-size: 12px; }
       #overlay .top tr.me td { color: #7fffd4; font-weight: 600; }
-      #overlay a { color: #8b94a8; }
+      #overlay a { color: #a8c9b0; }
     </style>
   </head>
   <body>

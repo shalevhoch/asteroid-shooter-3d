@@ -204,6 +204,12 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - At most `MAX_CUES_PER_TICK = 4` sounds per tick. Audio starts on the first input; M mutes and the choice is kept.
 - **Placeholder FX**: kills, Earth hits and photon hits flash a growing, fading sprite. A destroyed ship leaves one big flash.
 
+- **Portal look** (P14): the game uses the games.hochgi.com portal's look: Segoe UI/Arial, gold text (`#f0d9a8`),
+  sage secondary text (`#a8c9b0`), green card borders (`#3a9d6e`) on dark green-black cards, and its own SVG favicon
+  (a rock with a comet trail). The title, pause and game-over cards link back to the portal (`/`).
+  - **Decision**: the portal tile goes up in a PR on `shalevhoch/shalevhoch.github.io` that isn't self-merged. Shalev
+    owns the Hebrew name, text and icon, and merging it is when the game gets listed.
+
 ## 10. Waves, objectives and difficulty
 
 - **Campaign**: `CAMPAIGN_WAVES = 10` waves, then endless waves that keep escalating until the run ends.

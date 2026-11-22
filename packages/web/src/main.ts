@@ -147,6 +147,9 @@ let accMs = 0;
 let lastMs = performance.now();
 let fov = FOV_BASE;
 
+/** Back to games.hochgi.com (P14), on the title, pause and game-over cards. */
+const PORTAL_LINK = '<p class="portal"><a href="/">← all games · games.hochgi.com</a></p>';
+
 const END_TEXT = { earthDestroyed: 'Earth has fallen.', shipDestroyed: 'Your ship was destroyed.' } as const;
 
 function difficultyPicker(): string {
@@ -184,9 +187,9 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
       <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}
-      <button id="go">Click to start</button><p class="dim">Enter also starts · Esc or P pauses · H shows the controls · M mutes</p>${settingsPanel(false)}</div>`;
+      <button id="go">Click to start</button><p class="dim">Enter also starts · Esc or P pauses · H shows the controls · M mutes</p>${settingsPanel(false)}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">Click to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}</div>`;
+    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">Click to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
     overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
       <div class="final">${String(curr.score)}</div>
@@ -195,7 +198,7 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card wide"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
       <div class="final">${String(curr.score)}</div>${newBest ? '<div class="newbest">NEW BEST!</div>' : `<p class="dim">Best ${String(best)}</p>`}
       <div class="summary">${summaryTable()}${topTable()}</div>
-      <button id="go">Play again</button><p><a href="/">← all games</a></p></div>`;
+      <button id="go">Play again</button>${PORTAL_LINK}</div>`;
   }
   document.getElementById('go')?.addEventListener('click', (e) => {
     e.stopPropagation();
