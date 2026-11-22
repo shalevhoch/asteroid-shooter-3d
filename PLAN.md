@@ -18,7 +18,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | ✓ | Packet | Issue | Milestone | Status | Delivered by | PR |
 |---|---|---|---|---|---|---|
 | [x] | P00: Repo skeleton, harness, CI + Pages deploy | #21 (hidden) | tracer bullet | ✅ live | Coder Bot (manual, skip-pipeline) | direct push (pre-protection) |
-| [ ] | P01: SPEC.md v1 — core rules and defaults | [#22](https://github.com/shalevhoch/asteroid-shooter-3d/issues/22) (was #1) | tracer bullet | 📋 | | |
+| [x] | P01: SPEC.md v1 — core rules and defaults | [#22](https://github.com/shalevhoch/asteroid-shooter-3d/issues/22) (was #1) | tracer bullet | ✅ | Coder Bot (spec-only, no code) | PRLINK |
 | [ ] | P02: Asset import and model gallery | [#23](https://github.com/shalevhoch/asteroid-shooter-3d/issues/23) (was #2) | tracer bullet | 📋 | | |
 | [ ] | P03: Sim skeleton and flight model | [#24](https://github.com/shalevhoch/asteroid-shooter-3d/issues/24) (was #3) | tracer bullet | 📋 | | |
 | [ ] | P04: Renderer loop and keyboard/mouse input | [#25](https://github.com/shalevhoch/asteroid-shooter-3d/issues/25) (was #4) | tracer bullet | 📋 | | |
