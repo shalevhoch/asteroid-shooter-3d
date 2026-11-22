@@ -1,10 +1,12 @@
 /** DOM binding for the keymap (P04): keyboard, pointer-lock mouse, wheel. Produces one sim Input per tick. */
 import type { Input } from '@asteroid/sim';
-import { EDGE_ACTIONS, MOUSE_LEFT, MOUSE_RIGHT, actionFor, consumeMouse, toInput, type Action, type Layout } from './keymap.js';
+import { EDGE_ACTIONS, MOUSE_LEFT, MOUSE_RIGHT, actionFor, MOUSE_PX_PER_TICK, consumeMouse, toInput, type Action, type Layout } from './keymap.js';
 
 export interface ControlSettings {
   layout: Layout;
   invertY: boolean;
+  /** Mouse sensitivity multiplier (P13); 1 is `MOUSE_PX_PER_TICK` px per full-rate tick. */
+  sensitivity: number;
 }
 
 export class Controls {
@@ -94,8 +96,9 @@ export class Controls {
       const a = actionFor(this.settings.layout, code);
       if (a) held.add(a);
     }
-    const mx = consumeMouse(this.mouseXPx);
-    const my = consumeMouse(this.mouseYPx);
+    const px = MOUSE_PX_PER_TICK / this.settings.sensitivity;
+    const mx = consumeMouse(this.mouseXPx, px);
+    const my = consumeMouse(this.mouseYPx, px);
     this.mouseXPx = mx.bufferPx;
     this.mouseYPx = my.bufferPx;
     const input = toInput({ held, throttleSteps: this.throttleSteps, rocketPresses: this.rocketPresses, mouseX: mx.axis, mouseY: my.axis, invertY: this.settings.invertY });
