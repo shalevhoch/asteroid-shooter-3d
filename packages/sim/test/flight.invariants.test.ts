@@ -15,6 +15,7 @@ import {
   type Input,
   type RngState,
 } from '../src/index.js';
+import { openSpace } from './helpers.js';
 
 /** A seeded random input stream (the test's own RNG, independent of the sim's). */
 function randomInputs(seed: number, n: number): Input[] {
@@ -40,16 +41,19 @@ function randomInputs(seed: number, n: number): Input[] {
 describe('flight invariants', () => {
   for (const seed of [1, 2, 3, 42, 1234]) {
     it(`hold over 3000 random ticks (seed ${String(seed)})`, () => {
-      let s = initialState(seed);
+      let s = openSpace(seed);
       for (const i of randomInputs(seed, 3000)) {
         const prev = s;
-        s = step(s, i).state;
+        const r = step(s, i);
+        s = r.state;
+        if (s.ended) break;
+        const reloaded = r.events.some((e) => e.type === 'shipReloaded');
         const { ship } = s;
         expect(Math.abs(Math.hypot(...ship.rot) - 1)).toBeLessThan(1e-9); // INV-1
         expect(Number.isInteger(ship.throttle) && ship.throttle >= 0 && ship.throttle <= THROTTLE_MAX).toBe(true); // INV-2
         expect(Number.isInteger(ship.fuel) && ship.fuel >= 0 && ship.fuel <= FUEL_MAX).toBe(true); // INV-3
-        expect(ship.fuel).toBeLessThanOrEqual(prev.ship.fuel);
-        if (i.turbo && prev.ship.fuel > 0) expect(ship.fuel).toBe(prev.ship.fuel - 1); // INV-4
+        if (!reloaded) expect(ship.fuel).toBeLessThanOrEqual(prev.ship.fuel);
+        if (!reloaded && i.turbo && prev.ship.fuel > 0) expect(ship.fuel).toBe(prev.ship.fuel - 1); // INV-4
         const moved = distance(prev.ship.pos, ship.pos);
         const bumped = MOTHERSHIP_WORLD_BOXES.some((b) => sphereHitsBox(prev.ship.pos, SHIP_RADIUS + TURBO_STEP + 3 * STRAFE_STEP, b));
         if (!bumped) expect(moved).toBeLessThanOrEqual(TURBO_STEP + 3 * STRAFE_STEP + 1e-9); // INV-5

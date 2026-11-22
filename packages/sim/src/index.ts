@@ -30,3 +30,5 @@ export * from './rng.js';
 export { fly, turn, axis } from './flight.js';
 export { MOTHERSHIP_WORLD_BOXES, resolveMothership, sphereHitsBox, pushOut, type Box } from './mothership.js';
 export { step, run } from './step.js';
+export { makeAsteroid, spawn, moveAsteroids, destroyAsteroid, radiusOf, hpOf, earthDamageOf } from './asteroids.js';
+export { applyHazards, HANGAR_CENTRE } from './hazards.js';

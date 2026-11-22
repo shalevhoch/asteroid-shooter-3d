@@ -11,6 +11,18 @@ export interface World {
   readonly sky: THREE.Object3D;
   readonly ship: THREE.Group;
   readonly earth: THREE.Object3D;
+  /** Asteroid geometry by size, from astro02 (big) and astro01 (small). */
+  readonly asteroidGeometry: { readonly big: THREE.BufferGeometry; readonly small: THREE.BufferGeometry };
+}
+
+function firstGeometry(obj: THREE.Object3D): THREE.BufferGeometry {
+  const geometries: unknown[] = [];
+  obj.traverse((c) => {
+    if (c instanceof THREE.Mesh) geometries.push(c.geometry);
+  });
+  const g = geometries[0];
+  if (!(g instanceof THREE.BufferGeometry)) throw new Error('model has no mesh');
+  return g as THREE.BufferGeometry;
 }
 
 async function loadObj(base: string, path: string, texture?: string): Promise<THREE.Group> {
@@ -34,11 +46,13 @@ export async function buildWorld(base: string): Promise<World> {
   sun.position.set(-1, 0.6, 0.8);
   scene.add(sun);
 
-  const [sky, earth, mothership, shipModel] = await Promise.all([
+  const [sky, earth, mothership, shipModel, bigRock, smallRock] = await Promise.all([
     loadObj(base, 'models/space/space.obj', 'models/space/space.jpg'),
     loadObj(base, 'models/earth/earth.obj', 'models/earth/earth.jpg'),
     loadObj(base, 'models/mothership/mothership.obj', 'models/mothership/mothership.jpg'),
     loadObj(base, 'models/ship1/ship.obj', 'models/ship1/f02_512.jpg'),
+    loadObj(base, 'models/asteroids/astro02.obj'),
+    loadObj(base, 'models/asteroids/astro01.obj'),
   ]);
 
   // Sky: the unit sphere, scaled up, drawn first and unlit, following the camera.
@@ -74,5 +88,6 @@ export async function buildWorld(base: string): Promise<World> {
   ship.add(turned);
   scene.add(ship);
 
-  return { scene, sky, ship, earth };
+  const asteroidGeometry = { big: firstGeometry(bigRock).center(), small: firstGeometry(smallRock).center() };
+  return { scene, sky, ship, earth, asteroidGeometry };
 }

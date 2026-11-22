@@ -46,7 +46,8 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 - **Collision sphere**: `SHIP_RADIUS = 20`, centred on the ship's position.
 - **Mothership**: if the ship's sphere overlaps a mothership box, the ship is pushed out along that box's axis of least
   penetration, and the throttle drops by 1 level.
-- **Hangar**: while the ship's position is inside the hangar sphere, fuel, rockets and hull refill to their maxima.
+- **Hangar**: while the ship's position is inside the hangar sphere, fuel, rockets and hull refill to their maxima
+  (`shipReloaded` fires on the tick anything actually refilled).
 
 ## 4. Asteroids
 
@@ -63,6 +64,7 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 - **Split**: a big asteroid destroyed by photons splits into `SPLIT_COUNT = 4` small asteroids, placed at the original's
   offsets (+20,+20,+20), (0,+20,+20), (+20,−20,+20), (−20,+20,0) from its position, each aimed at Earth's centre.
   A big asteroid destroyed by a rocket does **not** split.
+- **No ship collisions**: asteroids pass through the ship without effect, as in the original.
 - Each asteroid has a unique, increasing integer id. Every per-tick iteration over asteroids goes in id order.
 
 ## 5. Weapons
@@ -144,7 +146,6 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P05**: whether ship–asteroid collisions exist (off in v1, as in the original), and what they cost.
 - **P07**: the end-of-run flow, and how the best score is stored.
 - **P08**: waves, objectives and difficulty presets that replace the steady spawn of §4.
 - **P10**: scoring v2 (combos, multipliers, the run summary) on top of §6.
