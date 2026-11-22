@@ -385,6 +385,30 @@ title card has the full list.
   Shalev can rename, swap or retune any of them; an unlock is keyed by id, so renames keep progress.
 - No points or gameplay effect; achievements are cosmetic.
 
+## 14. Performance and loading (P20)
+
+- **Loading screen**: the page's HTML shows a title card with a progress bar before any script runs. The bar follows
+  the three.js loading manager, only moves forward and reads 100 % only when every queued file is in. The HUD,
+  radar and controls list stay hidden until the world is built. A load failure says so and asks for a reload.
+- **Quality levels** (render only; the sim is untouched):
+
+  | Level | Pixel ratio cap | FX particle cap |
+  |---|---|---|
+  | high (today's look) | 2 | 4000 |
+  | medium | 1.5 | 2000 |
+  | low | 1 | 1000 |
+
+- Desktops start high and touch devices (§8) medium. During play, after a 3 s warm-up, every 2 s window that
+  averages under 40 fps steps quality down one level, at once, down to low. It never steps back up in a run of the
+  page, so it can't oscillate; frames over 250 ms (tab hidden, hitches) are ignored. `?quality=high|medium|low`
+  pins a level and turns the auto step off.
+- **Budget**: the title card is ready in about 3.4 s on an emulated 4G link (9 Mbit/s, 150 ms RTT) against the
+  uncompressed preview server; GitHub Pages gzips the 560 kB script to ~140 kB.
+- **Decisions**: the reference device is a play-test item (Shalev's tablet); the 30 fps floor is checked there. No
+  KTX2/GLB conversion for now: the first-play payload is ~2 MB of mostly JPEG, and a KTX2 transcoder plus re-encode
+  would add complexity for little gain. Baking the LWO and 3DS models to GLB is a follow-up. No quality picker in the
+  settings yet; `?quality=` covers testing.
+
 ## Open
 
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
