@@ -64,7 +64,7 @@ describe('nextFov', () => {
 describe('settings', () => {
   it('defaults to modern, no invert, chase, help hidden in play', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);
-    expect(DEFAULT_SETTINGS).toEqual({ layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true });
+    expect(DEFAULT_SETTINGS).toEqual({ layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1 });
     expect(parseSettings(null, true).shake).toBe(false);
     expect(parseSettings('{"shake":true}', true).shake).toBe(true);
   });

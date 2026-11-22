@@ -28,6 +28,8 @@ export class AudioBank {
   private ctx: AudioContext | null = null;
   private readonly buffers = new Map<Sound, AudioBuffer>();
   muted = false;
+  /** Master volume, 0..1 (P13). */
+  volume = 1;
 
   constructor(private readonly base: string) {
     const unlock = () => {
@@ -59,14 +61,14 @@ export class AudioBank {
 
   play(cues: readonly Cue[]): void {
     const ctx = this.ctx;
-    if (!ctx || this.muted) return;
+    if (!ctx || this.muted || this.volume <= 0) return;
     for (const c of cues) {
       const buf = this.buffers.get(c.sound);
       if (!buf) continue;
       const src = ctx.createBufferSource();
       src.buffer = buf;
       const gain = ctx.createGain();
-      gain.gain.value = c.volume;
+      gain.gain.value = c.volume * this.volume;
       src.connect(gain).connect(ctx.destination);
       src.start();
     }

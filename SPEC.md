@@ -167,6 +167,19 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - **classic**: the original's eye point, just behind the ship with the ship low in view.
 - **FOV**: 50°, easing toward 80° while the turbo is moving the ship.
 - The renderer draws the state interpolated between the last two ticks. It never feeds rendering back into the sim.
+- **Pause and settings overlay** (P13):
+  - Esc (leaving pointer lock, or a plain keypress in the classic layout) or P pauses; click, Enter or P resumes.
+    The sim doesn't tick while paused.
+  - The pause card shows the settings panel open; the title card has it folded. The controls list beside it always
+    reflects the active layout.
+  - Settings: keys (modern/classic), camera, invert mouse Y, mouse sensitivity (×0.25 to ×3 in 0.25 steps,
+    default ×1: `MOUSE_PX_PER_TICK ÷ sensitivity` px is a full-rate turn), volume (0–100 % in 10 % steps, default
+    100 %; separate from mute), sound, screen shake, controls-in-play and difficulty. Mid-run, difficulty applies
+    to the next run and says so.
+  - Every change applies at once and persists per browser. Stored values are clamped and snapped; settings saved
+    before P13 load with the new defaults.
+  - **Decision**: no separate first-run tutorial. The title card already shows the full controls list and the
+    goal, and the pause card repeats it.
 
 ## 9. Run flow, HUD and audio
 

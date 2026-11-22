@@ -19,7 +19,7 @@ import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parse
 import { Hud, hudModel } from './hud.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { buildWorld } from './scene.js';
-import { DEFAULT_SETTINGS, SETTINGS_KEY, cycle, parseSettings } from './settings.js';
+import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
@@ -93,6 +93,7 @@ window.addEventListener('resize', () => {
 const controls = new Controls(renderer.domElement, settings);
 const audio = new AudioBank(base);
 audio.muted = settings.muted;
+audio.volume = settings.volume;
 const hud = new Hud(el('hud'));
 const threat = new ThreatView(el('threat') as HTMLCanvasElement);
 const viewProj = new THREE.Matrix4();
@@ -105,7 +106,7 @@ function renderHelp(): void {
     settings.layout === 'modern'
       ? `<tr><td>mouse</td><td>aim (pitch / yaw)${settings.invertY ? ', Y inverted' : ''}</td></tr><tr><td>wheel</td><td>throttle ±</td></tr>`
       : '';
-  help.innerHTML = `<h2>Controls: ${settings.layout}${settings.muted ? ' · muted' : ''}</h2><table>${mouse}${rows}</table><p>Esc pauses</p>`;
+  help.innerHTML = `<h2>Controls: ${settings.layout}${settings.muted ? ' · muted' : ''}</h2><table>${mouse}${rows}</table><p>Esc or P pauses</p>`;
   // Always on the title and pause screens; in play only when toggled on.
   help.style.display = settings.help || phase === 'title' || phase === 'paused' ? 'block' : 'none';
 }
@@ -120,6 +121,7 @@ function applyToggles() {
     else continue;
     saveSettings();
     renderHelp();
+    if (phase === 'paused' || phase === 'title') renderOverlay();
   }
 }
 
@@ -151,8 +153,26 @@ function difficultyPicker(): string {
   return `<div class="diff">${DIFFICULTIES.map((d) => `<button data-diff="${d}" class="${d === settings.difficulty ? 'on' : ''}">${DIFFICULTY_LABELS[d].name}</button>`).join('')}</div><p class="dim">${DIFFICULTY_LABELS[settings.difficulty].blurb}</p>`;
 }
 
+/** The settings panel (P13): every row changes and persists at once. Folded on the title card, open on the pause card. */
+function settingsPanel(open: boolean): string {
+  const rows = settingRows(settings, DIFFICULTY_NAMES, phase === 'paused')
+    .map((r) => {
+      const ctl =
+        r.kind === 'range'
+          ? `<button data-set="${r.id}" data-dir="-1" aria-label="less">−</button><span class="val">${r.value}</span><button data-set="${r.id}" data-dir="1" aria-label="more">+</button>`
+          : `<button data-set="${r.id}" class="val">${r.value}</button>`;
+      return `<tr><td>${r.label}${r.note ? ` <span class="dim">(${r.note})</span>` : ''}</td><td class="ctl">${ctl}</td></tr>`;
+    })
+    .join('');
+  return `<details class="settings"${open ? ' open' : ''}><summary>Settings</summary><table>${rows}</table></details>`;
+}
+
+const DIFFICULTY_NAMES = Object.fromEntries(DIFFICULTIES.map((d) => [d, DIFFICULTY_LABELS[d].name])) as Record<(typeof DIFFICULTIES)[number], string>;
+
 /** A function, so TypeScript doesn't narrow `phase` across calls that change it. */
 const isPlaying = (): boolean => phase === 'playing';
+/** Whether the title card's settings panel is unfolded (kept across re-renders). */
+let settingsOpen = false;
 
 function renderOverlay() {
   overlay.dataset['phase'] = phase;
@@ -164,9 +184,9 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
       <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}
-      <button id="go">Click to start</button><p class="dim">Enter also starts · H shows the controls · M mutes</p></div>`;
+      <button id="go">Click to start</button><p class="dim">Enter also starts · Esc or P pauses · H shows the controls · M mutes</p>${settingsPanel(false)}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">Click to resume</button><p class="dim">Score ${String(curr.score)}</p></div>`;
+    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">Click to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}</div>`;
   } else if (phase === 'won') {
     overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
       <div class="final">${String(curr.score)}</div>
@@ -185,6 +205,22 @@ function renderOverlay() {
     e.stopPropagation();
     finishWon();
   });
+  const details = overlay.querySelector('details');
+  details?.addEventListener('toggle', () => {
+    settingsOpen = details.open;
+  });
+  if (details && phase === 'title') details.open = settingsOpen;
+  for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-set]')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      changeSetting(settings, b.dataset['set'] as SettingId, b.dataset['dir'] === '-1' ? -1 : 1);
+      audio.muted = settings.muted;
+      audio.volume = settings.volume;
+      saveSettings();
+      renderOverlay();
+      renderHelp();
+    });
+  }
   for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-diff]')) {
     b.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -266,6 +302,8 @@ function advance() {
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Enter' && phase !== 'playing') advance();
   if (e.code === 'KeyP') dispatch(phase === 'paused' ? 'resume' : 'pause');
+  // Esc pauses in the classic layout too, where there is no pointer lock to leave.
+  if (e.code === 'Escape' && phase === 'playing') dispatch('pause');
 });
 document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && phase === 'playing') dispatch('pause');
