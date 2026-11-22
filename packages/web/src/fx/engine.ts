@@ -30,6 +30,8 @@ const ROCKET_LOOK = { size: 13, r: 1, g: 0.63, b: 0.25 };
 export class FxEngine {
   readonly particles: Particle[] = [];
   readonly shockwaves: Shockwave[] = [];
+  /** Live particles kept (P20 lowers it on slow devices); never above MAX_PARTICLES. */
+  particleCap = MAX_PARTICLES;
 
   constructor(private readonly rnd: Rnd = Math.random) {}
 
@@ -130,7 +132,7 @@ export class FxEngine {
   }
 
   private enforceCap(): void {
-    const over = this.particles.length - MAX_PARTICLES;
+    const over = this.particles.length - Math.min(this.particleCap, MAX_PARTICLES);
     if (over > 0) this.particles.splice(0, over);
   }
 }

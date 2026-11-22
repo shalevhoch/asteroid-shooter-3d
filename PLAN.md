@@ -37,7 +37,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P17: Craft select | [#38](https://github.com/shalevhoch/asteroid-shooter-3d/issues/38) (was #17) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#59](https://github.com/shalevhoch/asteroid-shooter-3d/pull/59) |
 | [x] | P18: Space station landmark and second reload point | [#39](https://github.com/shalevhoch/asteroid-shooter-3d/issues/39) (was #18) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#60](https://github.com/shalevhoch/asteroid-shooter-3d/pull/60) |
 | [x] | P19: Gamepad support | [#40](https://github.com/shalevhoch/asteroid-shooter-3d/issues/40) (was #19) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#61](https://github.com/shalevhoch/asteroid-shooter-3d/pull/61) |
-| [ ] | P20: Low-end tablet performance pass | [#41](https://github.com/shalevhoch/asteroid-shooter-3d/issues/41) (was #20) | nice to have | 📋 | | |
+| [x] | P20: Low-end tablet performance pass | [#41](https://github.com/shalevhoch/asteroid-shooter-3d/issues/41) (was #20) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#62](https://github.com/shalevhoch/asteroid-shooter-3d/pull/62) |
 
 New packets get the next free `PNN`, an issue, and a row here, in the PR that discovers them.
 

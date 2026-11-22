@@ -22,6 +22,8 @@ import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
+import { LoadProgress } from './loading.js';
+import { QualityGovernor, initialQuality, type QualityLevel } from './quality.js';
 import { GamepadInput, mergePad, type PadPress } from './gamepad.js';
 import { mergeTouch, wantsTouch } from './touch.js';
 import { TouchControls } from './touchControls.js';
@@ -108,7 +110,8 @@ function nextToast() {
 let rank: number | null = null;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const quality = new QualityGovernor(initialQuality(location.search, touchMode));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.current.dprCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
 host.appendChild(renderer.domElement);
 const camera = new THREE.PerspectiveCamera(FOV_BASE, window.innerWidth / window.innerHeight, 1, 30000);
@@ -184,7 +187,19 @@ function applyToggles() {
   }
 }
 
-const world = await buildWorld(base);
+// Loading screen (P20): index.html shows it before any script runs; asset progress fills the bar.
+const loadProgress = new LoadProgress();
+THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
+  const pct = `${String(loadProgress.update(loaded, total))}%`;
+  const bar = document.querySelector<HTMLElement>('#loading i');
+  if (bar) bar.style.width = pct;
+  const label = document.getElementById('loadpct');
+  if (label) label.textContent = pct;
+};
+const world = await buildWorld(base).catch((e: unknown) => {
+  overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1><p>Couldn't load the game's assets. Check the connection and reload.</p></div>`;
+  throw e;
+});
 let stationRing: Awaited<ReturnType<typeof addStation>> | null = null;
 // The station is dressing plus a reload point: load it behind the title card, not before it.
 void addStation(world.scene, base).then((r) => {
@@ -204,6 +219,7 @@ const touchUi = touchMode
 let jolt: Jolt | null = null;
 world.scene.add(batch.mesh);
 const fx = new FxEngine();
+fx.particleCap = quality.current.particleCap;
 /** FX run on their own 25 Hz clock, so explosions finish behind the game-over card. */
 let fxAccMs = 0;
 
@@ -434,6 +450,7 @@ if (new URLSearchParams(location.search).has('debug')) {
       prev = curr = s;
     },
     asteroidPhase: () => phase,
+    asteroidQuality: () => ({ ...quality.current, pixelRatio: renderer.getPixelRatio(), particles: fx.particles.length }),
     asteroidStart: () => {
       advance();
     },
@@ -441,9 +458,21 @@ if (new URLSearchParams(location.search).has('debug')) {
 }
 renderOverlay();
 renderHelp();
+document.body.classList.remove('loading');
 
 const v = new THREE.Vector3();
+/** Applies a quality step (P20): a lower pixel ratio and particle cap, at once. */
+function applyQuality(q: QualityLevel) {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.dprCap));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  fx.particleCap = q.particleCap;
+}
+
 renderer.setAnimationLoop((nowMs: number) => {
+  if (phase === 'playing') {
+    const q = quality.frame(nowMs - lastMs);
+    if (q) applyQuality(q);
+  }
   const frameMs = Math.min(Math.max(nowMs - lastMs, 0), 250);
   lastMs = nowMs;
   for (const p of gamepad.poll(settings.invertY)) onPadPress(p);
