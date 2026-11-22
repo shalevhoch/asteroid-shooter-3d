@@ -211,12 +211,33 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - The HUD shows the wave (or ENDLESS *n*) and the objective's live progress.
   - The game-over card adds the difficulty, the waves cleared and the objectives met.
 
+## 11. Threat awareness
+
+P09: the player can always tell where every asteroid is and how long Earth has. Every asteroid is Earth-bound, so
+every asteroid is a threat and all of them are shown.
+
+- **Time to impact** of an asteroid: the gap between its surface and Earth's, over its speed, in ticks
+  (`(|pos − EARTH_POS| − EARTH_RADIUS − r) / speed`, never below 0). Asteroids fly straight at Earth, so it is exact:
+  the impact happens on tick ⌈TTI⌉.
+- **HUD readout**: `IMPACT m:ss` for the most urgent asteroid (smallest TTI, ties to the lowest id), rounded up to
+  the second. Calm above 30 s, warning (amber) under 30 s, critical (red, blinking) under 10 s. Hidden with no
+  asteroids.
+- **Off-screen arrows**: every asteroid outside the view gets a triangle on an inset screen border, pointing the way
+  to turn. A point behind the camera is mirrored, so the arrow still says which way to turn; dead behind points down.
+  The arrow is coloured by that asteroid's urgency.
+- **Distant markers**: an on-screen asteroid smaller than 7 px gets a ring, so none is ever invisible.
+- **Target brackets**: the asteroid a rocket would lock on (§5, the preset's lock cone) gets a dashed green bracket
+  while rockets remain; asteroids with a rocket homing on them get a solid orange bracket.
+- **Radar**: a 2D ship-relative disc (bottom left, range 4000 units). Forward is up, right is right. Blips are filled
+  above the wing plane and hollow below; points beyond the range sit on the rim. Earth and the mothership are shown
+  too.
+- The overlay is drawn on a 2D canvas over the 3D view, outside the sim. It is hidden on the title screen.
+
 ## Open
 
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P08**: waves, objectives and difficulty presets that replace the steady spawn of §4.
 - **P10**: scoring v2 (combos, multipliers, the run summary) on top of §6.
 - **P16**: the achievement list.
 - **P17**: per-craft stat differences against §3.

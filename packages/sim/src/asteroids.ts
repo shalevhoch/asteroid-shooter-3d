@@ -62,3 +62,22 @@ export function destroyAsteroid(state: GameState, id: number, by: KillCause, eve
   const pieces = SPLIT_OFFSETS.map((o, i) => makeAsteroid(state.nextId + i, 'small', add(target.pos, o), target.speed));
   return { ...state, asteroids: [...rest, ...pieces], nextId: state.nextId + pieces.length, score };
 }
+
+/**
+ * Ticks until asteroid `a` touches Earth on its current course (SPEC §11): its surface gap over its speed.
+ * Infinity if it isn't moving; 0 if it's already touching.
+ */
+export function timeToImpact(a: AsteroidState): number {
+  if (!(a.speed > 0)) return Infinity;
+  return Math.max(0, (distance(a.pos, EARTH_POS) - EARTH_RADIUS - radiusOf(a.size)) / a.speed);
+}
+
+/** The asteroid that reaches Earth first (ties to the lowest id), with its time to impact; null when there are none. */
+export function mostUrgent(asteroids: readonly AsteroidState[]): { id: number; ticks: number } | null {
+  let best: { id: number; ticks: number } | null = null;
+  for (const a of asteroids) {
+    const ticks = timeToImpact(a);
+    if (Number.isFinite(ticks) && (!best || ticks < best.ticks || (ticks === best.ticks && a.id < best.id))) best = { id: a.id, ticks };
+  }
+  return best;
+}

@@ -1,6 +1,7 @@
 /** HUD v0 (P07): a clean DOM HUD. `hudModel` is the pure part (what to show); `Hud` writes it to the page. */
 import { waveLine } from './waveUi.js';
-import { EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, ROCKET_MAX, THROTTLE_MAX, type GameState } from '@asteroid/sim';
+import { formatImpact, urgency, type Urgency } from './threat.js';
+import { mostUrgent, EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, ROCKET_MAX, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
   readonly score: number;
@@ -17,11 +18,18 @@ export interface HudModel {
   readonly turbo: boolean;
   /** "WAVE 3/10 · Rocket kills 1/2" (P08). */
   readonly wave: string;
+  /** The soonest Earth impact (P09), or null with no asteroids. */
+  readonly impact: { readonly text: string; readonly urgency: Urgency } | null;
   /** Warnings worth flashing. */
   readonly warnings: readonly string[];
 }
 
 const frac = (v: number, max: number) => Math.max(0, Math.min(1, v / max));
+
+function impactOf(s: GameState): HudModel['impact'] {
+  const u = mostUrgent(s.asteroids);
+  return u ? { text: `IMPACT ${formatImpact(u.ticks)}`, urgency: urgency(u.ticks) } : null;
+}
 
 export function hudModel(s: GameState, best: number): HudModel {
   const warnings: string[] = [];
@@ -41,6 +49,7 @@ export function hudModel(s: GameState, best: number): HudModel {
     speedMax: THROTTLE_MAX + 1,
     turbo: s.ship.turbo,
     wave: waveLine(s),
+    impact: impactOf(s),
     warnings,
   };
 }
@@ -55,6 +64,7 @@ export class Hud {
         <div class="bar fuel"><span>FUEL</span><i></i></div>
       </div>
       <div class="br"><div class="rockets"></div><div class="speed"></div></div>
+      <div class="impact"></div>
       <div class="warn"></div>
       <div class="crosshair">+</div>`;
   }
@@ -77,6 +87,9 @@ export class Hud {
     this.q('.rockets').textContent = `ROCKETS ${'▲'.repeat(m.rockets)}${'△'.repeat(m.rocketMax - m.rockets)}`;
     this.q('.speed').textContent = `SPEED ${'■'.repeat(m.speed)}${'□'.repeat(m.speedMax - m.speed)}${m.turbo ? ' TURBO' : ''}`;
     this.q('.warn').textContent = m.warnings.join(' · ');
+    const impact = this.q('.impact');
+    impact.textContent = m.impact?.text ?? '';
+    impact.dataset['urgency'] = m.impact?.urgency ?? '';
   }
 
   /** Places the crosshair where the line of fire is, `ndc` in [−1, 1]² (null hides it, e.g. behind the camera). */
