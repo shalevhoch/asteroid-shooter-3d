@@ -54,12 +54,14 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 - Two sizes:
   - **big**: `BIG_RADIUS = 100`, `BIG_HP = 20`
   - **small**: `SMALL_RADIUS = 20`, `SMALL_HP = 8`
-- **Spawning**: every `SPAWN_INTERVAL = 200` ticks, starting at tick `SPAWN_INTERVAL`, one asteroid spawns at
-  `(−800, U[−500, 500), U[−500, 500))`. It is big with probability `BIG_CHANCE = 1/5`, otherwise small.
-- **Motion**: straight toward Earth's centre at `ASTEROID_SPEED = 3` per tick. The direction is fixed at spawn. Tumbling
-  is visual only.
+- **Spawning**: the waves of §10 decide when asteroids spawn, how many, and how fast. Each spawns at
+  `(SPAWN_X = −800, U[−500, 500), U[−500, 500))`, drawing y, z, then size from the RNG. It is big with the wave's
+  probability, otherwise small. Wave 1 on Normal is the original's pace: one every `SPAWN_INTERVAL = 200` ticks from
+  tick 200, `BIG_CHANCE = 1/5`, at `ASTEROID_SPEED = 3`.
+- **Motion**: straight toward Earth's centre at the asteroid's own speed per tick, fixed at spawn (the wave's speed ×
+  the difficulty's scale). The direction is also fixed at spawn. Split pieces inherit the speed. Tumbling is visual only.
 - **Earth impact**: when an asteroid's sphere touches Earth's sphere, the asteroid is destroyed without scoring, and
-  Earth loses `BIG_EARTH_DAMAGE = 10` or `SMALL_EARTH_DAMAGE = 2`. It passes through the atmosphere unharmed (the
+  Earth loses `BIG_EARTH_DAMAGE = 10` or `SMALL_EARTH_DAMAGE = 2`, × the difficulty's scale (rounded, at least 1). It passes through the atmosphere unharmed (the
   atmosphere is a ship hazard; its burn glow is visual).
 - **Split**: a big asteroid destroyed by photons splits into `SPLIT_COUNT = 4` small asteroids, placed at the original's
   offsets (+20,+20,+20), (0,+20,+20), (+20,−20,+20), (−20,+20,0) from its position, each aimed at Earth's centre.
@@ -109,15 +111,16 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 Each tick, in this order:
 1. Apply input: turning, throttle, turbo/strafe movement, firing.
 2. Ship hazards: mothership push-out, hangar refill, atmosphere burn, Earth contact.
-3. Spawn asteroids (if due).
+3. Waves: the lead-in countdown, scheduled spawns, and the wave clear (§10).
 4. Move asteroids, then resolve Earth impacts.
 5. Move projectiles and resolve hits (rockets home before moving).
-6. Expire projectiles whose life ran out, and check the run's end.
+6. Expire projectiles whose life ran out, fold the tick's events into the wave's objective tallies, and check the run's end.
 
 The sim emits **events** for anything the renderer, audio or HUD react to (`turboStarted`, `turboEnded`,
 `fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired {target}`, `rocketLocked`, `projectileSpent`, `asteroidHit {hp}`,
 `asteroidDestroyed {by, size, pos, points}`,
-`asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`, `runEnded`).
+`asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`, `runEnded`, `waveStarted {wave, count, objective}`,
+`waveCleared {wave, objectiveMet, regen}`, `objectiveMet {wave, points, repair}`, `campaignWon`).
 
 ## 8. Controls and camera
 
@@ -172,6 +175,41 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - `kaboom`: a kill, an Earth hit or the run ending.
   - At most `MAX_CUES_PER_TICK = 4` sounds per tick. Audio starts on the first input; M mutes and the choice is kept.
 - **Placeholder FX**: kills, Earth hits and photon hits flash a growing, fading sprite. A destroyed ship leaves one big flash.
+
+## 10. Waves, objectives and difficulty
+
+- **Campaign**: `CAMPAIGN_WAVES = 10` waves, then endless waves that keep escalating until the run ends.
+  - Wave *n* (index *i* = *n* − 1) has these values:
+    - `5 + 2i` asteroids;
+    - a spawn every `max(50, 200 − 14i)` ticks;
+    - a speed of `min(6, 3 × (1 + 0.05i))`;
+    - a big chance of `min(0.6, 0.2 + 0.03i)`.
+  - The endless caps are `ENDLESS_MIN_INTERVAL`, `ENDLESS_MAX_SPEED` and `ENDLESS_MAX_BIG`.
+- **Wave life**:
+  - A wave's lead-in counts down. Wave 1 starts `SPAWN_INTERVAL` ticks into the run; later waves start
+    `BREATHER_TICKS = 125` ticks after the previous clear.
+  - When it ends, `waveStarted` fires and the first asteroid spawns, then the rest at the wave's interval.
+  - A wave is cleared on the first tick after all its asteroids have spawned and none are alive (killed or crashed).
+    `waveCleared` fires.
+  - Clearing wave 10 also fires `campaignWon`.
+- **Objectives**: every wave after the first has one, judged at the clear from that wave's tallies.
+  - The campaign order: none, no Earth hit, 2 rocket kills, 2 big kills, no Earth hit, photons only (no rockets fired),
+    3 rocket kills, no Earth hit, 4 big kills, no Earth hit. Endless waves cycle the same list.
+  - Meeting one scores `OBJECTIVE_POINTS_BASE + OBJECTIVE_POINTS_PER_WAVE × n` (`50 + 10n`) and repairs Earth by
+    `OBJECTIVE_REPAIR = 10`, capped at its maximum. `objectiveMet` fires.
+- **Difficulty presets**, chosen on the title screen and kept per browser. **Normal** is the default.
+
+  | Preset | Asteroid speed | Spawn interval | Earth damage | Earth regen per clear | Rocket lock cone | Turbo fuel per tick |
+  |---|---|---|---|---|---|---|
+  | Kid / Easy | × 0.6 | × 1.4 | × 0.5 | +20 | 60° | 0 |
+  | Normal | × 1 | × 1 | × 1 | 0 | 30° | 1 |
+  | Hard | × 1.25 | × 0.8 | × 1.5 | 0 | 30° | 1 |
+- **Win**: after wave 10 the game pauses on a win card (score, difficulty). **Keep going** continues into the endless
+  waves; **Finish** ends the run as a win ("You saved Earth!") and records the best score.
+- **UI**:
+  - A banner announces each wave (number, asteroid count, objective) and each clear (bonus, regen).
+  - The HUD shows the wave (or ENDLESS *n*) and the objective's live progress.
+  - The game-over card adds the difficulty, the waves cleared and the objectives met.
 
 ## Open
 
