@@ -2,8 +2,8 @@
 name: spec-to-ship
 description: >-
   Orchestrator overview of the delivery pipeline for asteroid-shooter-3d: refine-packet (before) →
-  spec-author → test-author → coder → verifier → reviewer → PR + PLAN.md sync → squash-merge. No human
-  gate between phases.
+  spec-author → test-author → coder → verifier → reviewer → packet branch + PR + PLAN.md sync → green CI →
+  Gilad reviews and merges. No human gate between phases.
 ---
 
 # Spec-to-Ship
@@ -18,7 +18,8 @@ mode of agent-driven development. Design comes before tests, tests before code, 
   PHASE 3 GREEN    coder: implement, keep packages/sim pure
   PHASE 4 VERIFY   verifier (read-only): pnpm verify, build:pages, Stryker on sim — no judgment
   PHASE 5 REVIEW   reviewer (read-only): spec↔tests↔code, purity, suppressions, PLAN.md, AGENTS.md
-  SHIP             orchestrator: PR "🤖: PNN: …" (Closes #N) → tick PLAN.md row → CI green → squash-merge
+  SHIP             orchestrator: branch packet/PNN-… → PR "🤖: PNN: …" (Closes #N) → tick PLAN.md row → CI green
+                   → Gilad reviews and merges (agents merge only when Gilad says so). Never push to main.
 ```
 
 - **Nobody grades their own homework.** Phases 4–5 can't edit. Re-run the gate after every phase.

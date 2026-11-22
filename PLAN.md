@@ -17,7 +17,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 
 | ✓ | Packet | Issue | Milestone | Status | Delivered by | PR |
 |---|---|---|---|---|---|---|
-| [ ] | P00: Repo skeleton, harness, CI + Pages deploy | [#21](https://github.com/shalevhoch/asteroid-shooter-3d/issues/21) | tracer bullet | 🚧 skeleton + CI done; waiting for Shalev to enable Pages | Coder Bot (manual, skip-pipeline) | direct push |
+| [x] | P00: Repo skeleton, harness, CI + Pages deploy | [#21](https://github.com/shalevhoch/asteroid-shooter-3d/issues/21) | tracer bullet | ✅ live | Coder Bot (manual, skip-pipeline) | direct push (pre-protection) |
 | [ ] | P01: SPEC.md v1 — core rules and defaults | [#1](https://github.com/shalevhoch/asteroid-shooter-3d/issues/1) | tracer bullet | 📋 | | |
 | [ ] | P02: Asset import and model gallery | [#2](https://github.com/shalevhoch/asteroid-shooter-3d/issues/2) | tracer bullet | 📋 | | |
 | [ ] | P03: Sim skeleton and flight model | [#3](https://github.com/shalevhoch/asteroid-shooter-3d/issues/3) | tracer bullet | 📋 | | |
@@ -121,4 +121,4 @@ Packet-level questions (control defaults, craft stats, campaign vs endless, touc
 *Open questions* and get settled by `/refine-packet`.
 
 1. **Where the pipeline runs:** Grok Bot, or Gilad's OpenCode/SuperGrok.
-2. **Branch protection on `main`** (require `verify` + `packet-pr`): needs a repo admin (Shalev): conquarrow-dev only has write access.
+2. _Resolved:_ `main` is protected, and every change goes through a PR with green CI that Gilad merges.

@@ -84,19 +84,24 @@ Reproduce known state with commands, not hand edits (`git restore --source`, `pn
    right before delivery. It resolves the issue's open questions and writes the refined scope, decisions and
    done criteria back into the issue. Labels it `refined`.
 3. **`/spec-to-ship PNN`** (`.opencode/command/spec-to-ship.md`): spec-author → test-author →
-   coder → verifier → reviewer → PR → squash-merge on green CI. No human gates between phases.
+   coder → verifier → reviewer → branch + PR → green CI → **Gilad reviews and merges** (or tells us to merge).
+   No human gates between the phases themselves.
    Escalate only for a game-design question SPEC.md and the refined issue don't answer, an
    unexpected cost, or a big shift against SPEC.md or a shipped packet.
 4. Skip the pipeline for typos, docs, dependency bumps, mechanical refactors and harness work: open a small PR.
 
 ## PR and commit conventions
 
-- Branch `packet/pNN-<slug>` for packet work, otherwise `chore/…`, `fix/…`, `docs/…`.
+- **Never push to `main`.** `main` is protected: every change lands through a PR with green CI (`verify`).
+- **One branch and one PR per packet:** branch `packet/PNN-<slug>` (e.g. `packet/P01-spec-v1`), opened with
+  `gh pr create`. Other work uses `chore/…`, `fix/…` or `docs/…` branches, also via PR.
 - Packet PR title `🤖: PNN: <name>`. The body starts with `🤖: `, links the issue and spec, and says `Closes #N`.
 - **A packet PR updates its `PLAN.md` index row** (status ✅, delivered-by, PR link). CI
   (`packet-pr` workflow) fails a packet PR that doesn't touch `PLAN.md` or lacks `Closes #N`.
-- Conventional-commit subjects (`feat(sim): …`, `chore(harness): …`). Squash-merge to `main`.
-- Push to `origin` = `github.com/shalevhoch/asteroid-shooter-3d` (direct pushes are approved). `main` deploys to Pages.
+- **Gilad reviews and merges** each PR (squash), or explicitly tells the agent to merge it. Agents don't merge on their own.
+- Conventional-commit subjects (`feat(sim): …`, `chore(harness): …`).
+- Remote `origin` = `github.com/shalevhoch/asteroid-shooter-3d`. Agents push branches and call `gh` with Shalev's token
+  (`GH_TOKEN=$GH_SHALEV_TOKEN`; never print it), with commits authored as `conquarrow-dev`. A merge to `main` deploys to Pages.
 
 ## Security considerations
 

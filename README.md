@@ -21,4 +21,5 @@ pnpm build:pages         # production build for /asteroid-shooter-3d/
 
 - How we work: [AGENTS.md](./AGENTS.md) (rules for humans and agents) · [PLAN.md](./PLAN.md) (plan + packet index)
   · [SPEC.md](./SPEC.md) (game rules) · packets are [GitHub issues](https://github.com/shalevhoch/asteroid-shooter-3d/issues).
-- Every push to `main` deploys to GitHub Pages.
+- Workflow: one branch + PR per packet (`packet/PNN-…`), CI must be green, and Gilad reviews and merges. `main` is protected,
+  and every merge to it deploys to GitHub Pages.

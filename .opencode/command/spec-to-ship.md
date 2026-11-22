@@ -1,12 +1,12 @@
 ---
-description: Drive one packet issue through spec, red tests, green, a read-only verify and a read-only review, then open the PR, tick PLAN.md, and squash-merge on green CI. No approval gates.
+description: Drive one packet issue through spec, red tests, green, a read-only verify and a read-only review, then open the packet PR, tick PLAN.md, get CI green, and hand it to Gilad to review and merge. No approval gates between phases.
 model: xai/grok-4.7
 variant: xhigh
 ---
 
 # /spec-to-ship
 
-Drive `$ARGUMENTS` (a packet id `PNN` or an issue number) to a squash-merged PR. You are the
+Drive `$ARGUMENTS` (a packet id `PNN` or an issue number) to a green, review-ready PR that Gilad merges. You are the
 orchestrator and you run every phase. Read `AGENTS.md` and `.claude/skills/spec-to-ship/SKILL.md` first.
 Context moves through artifacts (issue, spec files, tests, diff), not chat history.
 
@@ -33,7 +33,7 @@ argument when launching a subagent, because frontmatter is the pin.
 
 ```bash
 gh issue view <N> --repo shalevhoch/asteroid-shooter-3d     # scope, decisions, done criteria
-git switch main && git pull && git switch -c packet/pNN-<slug>
+git switch main && git pull && git switch -c packet/PNN-<slug>     # one branch per packet, never commit to main
 ```
 
 If the issue isn't labelled `refined` and still lists open questions, stop and suggest `/refine-packet PNN` first.
@@ -62,19 +62,23 @@ Delegate, with the verifier's suppression list. Route each must-fix to the ownin
 
 ## Ship
 
-1. Commit, then `git push -u origin packet/pNN-<slug>` (origin = `github.com/shalevhoch/asteroid-shooter-3d`).
-2. `gh pr create --title "🤖: PNN: <name>" --body "🤖: … Closes #N …"`. The body links the issue and the spec.
+Never push to `main` (it is protected). Push and run `gh` with Shalev's token: `GH_TOKEN=$GH_SHALEV_TOKEN` (never print it).
+Commits are authored as `conquarrow-dev`.
+
+1. Commit, then `git push -u origin packet/PNN-<slug>` (origin = `github.com/shalevhoch/asteroid-shooter-3d`).
+2. `GH_TOKEN=$GH_SHALEV_TOKEN gh pr create --base main --title "🤖: PNN: <name>" --body "🤖: … Closes #N …"`. The body links the issue and the spec.
 3. **Sync PLAN.md on the same branch:** in the `PLAN.md` packet index, tick this packet's checkbox and set its
    row's status ✅, delivered-by (`/spec-to-ship` + the agent/model), and the PR link. Commit
    `docs(plan): PNN shipped` and push. CI's `packet-pr` check fails without it.
-4. Wait for CI (`gh pr checks --watch`). On green: `gh pr merge --squash --delete-branch`. Merging closes the
-   issue via `Closes #N`, and `main` deploys to games.hochgi.com/asteroid-shooter-3d/.
-5. Check the live page after deploy (`curl -sf https://games.hochgi.com/asteroid-shooter-3d/`) and
-   report it.
+4. Wait for CI (`gh pr checks --watch`) and fix until it is green (`verify` and `packet-pr`).
+5. **Hand off to Gilad:** report the PR link and a summary. **Gilad reviews and merges** (squash). Run
+   `gh pr merge --squash --delete-branch` only when Gilad explicitly tells you to. Merging closes the issue via
+   `Closes #N`, and `main` deploys to games.hochgi.com/asteroid-shooter-3d/.
+6. After the merge, check the live page (`curl -sf https://games.hochgi.com/asteroid-shooter-3d/`) and report it.
 
 New findings the run turned up become new issues (label `packet` or `bug`) plus a `PLAN.md` row, in the same PR.
 
 ## Skip the pipeline
 
-Typos, doc-only changes, dependency bumps, mechanical refactors and harness work: a small PR with a one-line
-scope note, no packet title.
+Typos, doc-only changes, dependency bumps, mechanical refactors and harness work: a small PR on a `chore/…`,
+`docs/…` or `fix/…` branch with a one-line scope note and no packet title. It still needs green CI and Gilad's merge.
