@@ -18,8 +18,8 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | ✓ | Packet | Issue | Milestone | Status | Delivered by | PR |
 |---|---|---|---|---|---|---|
 | [x] | P00: Repo skeleton, harness, CI + Pages deploy | #21 (hidden) | tracer bullet | ✅ live | Coder Bot (manual, skip-pipeline) | direct push (pre-protection) |
-| [x] | P01: SPEC.md v1 — core rules and defaults | [#22](https://github.com/shalevhoch/asteroid-shooter-3d/issues/22) (was #1) | tracer bullet | ✅ | Coder Bot (spec-only, no code) | [#43](https://github.com/shalevhoch/asteroid-shooter-3d/pull/43) |
-| [ ] | P02: Asset import and model gallery | [#23](https://github.com/shalevhoch/asteroid-shooter-3d/issues/23) (was #2) | tracer bullet | 📋 | | |
+| [x] | P01: SPEC.md v1 — core rules and defaults | [#22](https://github.com/shalevhoch/asteroid-shooter-3d/issues/22) (was #1) | tracer bullet | ✅ | Coder Bot (spec only, self-merged per Gilad) | [#43](https://github.com/shalevhoch/asteroid-shooter-3d/pull/43) |
+| [x] | P02: Asset import and model gallery | [#23](https://github.com/shalevhoch/asteroid-shooter-3d/issues/23) (was #2) | tracer bullet | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#44](https://github.com/shalevhoch/asteroid-shooter-3d/pull/44) |
 | [ ] | P03: Sim skeleton and flight model | [#24](https://github.com/shalevhoch/asteroid-shooter-3d/issues/24) (was #3) | tracer bullet | 📋 | | |
 | [ ] | P04: Renderer loop and keyboard/mouse input | [#25](https://github.com/shalevhoch/asteroid-shooter-3d/issues/25) (was #4) | tracer bullet | 📋 | | |
 | [ ] | P05: Asteroids, Earth and collisions | [#26](https://github.com/shalevhoch/asteroid-shooter-3d/issues/26) (was #5) | MVP | 📋 | | |

@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 /**
@@ -10,5 +11,8 @@ export const PAGES_BASE = '/asteroid-shooter-3d/';
 export default defineConfig(({ mode }) => ({
   base: mode === 'pages' ? PAGES_BASE : '/',
   server: { port: 5175 },
-  build: { target: 'es2022', sourcemap: true, assetsDir: 'static', chunkSizeWarningLimit: 800 },
+  build: {
+    target: 'es2022', sourcemap: true, assetsDir: 'static', chunkSizeWarningLimit: 800,
+    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), gallery: resolve(import.meta.dirname, 'gallery.html') } },
+  },
 }));

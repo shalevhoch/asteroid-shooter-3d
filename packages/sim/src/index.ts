@@ -20,3 +20,5 @@ export function ticksFor(accumulatedMs: number): { ticks: number; remainderMs: n
   const ticks = Math.floor(accumulatedMs / TICK_MS);
   return { ticks, remainderMs: accumulatedMs - ticks * TICK_MS };
 }
+
+export { MOTHERSHIP_BOXES } from './data/mothershipBoxes.js';
