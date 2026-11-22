@@ -222,6 +222,9 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
     to the next run and says so.
   - Every change applies at once and persists per browser. Stored values are clamped and snapped; settings saved
     before P13 load with the new defaults.
+  - **Narrow screens** (P21): below 1240 px wide the card sits at the left edge and the controls list narrows to
+    340 px (wrapping long labels); below 720 px tall it tightens and clips at the screen edge. The list never covers
+    the card.
   - **Decision**: no separate first-run tutorial. The title card already shows the full controls list and the
     goal, and the pause card repeats it.
 

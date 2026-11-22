@@ -39,6 +39,16 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P19: Gamepad support | [#40](https://github.com/shalevhoch/asteroid-shooter-3d/issues/40) (was #19) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#61](https://github.com/shalevhoch/asteroid-shooter-3d/pull/61) |
 | [x] | P20: Low-end tablet performance pass | [#41](https://github.com/shalevhoch/asteroid-shooter-3d/issues/41) (was #20) | nice to have | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#62](https://github.com/shalevhoch/asteroid-shooter-3d/pull/62) |
 
+### Polish
+
+| Done | Packet | Issue | Milestone | Status | Owner | PR |
+|---|---|---|---|---|---|---|
+| [x] | P21: Controls list overlaps the title card on narrow screens | [#63](https://github.com/shalevhoch/asteroid-shooter-3d/issues/63) | polish | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#68](https://github.com/shalevhoch/asteroid-shooter-3d/pull/68) |
+| [ ] | P22: "Press Start" on the title card when a gamepad is connected | [#64](https://github.com/shalevhoch/asteroid-shooter-3d/issues/64) | polish | 📋 | | |
+| [ ] | P23: Quality option in settings | [#65](https://github.com/shalevhoch/asteroid-shooter-3d/issues/65) | polish | 📋 | | |
+| [ ] | P24: Re-encode the Earth and sky textures for load headroom | [#66](https://github.com/shalevhoch/asteroid-shooter-3d/issues/66) | polish | 📋 | | |
+| [ ] | P25: Convert the LWO/3DS ship models to GLB | [#67](https://github.com/shalevhoch/asteroid-shooter-3d/issues/67) | polish | 📋 | | |
+
 New packets get the next free `PNN`, an issue, and a row here, in the PR that discovers them.
 
 _Issues #1–#21 were authored by `conquarrow-dev` and are hidden while GitHub has that account flagged. P01–P20 were
