@@ -1,66 +1,112 @@
 /**
- * P00 placeholder scene: one asteroid from the original game's models, tumbling in a starfield.
- * It proves the toolchain, the Pages base path and asset loading end to end. The real game loop lands in P04.
+ * P04 flight test: the sim's fixed 25 Hz tick driven by requestAnimationFrame, rendered with interpolation.
+ * Fly around Earth and the mothership; asteroids and weapons arrive in P05–P06.
  */
 import * as THREE from 'three';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { TICK_MS } from '@asteroid/sim';
-import { assetUrl } from './assetUrl.js';
+import { FUEL_MAX, TICK_MS, initialState, step, ticksFor, type GameState } from '@asteroid/sim';
+import { Controls } from './controls.js';
+import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
+import { buildWorld } from './scene.js';
+import { DEFAULT_SETTINGS, SETTINGS_KEY, cycle, parseSettings } from './settings.js';
+import { CAMERA_MODES, FOV_BASE, cameraPose, interpolate, nextFov } from './view.js';
 
 const base = import.meta.env.BASE_URL;
-const host = document.getElementById('app');
-if (!host) throw new Error('#app missing');
+const el = (id: string): HTMLElement => {
+  const e = document.getElementById(id);
+  if (!e) throw new Error(`#${id} missing`);
+  return e;
+};
+const host = el('app');
+const hud = el('hud');
+const help = el('help');
+const intro = el('intro');
+
+const settings = (() => {
+  try {
+    return parseSettings(localStorage.getItem(SETTINGS_KEY));
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+})();
+const save = () => {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // Private mode: settings just don't persist.
+  }
+};
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 host.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 5000);
-camera.position.set(0, 0, 85);
-
-scene.add(new THREE.AmbientLight(0x404050, 1.2));
-const sun = new THREE.DirectionalLight(0xfff2dd, 2.2);
-sun.position.set(80, 40, 60);
-scene.add(sun);
-
-const starCount = 1500;
-const starPositions = new Float32Array(starCount * 3);
-for (let i = 0; i < starCount; i++) {
-  const v = new THREE.Vector3().randomDirection().multiplyScalar(800 + Math.random() * 1200);
-  starPositions.set([v.x, v.y, v.z], i * 3);
-}
-const starGeometry = new THREE.BufferGeometry();
-starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-const starTexture = new THREE.TextureLoader().load(assetUrl(base, 'textures/round_particle_16x16.png'));
-const stars = new THREE.Points(
-  starGeometry,
-  new THREE.PointsMaterial({ size: 6, map: starTexture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),
-);
-scene.add(stars);
-
-const spin = new THREE.Group();
-scene.add(spin);
-new OBJLoader().load(assetUrl(base, 'models/asteroids/astro01.obj'), (obj) => {
-  const rock = new THREE.MeshStandardMaterial({ color: 0x8a7f72, roughness: 0.95, metalness: 0.05, flatShading: true });
-  obj.traverse((child) => {
-    if (child instanceof THREE.Mesh) child.material = rock;
-  });
-  spin.add(obj);
-});
-
+const camera = new THREE.PerspectiveCamera(FOV_BASE, window.innerWidth / window.innerHeight, 1, 30000);
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Rotation is expressed per sim tick so the placeholder already moves at the game's 25 Hz cadence.
-const radiansPerTick = 0.01;
-renderer.setAnimationLoop((timeMs: number) => {
-  const ticks = timeMs / TICK_MS;
-  spin.rotation.set(ticks * radiansPerTick * 0.7, ticks * radiansPerTick, 0);
-  stars.rotation.y = ticks * 0.0002;
-  renderer.render(scene, camera);
+const controls = new Controls(renderer.domElement, settings);
+
+function renderHelp() {
+  const rows = bindings(settings.layout)
+    .map(([action, codes]) => `<tr><td>${[...new Set(codes.map(keyLabel))].join(' / ')}</td><td>${ACTION_LABELS[action]}</td></tr>`)
+    .join('');
+  const mouse = settings.layout === 'modern' ? `<tr><td>mouse</td><td>aim (pitch / yaw)${settings.invertY ? ', Y inverted' : ''}</td></tr><tr><td>wheel</td><td>throttle ±</td></tr>` : '';
+  help.innerHTML = `<h2>Controls: ${settings.layout}</h2><table>${mouse}${rows}</table><p>Click to capture the mouse · Esc releases it</p>`;
+  help.style.display = settings.help ? 'block' : 'none';
+}
+renderHelp();
+
+function applyToggles() {
+  for (const t of controls.takeToggles()) {
+    if (t === 'toggleCamera') settings.camera = cycle(CAMERA_MODES, settings.camera);
+    else if (t === 'toggleLayout') settings.layout = cycle(LAYOUTS, settings.layout);
+    else if (t === 'toggleInvertY') settings.invertY = !settings.invertY;
+    else if (t === 'toggleHelp') settings.help = !settings.help;
+    else continue;
+    save();
+    renderHelp();
+  }
+}
+
+const world = await buildWorld(base);
+intro.classList.add('ready');
+
+let prev: GameState = initialState(Date.now() >>> 0);
+let curr: GameState = prev;
+let accMs = 0;
+let lastMs = performance.now();
+let fov = FOV_BASE;
+const MAX_FRAME_MS = 250;
+const v = new THREE.Vector3();
+
+renderer.setAnimationLoop((nowMs: number) => {
+  const frameMs = Math.min(Math.max(nowMs - lastMs, 0), MAX_FRAME_MS);
+  lastMs = nowMs;
+  applyToggles();
+  const { ticks, remainderMs } = ticksFor(accMs + frameMs);
+  for (let i = 0; i < ticks; i++) {
+    prev = curr;
+    curr = step(curr, controls.nextInput()).state;
+  }
+  accMs = remainderMs;
+
+  const pose = interpolate(prev.ship, curr.ship, accMs / TICK_MS);
+  world.ship.position.set(...pose.pos);
+  world.ship.quaternion.set(...pose.rot);
+  const cam = cameraPose(pose, settings.camera);
+  camera.position.set(...cam.eye);
+  camera.up.set(...cam.up);
+  camera.lookAt(v.set(...cam.look));
+  fov = nextFov(fov, curr.ship, frameMs / 1000);
+  camera.fov = fov;
+  camera.updateProjectionMatrix();
+  world.sky.position.copy(camera.position);
+  world.earth.rotation.y = (curr.tick * TICK_MS) / 1000 / 120;
+
+  const s = curr.ship;
+  hud.textContent = `throttle ${String(s.throttle)}${s.turbo ? ' · TURBO' : ''} · fuel ${String(Math.round((100 * s.fuel) / FUEL_MAX))}% · camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H]${controls.locked ? '' : ' · click to fly'}`;
+  renderer.render(world.scene, camera);
 });

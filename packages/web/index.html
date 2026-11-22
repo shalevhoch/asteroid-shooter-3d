@@ -7,21 +7,32 @@
     <title>Asteroid Shooter 3D</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E☄️%3C/text%3E%3C/svg%3E" />
     <style>
-      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; }
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; color: #f0d9a8; }
       #app { position: fixed; inset: 0; }
-      #overlay { position: fixed; left: 0; right: 0; bottom: 8%; text-align: center; color: #f0d9a8; pointer-events: none; text-shadow: 0 2px 8px #000; }
-      #overlay h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: 0.04em; }
-      #overlay p { margin: 4px 0; color: #a8c9b0; }
-      #overlay a { color: #f0d9a8; pointer-events: auto; }
+      #app canvas { display: block; cursor: crosshair; }
+      #hud { position: fixed; left: 12px; bottom: 10px; font-size: 13px; color: #a8c9b0; text-shadow: 0 1px 4px #000; pointer-events: none; }
+      #help { position: fixed; right: 12px; top: 12px; background: rgba(8, 10, 18, 0.78); border: 1px solid #2a3148; border-radius: 8px; padding: 8px 12px; font-size: 12px; pointer-events: none; }
+      #help h2 { font-size: 13px; margin: 0 0 6px; }
+      #help td { padding: 1px 8px 1px 0; color: #d8dce6; }
+      #help td:first-child { color: #f0d9a8; white-space: nowrap; }
+      #help p { margin: 6px 0 0; color: #8b94a8; }
+      #intro { position: fixed; left: 0; right: 0; top: 10%; text-align: center; pointer-events: none; text-shadow: 0 2px 8px #000; transition: opacity 1.5s 4s; }
+      #intro.ready { opacity: 0; }
+      #intro h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: 0.04em; }
+      #intro p { margin: 4px 0; color: #a8c9b0; }
+      #links { position: fixed; left: 12px; top: 10px; font-size: 12px; }
+      #links a { color: #8b94a8; }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="overlay">
+    <div id="intro">
       <h1>☄️ Asteroid Shooter 3D</h1>
-      <p>Coming soon: defend Earth from the incoming asteroids.</p>
-      <p><a href="/">← all games</a> · <a href="https://github.com/hochgi/astroid-shooter-3D">the original Java game</a></p>
+      <p>Flight test: fly out of the hangar, around Earth and the mothership. Asteroids and weapons come next.</p>
     </div>
+    <div id="links"><a href="/">← all games</a> · <a href="https://github.com/hochgi/astroid-shooter-3D">the original</a></div>
+    <div id="help"></div>
+    <div id="hud">loading…</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
