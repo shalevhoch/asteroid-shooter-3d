@@ -30,7 +30,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P10: Scoring v2 and run summary | [#31](https://github.com/shalevhoch/asteroid-shooter-3d/issues/31) (was #10) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#52](https://github.com/shalevhoch/asteroid-shooter-3d/pull/52) |
 | [x] | P11: FX foundation (instanced billboard batches) | [#32](https://github.com/shalevhoch/asteroid-shooter-3d/issues/32) (was #11) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#53](https://github.com/shalevhoch/asteroid-shooter-3d/pull/53) |
 | [x] | P12: Line sprites and full explosion | [#33](https://github.com/shalevhoch/asteroid-shooter-3d/issues/33) (was #12) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#54](https://github.com/shalevhoch/asteroid-shooter-3d/pull/54) |
-| [ ] | P13: Pause, help and settings overlay | [#34](https://github.com/shalevhoch/asteroid-shooter-3d/issues/34) (was #13) | shippable | 📋 | | |
+| [x] | P13: Pause, help and settings overlay | [#34](https://github.com/shalevhoch/asteroid-shooter-3d/issues/34) (was #13) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#55](https://github.com/shalevhoch/asteroid-shooter-3d/pull/55) |
 | [ ] | P14: Portal look and portal entry | [#35](https://github.com/shalevhoch/asteroid-shooter-3d/issues/35) (was #14) | shippable | 📋 | | |
 | [ ] | P15: Touch controls | [#36](https://github.com/shalevhoch/asteroid-shooter-3d/issues/36) (was #15) | shippable | 📋 | | |
 | [ ] | P16: Achievements | [#37](https://github.com/shalevhoch/asteroid-shooter-3d/issues/37) (was #16) | nice to have | 📋 | | |
