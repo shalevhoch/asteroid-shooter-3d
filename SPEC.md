@@ -167,6 +167,18 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - **classic**: the original's eye point, just behind the ship with the ship low in view.
 - **FOV**: 50°, easing toward 80° while the turbo is moving the ship.
 - The renderer draws the state interpolated between the last two ticks. It never feeds rendering back into the sim.
+- **Touch controls** (P15), for tablets and phones in landscape:
+  - Shown during play when the primary pointer is coarse and the device has touch points. `?touch` forces them
+    on and `?touch=0` off. The keyboard and mouse keep working alongside.
+  - **Stick**: a finger anywhere on the left half drops a floating stick under it, 64 px in radius with a 12 %
+    dead zone. Deflection is pitch and yaw (up is nose up; invert-Y and sensitivity apply), clamped to a full-rate
+    turn.
+  - **Throttle slider** on the right edge: levels 0 to 4. It follows the ship's throttle until touched, then steps
+    the throttle one level per tick toward the finger's level. A key or wheel step wins that tick.
+  - **Buttons**: FIRE (hold, photons), ROCKET (tap; up to 3 taps queue) and TURBO (hold). Ⅱ pauses; tap to resume.
+  - No pointer lock in touch mode. In portrait, a "turn your device sideways" card covers the game.
+  - **Decisions**: touch devices default to Kid / Easy (a stored difficulty wins). No gyro aim for now. Touch
+    controls ship in the shippable milestone, for Shalev's tablet.
 - **Pause and settings overlay** (P13):
   - Esc (leaving pointer lock, or a plain keypress in the classic layout) or P pauses; click, Enter or P resumes.
     The sim doesn't tick while paused.
