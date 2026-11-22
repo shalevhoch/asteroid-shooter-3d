@@ -102,9 +102,24 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 | small, by photons | `SMALL_PHOTON_POINTS = 10` |
 | small, by rocket | `SMALL_ROCKET_POINTS = 8` |
 
-- The score starts at 0 and only increases. Each kill's `asteroidDestroyed` event carries its `points`.
+- The score starts at 0 and only increases. Each kill's `asteroidDestroyed` event carries its `points` (base × the
+  combo multiplier), its `base`, its chain position `combo` and its `multiplier`.
+- **Combo** (P10): a kill within `COMBO_WINDOW = 75` ticks (3 s) of the previous kill extends the chain; otherwise
+  it starts a new chain of one. Any Earth impact breaks the chain. The multiplier is
+  `min(COMBO_MAX_MULTIPLIER = 4, 1 + ⌊(chain − 1) / 2⌋)`: kills 1–2 ×1, 3–4 ×2, 5–6 ×3, 7+ ×4. The HUD shows
+  `COMBO n · next ×m` while a chain of 2+ is live.
+- **Wave-clear bonuses** (P10), paid on the clear tick and carried on `waveCleared`: `clearBonus = 20 × wave` and
+  `earthBonus = ⌊30 × earthHealth / EARTH_MAX_HEALTH⌋`, judged before that clear's repair and regen.
+- **Invariant**: the score always equals the sum of the scored events: kill `points`, `objectiveMet.points`,
+  `waveCleared.clearBonus + earthBonus` (`pointsIn`).
+- **Accuracy** is photon hits (`asteroidHit` + photon kills) over photons fired. It is shown, not scored.
 - The run ends on the tick Earth's health or the hull reaches 0 (clamped at 0). After that, `step` returns the state unchanged.
 - The best score is kept per browser (`localStorage`). Only a strictly higher score replaces it.
+- **Run summary** (P10): the game-over card breaks the score into kills (base), combo bonus, objectives, wave clears
+  and Earth bonus (adding up to the total), then difficulty, time, accuracy, rockets fired and Earth hits.
+- **Local top-10** (P10): the 10 best runs in this browser (score, difficulty, waves cleared or 🌍 for a won
+  campaign, date), no name entry. A run that places is highlighted with its rank. Ties keep the older run ahead;
+  0-point runs are never recorded.
 
 ## 7. Tick order
 
@@ -238,6 +253,5 @@ every asteroid is a threat and all of them are shown.
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P10**: scoring v2 (combos, multipliers, the run summary) on top of §6.
 - **P16**: the achievement list.
 - **P17**: per-craft stat differences against §3.

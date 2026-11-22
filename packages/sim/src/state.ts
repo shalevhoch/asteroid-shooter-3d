@@ -3,6 +3,7 @@ import { EARTH_MAX_HEALTH, ROCKET_MAX, SHIP_START, FUEL_MAX, HULL_MAX } from './
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
+import { NO_COMBO, type ComboState } from './scoring.js';
 import { INITIAL_WAVE, type Difficulty, type Objective, type WaveState } from './waves.js';
 
 /** Ship-local axes: right +X, up +Y, forward −Z (so right = forward × up, SPEC §3). */
@@ -68,6 +69,8 @@ export interface GameState {
   readonly projectiles: readonly ProjectileState[];
   readonly nextProjectileId: number;
   readonly score: number;
+  /** The kill chain behind the combo multiplier (SPEC §6). */
+  readonly combo: ComboState;
   readonly difficulty: Difficulty;
   readonly wave: WaveState;
   /** Set on the tick the run ends; `step` is then a no-op. */
@@ -117,7 +120,7 @@ export type SimEvent =
   | { readonly type: 'hullBurning' }
   | { readonly type: 'asteroidSpawned'; readonly id: number; readonly size: AsteroidSize }
   | { readonly type: 'earthHit'; readonly id: number; readonly size: AsteroidSize; readonly damage: number; readonly pos: Vec3 }
-  | { readonly type: 'asteroidDestroyed'; readonly id: number; readonly size: AsteroidSize; readonly by: KillCause; readonly pos: Vec3; readonly points: number }
+  | { readonly type: 'asteroidDestroyed'; readonly id: number; readonly size: AsteroidSize; readonly by: KillCause; readonly pos: Vec3; readonly points: number; readonly base: number; readonly combo: number; readonly multiplier: number }
   | { readonly type: 'asteroidHit'; readonly id: number; readonly hp: number; readonly pos: Vec3 }
   | { readonly type: 'photonFired'; readonly id: number; readonly pos: Vec3 }
   | { readonly type: 'rocketFired'; readonly id: number; readonly pos: Vec3; readonly target: number | null }
@@ -125,7 +128,7 @@ export type SimEvent =
   | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3 }
   | { readonly type: 'runEnded'; readonly reason: RunEndReason }
   | { readonly type: 'waveStarted'; readonly wave: number; readonly count: number; readonly objective: Objective | null }
-  | { readonly type: 'waveCleared'; readonly wave: number; readonly objectiveMet: boolean; readonly regen: number }
+  | { readonly type: 'waveCleared'; readonly wave: number; readonly objectiveMet: boolean; readonly regen: number; readonly clearBonus: number; readonly earthBonus: number }
   | { readonly type: 'objectiveMet'; readonly wave: number; readonly points: number; readonly repair: number }
   | { readonly type: 'campaignWon'; readonly wave: number }
   | { readonly type: 'turboStarted' }
@@ -149,6 +152,7 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal'): G
     projectiles: [],
     nextProjectileId: 1,
     score: 0,
+    combo: NO_COMBO,
     nextId: 1,
     earthHealth: EARTH_MAX_HEALTH,
     difficulty,

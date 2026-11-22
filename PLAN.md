@@ -27,7 +27,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P07: Game loop, HUD v0 and audio ★ playable | [#28](https://github.com/shalevhoch/asteroid-shooter-3d/issues/28) (was #7) | MVP | ✅ live | Coder Bot (spec-to-ship, self-merged per Gilad) | [#49](https://github.com/shalevhoch/asteroid-shooter-3d/pull/49) |
 | [x] | P08: Waves, objectives and difficulty presets | [#29](https://github.com/shalevhoch/asteroid-shooter-3d/issues/29) (was #8) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#50](https://github.com/shalevhoch/asteroid-shooter-3d/pull/50) |
 | [x] | P09: Threat awareness (off-screen arrows, time-to-impact, radar) | [#30](https://github.com/shalevhoch/asteroid-shooter-3d/issues/30) (was #9) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#51](https://github.com/shalevhoch/asteroid-shooter-3d/pull/51) |
-| [ ] | P10: Scoring v2 and run summary | [#31](https://github.com/shalevhoch/asteroid-shooter-3d/issues/31) (was #10) | shippable | 📋 | | |
+| [x] | P10: Scoring v2 and run summary | [#31](https://github.com/shalevhoch/asteroid-shooter-3d/issues/31) (was #10) | shippable | ✅ | Coder Bot (spec-to-ship, self-merged per Gilad) | [#52](https://github.com/shalevhoch/asteroid-shooter-3d/pull/52) |
 | [ ] | P11: FX foundation (instanced billboard batches) | [#32](https://github.com/shalevhoch/asteroid-shooter-3d/issues/32) (was #11) | shippable | 📋 | | |
 | [ ] | P12: Line sprites and full explosion | [#33](https://github.com/shalevhoch/asteroid-shooter-3d/issues/33) (was #12) | shippable | 📋 | | |
 | [ ] | P13: Pause, help and settings overlay | [#34](https://github.com/shalevhoch/asteroid-shooter-3d/issues/34) (was #13) | shippable | 📋 | | |

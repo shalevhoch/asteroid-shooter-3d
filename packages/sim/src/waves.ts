@@ -5,6 +5,7 @@
 import { ASTEROID_SPEED, BIG_CHANCE, EARTH_MAX_HEALTH, ROCKET_LOCK_CONE, SPAWN_INTERVAL, SPAWN_SPREAD_MAX, SPAWN_SPREAD_MIN, SPAWN_X } from './constants.js';
 import { makeAsteroid } from './asteroids.js';
 import { nextFloat, nextRange } from './rng.js';
+import { clearBonus, earthBonus } from './scoring.js';
 import type { AsteroidSize, GameState, SimEvent } from './state.js';
 
 export type Difficulty = 'kid' | 'normal' | 'hard';
@@ -169,7 +170,10 @@ export function updateWaves(state: GameState, events: SimEvent[]): GameState {
 function clearWave(state: GameState, def: WaveDef, preset: Preset, events: SimEvent[]): GameState {
   const w = state.wave;
   const met = objectiveMet(def.objective, w);
-  let { score, earthHealth } = state;
+  const bonus = clearBonus(w.number);
+  const earth = earthBonus(state.earthHealth);
+  let score = state.score + bonus + earth;
+  let earthHealth = state.earthHealth;
   if (met) {
     const points = OBJECTIVE_POINTS_BASE + OBJECTIVE_POINTS_PER_WAVE * w.number;
     const repair = Math.min(OBJECTIVE_REPAIR, EARTH_MAX_HEALTH - earthHealth);
@@ -179,7 +183,7 @@ function clearWave(state: GameState, def: WaveDef, preset: Preset, events: SimEv
   }
   const regen = Math.min(preset.earthRegen, EARTH_MAX_HEALTH - earthHealth);
   earthHealth += regen;
-  events.push({ type: 'waveCleared', wave: w.number, objectiveMet: met, regen });
+  events.push({ type: 'waveCleared', wave: w.number, objectiveMet: met, regen, clearBonus: bonus, earthBonus: earth });
   if (w.number === CAMPAIGN_WAVES) events.push({ type: 'campaignWon', wave: w.number });
   const next: WaveState = { ...INITIAL_WAVE, number: w.number + 1, timer: BREATHER_TICKS };
   return { ...state, score, earthHealth, wave: next };

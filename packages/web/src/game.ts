@@ -35,20 +35,42 @@ export interface RunStats {
   readonly earthHits: number;
   readonly wavesCleared: number;
   readonly objectivesMet: number;
+  /** Score breakdown (P10): kills at base value, the combo's extra, objectives, wave-clear and Earth bonuses. */
+  readonly killPoints: number;
+  readonly comboPoints: number;
+  readonly objectivePoints: number;
+  readonly clearPoints: number;
+  readonly earthPoints: number;
+  readonly bestCombo: number;
 }
 
-export const EMPTY_STATS: RunStats = { kills: 0, bigKills: 0, photonsFired: 0, photonHits: 0, rocketsFired: 0, earthHits: 0, wavesCleared: 0, objectivesMet: 0 };
+export const EMPTY_STATS: RunStats = { kills: 0, bigKills: 0, photonsFired: 0, photonHits: 0, rocketsFired: 0, earthHits: 0, wavesCleared: 0, objectivesMet: 0, killPoints: 0, comboPoints: 0, objectivePoints: 0, clearPoints: 0, earthPoints: 0, bestCombo: 0 };
+
+function addKill(s: RunStats, e: Extract<SimEvent, { type: 'asteroidDestroyed' }>): RunStats {
+  return {
+    ...s,
+    kills: s.kills + 1,
+    bigKills: s.bigKills + (e.size === 'big' ? 1 : 0),
+    photonHits: s.photonHits + (e.by === 'photon' ? 1 : 0),
+    killPoints: s.killPoints + e.base,
+    comboPoints: s.comboPoints + e.points - e.base,
+    bestCombo: Math.max(s.bestCombo, e.combo),
+  };
+}
+
+/** The breakdown's total; equals the sim's score (SPEC §6). */
+export const breakdownTotal = (s: RunStats): number => s.killPoints + s.comboPoints + s.objectivePoints + s.clearPoints + s.earthPoints;
 
 export function addStats(stats: RunStats, events: readonly SimEvent[]): RunStats {
   let s = stats;
   for (const e of events) {
-    if (e.type === 'asteroidDestroyed') s = { ...s, kills: s.kills + 1, bigKills: s.bigKills + (e.size === 'big' ? 1 : 0), photonHits: s.photonHits + (e.by === 'photon' ? 1 : 0) };
+    if (e.type === 'asteroidDestroyed') s = addKill(s, e);
     else if (e.type === 'asteroidHit') s = { ...s, photonHits: s.photonHits + 1 };
     else if (e.type === 'photonFired') s = { ...s, photonsFired: s.photonsFired + 1 };
     else if (e.type === 'rocketFired') s = { ...s, rocketsFired: s.rocketsFired + 1 };
     else if (e.type === 'earthHit') s = { ...s, earthHits: s.earthHits + 1 };
-    else if (e.type === 'waveCleared') s = { ...s, wavesCleared: s.wavesCleared + 1 };
-    else if (e.type === 'objectiveMet') s = { ...s, objectivesMet: s.objectivesMet + 1 };
+    else if (e.type === 'waveCleared') s = { ...s, wavesCleared: s.wavesCleared + 1, clearPoints: s.clearPoints + e.clearBonus, earthPoints: s.earthPoints + e.earthBonus };
+    else if (e.type === 'objectiveMet') s = { ...s, objectivesMet: s.objectivesMet + 1, objectivePoints: s.objectivePoints + e.points };
   }
   return s;
 }

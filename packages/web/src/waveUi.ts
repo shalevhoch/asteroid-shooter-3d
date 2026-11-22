@@ -15,7 +15,8 @@ export function bannerFor(events: readonly SimEvent[]): Banner | null {
     if (e.type === 'objectiveMet') bonus = `Objective met: +${String(e.points)} points${e.repair > 0 ? `, Earth +${String(e.repair)}` : ''}`;
     else if (e.type === 'waveCleared') {
       const regen = e.regen > 0 ? `Earth regenerates +${String(e.regen)}` : '';
-      banner = { title: `Wave ${String(e.wave)} cleared`, subtitle: [bonus, regen].filter(Boolean).join(' · ') || 'Get ready…', durationMs: 3500 };
+      const clear = `Clear bonus +${String(e.clearBonus)} · Earth bonus +${String(e.earthBonus)}`;
+      banner = { title: `Wave ${String(e.wave)} cleared`, subtitle: [clear, bonus, regen].filter(Boolean).join(' · '), durationMs: 3500 };
     } else if (e.type === 'waveStarted') {
       const label = e.wave > CAMPAIGN_WAVES ? `Endless wave ${String(e.wave)}` : `Wave ${String(e.wave)} of ${String(CAMPAIGN_WAVES)}`;
       banner = { title: label, subtitle: `${String(e.count)} asteroids${e.objective ? ` · ${describeObjective(e.objective)}` : ''}`, durationMs: 3000 };
