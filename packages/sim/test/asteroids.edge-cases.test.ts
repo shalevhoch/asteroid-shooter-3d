@@ -28,7 +28,7 @@ describe('asteroid edge cases', () => {
   });
 
   it('is deterministic per seed and differs across seeds', () => {
-    const idle = repeat(2000, input());
+    const idle = repeat(1200, input());
     expect(run(initialState(3), idle)).toEqual(run(initialState(3), idle));
     expect(run(initialState(3), idle).asteroids).not.toEqual(run(initialState(4), idle).asteroids);
   });

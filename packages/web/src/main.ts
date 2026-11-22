@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { CAMPAIGN_WAVES, DIFFICULTIES, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
 import { AudioBank, cuesFor } from './audio.js';
@@ -15,6 +15,7 @@ import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { ProjectileView } from './projectileView.js';
 import { buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, cycle, parseSettings } from './settings.js';
+import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
 
 const base = import.meta.env.BASE_URL;
@@ -27,6 +28,18 @@ const host = el('app');
 const help = el('help');
 const overlay = el('overlay');
 const status = el('status');
+const bannerEl = el('banner');
+let bannerTimer: ReturnType<typeof setTimeout> | undefined;
+function showBanner(b: Banner) {
+  const [h, p] = [bannerEl.querySelector('h2'), bannerEl.querySelector('p')];
+  if (h) h.textContent = b.title;
+  if (p) p.textContent = b.subtitle;
+  bannerEl.classList.add('on');
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => {
+    bannerEl.classList.remove('on');
+  }, b.durationMs);
+}
 
 const storage = {
   get(key: string): string | null {
@@ -109,11 +122,16 @@ let prev: GameState = initialState(Date.now() >>> 0);
 let curr: GameState = prev;
 let stats: RunStats = EMPTY_STATS;
 let newBest = false;
+let wonRun = false;
 let accMs = 0;
 let lastMs = performance.now();
 let fov = FOV_BASE;
 
 const END_TEXT = { earthDestroyed: 'Earth has fallen.', shipDestroyed: 'Your ship was destroyed.' } as const;
+
+function difficultyPicker(): string {
+  return `<div class="diff">${DIFFICULTIES.map((d) => `<button data-diff="${d}" class="${d === settings.difficulty ? 'on' : ''}">${DIFFICULTY_LABELS[d].name}</button>`).join('')}</div><p class="dim">${DIFFICULTY_LABELS[settings.difficulty].blurb}</p>`;
+}
 
 /** A function, so TypeScript doesn't narrow `phase` across calls that change it. */
 const isPlaying = (): boolean => phase === 'playing';
@@ -127,14 +145,18 @@ function renderOverlay() {
   if (phase === 'title') {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
-      <p class="dim">Best score: ${String(best)}</p>
+      <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}
       <button id="go">Click to start</button><p class="dim">Enter also starts · H shows the controls · M mutes</p></div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">Click to resume</button><p class="dim">Score ${String(curr.score)}</p></div>`;
+  } else if (phase === 'won') {
+    overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
+      <div class="final">${String(curr.score)}</div>
+      <div class="row"><button id="go">Keep going: endless mode</button><button id="finish">Finish the run</button></div></div>`;
   } else {
-    overlay.innerHTML = `<div class="card"><h1>${curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
+    overlay.innerHTML = `<div class="card"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
       <div class="final">${String(curr.score)}</div>${newBest ? '<div class="newbest">NEW BEST!</div>' : `<p class="dim">Best ${String(best)}</p>`}
-      <table class="stats"><tr><td>Time</td><td>${formatTime(curr.tick)}</td></tr><tr><td>Asteroids destroyed</td><td>${String(stats.kills)} (${String(stats.bigKills)} big)</td></tr>
+      <table class="stats"><tr><td>Difficulty</td><td>${DIFFICULTY_LABELS[curr.difficulty].name}</td></tr><tr><td>Time</td><td>${formatTime(curr.tick)}</td></tr><tr><td>Waves cleared</td><td>${String(stats.wavesCleared)} (${String(stats.objectivesMet)} objectives)</td></tr><tr><td>Asteroids destroyed</td><td>${String(stats.kills)} (${String(stats.bigKills)} big)</td></tr>
       <tr><td>Photon accuracy</td><td>${String(accuracy(stats))}%</td></tr><tr><td>Rockets fired</td><td>${String(stats.rocketsFired)}</td></tr><tr><td>Earth hits taken</td><td>${String(stats.earthHits)}</td></tr></table>
       <button id="go">Play again</button><p><a href="/">← all games</a></p></div>`;
   }
@@ -142,6 +164,19 @@ function renderOverlay() {
     e.stopPropagation();
     advance();
   });
+  document.getElementById('finish')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    finishWon();
+  });
+  for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-diff]')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const d = DIFFICULTIES.find((x) => x === b.dataset['diff']);
+      if (d) settings.difficulty = d;
+      saveSettings();
+      renderOverlay();
+    });
+  }
 }
 
 function dispatch(action: FlowAction) {
@@ -155,14 +190,16 @@ function dispatch(action: FlowAction) {
     if (settings.layout === 'modern') Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => undefined);
   }
   if (phase !== 'playing' && document.pointerLockElement) document.exitPointerLock();
+  if (phase !== 'playing') bannerEl.classList.remove('on');
   renderOverlay();
   renderHelp();
 }
 
 function newRun() {
-  prev = curr = initialState(Date.now() >>> 0);
+  prev = curr = initialState(Date.now() >>> 0, settings.difficulty);
   stats = EMPTY_STATS;
   newBest = false;
+  wonRun = false;
   asteroids.clear();
   shots.clear();
   fx.clear();
@@ -174,6 +211,7 @@ function advance() {
     newRun();
     dispatch('start');
   } else if (phase === 'paused') dispatch('resume');
+  else if (phase === 'won') dispatch('continue');
   else if (phase === 'over') {
     newRun();
     dispatch('restart');
@@ -251,16 +289,30 @@ renderer.setAnimationLoop((nowMs: number) => {
   renderer.render(world.scene, camera);
 });
 
+function recordBest() {
+  const r = updateBest(best, curr.score);
+  best = r.best;
+  newBest = r.isNew;
+  if (r.isNew) storage.set(BEST_KEY, String(best));
+}
+
+/** Ending a won campaign from the win screen: a game over without a loss. */
+function finishWon() {
+  wonRun = true;
+  recordBest();
+  dispatch('finish');
+}
+
 function onEvents(events: readonly SimEvent[], nowMs: number) {
   stats = addStats(stats, events);
+  const banner = bannerFor(events);
+  if (banner) showBanner(banner);
+  if (events.some((e) => e.type === 'campaignWon')) dispatch('win');
   audio.play(cuesFor(events));
   fx.spawn(burstsFor(events), nowMs);
   if (events.some((e) => e.type === 'runEnded')) {
     if (curr.ended === 'shipDestroyed') fx.spawn([{ pos: curr.ship.pos, size: 300, durationMs: 1400, color: 0xffb060 }], nowMs);
-    const r = updateBest(best, curr.score);
-    best = r.best;
-    newBest = r.isNew;
-    if (r.isNew) storage.set(BEST_KEY, String(best));
+    recordBest();
     dispatch('end');
   }
 }

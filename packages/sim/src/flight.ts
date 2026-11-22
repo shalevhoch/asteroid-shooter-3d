@@ -22,7 +22,10 @@ export interface FlightResult {
   readonly events: readonly SimEvent[];
 }
 
-export function fly(ship: ShipState, input: Input): FlightResult {
+/** Fuel after a tick: turbo spends `drain` (0 on Kid/Easy), never below 0. */
+const burn = (fuel: number, turbo: boolean, drain: number): number => (turbo ? Math.max(0, fuel - drain) : fuel);
+
+export function fly(ship: ShipState, input: Input, fuelDrain = 1): FlightResult {
   const events: SimEvent[] = [];
   const rot = turn(ship.rot, input);
   const throttle = Math.max(0, Math.min(THROTTLE_MAX, ship.throttle + unit(input.throttle)));
@@ -31,10 +34,10 @@ export function fly(ship: ShipState, input: Input): FlightResult {
   const up = rotate(rot, LOCAL_UP);
 
   const turbo = input.turbo && ship.fuel > 0;
-  const fuel = turbo ? ship.fuel - 1 : ship.fuel;
+  const fuel = burn(ship.fuel, turbo, fuelDrain);
   if (turbo && !ship.turbo) events.push({ type: 'turboStarted' });
   if (!turbo && ship.turbo) events.push({ type: 'turboEnded' });
-  if (turbo && fuel === 0) events.push({ type: 'fuelEmpty' });
+  if (turbo && fuel === 0 && fuelDrain > 0) events.push({ type: 'fuelEmpty' });
 
   let pos: Vec3 = addScaled(ship.pos, forward, turbo ? TURBO_STEP : throttle * THROTTLE_STEP);
   pos = addScaled(pos, right, unit(input.strafeX) * STRAFE_STEP);

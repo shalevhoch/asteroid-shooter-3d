@@ -3,6 +3,7 @@ import { EARTH_MAX_HEALTH, ROCKET_MAX, SHIP_START, FUEL_MAX, HULL_MAX } from './
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
+import { INITIAL_WAVE, type Difficulty, type Objective, type WaveState } from './waves.js';
 
 /** Ship-local axes: right +X, up +Y, forward −Z (so right = forward × up, SPEC §3). */
 export const LOCAL_RIGHT: Vec3 = [1, 0, 0];
@@ -49,6 +50,8 @@ export interface AsteroidState {
   /** Unit direction toward Earth's centre, fixed at spawn. */
   readonly dir: Vec3;
   readonly hp: number;
+  /** Units per tick, fixed at spawn (the wave's speed × the preset's scale); split pieces inherit it. */
+  readonly speed: number;
 }
 
 export type RunEndReason = 'earthDestroyed' | 'shipDestroyed';
@@ -65,6 +68,8 @@ export interface GameState {
   readonly projectiles: readonly ProjectileState[];
   readonly nextProjectileId: number;
   readonly score: number;
+  readonly difficulty: Difficulty;
+  readonly wave: WaveState;
   /** Set on the tick the run ends; `step` is then a no-op. */
   readonly ended: RunEndReason | null;
 }
@@ -119,6 +124,10 @@ export type SimEvent =
   | { readonly type: 'rocketLocked'; readonly id: number; readonly target: number }
   | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3 }
   | { readonly type: 'runEnded'; readonly reason: RunEndReason }
+  | { readonly type: 'waveStarted'; readonly wave: number; readonly count: number; readonly objective: Objective | null }
+  | { readonly type: 'waveCleared'; readonly wave: number; readonly objectiveMet: boolean; readonly regen: number }
+  | { readonly type: 'objectiveMet'; readonly wave: number; readonly points: number; readonly repair: number }
+  | { readonly type: 'campaignWon'; readonly wave: number }
   | { readonly type: 'turboStarted' }
   | { readonly type: 'turboEnded' }
   | { readonly type: 'fuelEmpty' };
@@ -131,7 +140,7 @@ export interface StepResult {
 /** Start facing +Z, out of the hangar bay's open end, with up +Y: local −Z turned 180° about +Y. */
 export const START_ROT: Quat = fromAxisAngle([0, 1, 0], Math.PI);
 
-export function initialState(seed: number): GameState {
+export function initialState(seed: number, difficulty: Difficulty = 'normal'): GameState {
   return {
     tick: 0,
     rng: seedRng(seed),
@@ -142,6 +151,8 @@ export function initialState(seed: number): GameState {
     score: 0,
     nextId: 1,
     earthHealth: EARTH_MAX_HEALTH,
+    difficulty,
+    wave: INITIAL_WAVE,
     ended: null,
   };
 }

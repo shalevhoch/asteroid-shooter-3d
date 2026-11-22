@@ -1,4 +1,5 @@
 /** HUD v0 (P07): a clean DOM HUD. `hudModel` is the pure part (what to show); `Hud` writes it to the page. */
+import { waveLine } from './waveUi.js';
 import { EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, ROCKET_MAX, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
@@ -14,6 +15,8 @@ export interface HudModel {
   readonly speed: number;
   readonly speedMax: number;
   readonly turbo: boolean;
+  /** "WAVE 3/10 · Rocket kills 1/2" (P08). */
+  readonly wave: string;
   /** Warnings worth flashing. */
   readonly warnings: readonly string[];
 }
@@ -37,6 +40,7 @@ export function hudModel(s: GameState, best: number): HudModel {
     speed: s.ship.turbo ? THROTTLE_MAX + 1 : s.ship.throttle,
     speedMax: THROTTLE_MAX + 1,
     turbo: s.ship.turbo,
+    wave: waveLine(s),
     warnings,
   };
 }
@@ -44,7 +48,7 @@ export function hudModel(s: GameState, best: number): HudModel {
 export class Hud {
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
-      <div class="tl"><div class="score">0</div><div class="best">best 0</div></div>
+      <div class="tl"><div class="score">0</div><div class="best">best 0</div><div class="wave"></div></div>
       <div class="bars">
         <div class="bar earth"><span>EARTH</span><i></i></div>
         <div class="bar hull"><span>HULL</span><i></i></div>
@@ -64,6 +68,7 @@ export class Hud {
   render(m: HudModel): void {
     this.q('.score').textContent = String(m.score);
     this.q('.best').textContent = `best ${String(m.best)}`;
+    this.q('.wave').textContent = m.wave;
     for (const k of ['earth', 'hull', 'fuel'] as const) {
       const bar = this.q(`.bar.${k} i`);
       bar.style.width = `${String(Math.round(m[k] * 100))}%`;

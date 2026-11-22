@@ -26,9 +26,9 @@ const speedOf = (p: ProjectileState) => (p.kind === 'photon' ? PHOTON_SPEED : RO
 const lifeOf = (p: ProjectileState) => (p.kind === 'photon' ? PHOTON_LIFE : ROCKET_LIFE);
 
 /** The asteroid closest to the line of fire within ROCKET_LOCK_CONE, ties to the lowest id. */
-export function crosshairTarget(from: Vec3, forward: Vec3, asteroids: readonly AsteroidState[]): number | null {
+export function crosshairTarget(from: Vec3, forward: Vec3, asteroids: readonly AsteroidState[], cone = ROCKET_LOCK_CONE): number | null {
   let best: number | null = null;
-  let bestAngle = ROCKET_LOCK_CONE;
+  let bestAngle = cone;
   for (const a of asteroids) {
     const to = sub(a.pos, from);
     const d = Math.hypot(...to);
@@ -51,7 +51,7 @@ export function nearestTarget(from: Vec3, asteroids: readonly AsteroidState[]): 
 }
 
 /** Step 1 (firing): cooldown, alternating photons, one rocket per firing tick. */
-export function fire(state: GameState, input: Input, events: SimEvent[]): GameState {
+export function fire(state: GameState, input: Input, events: SimEvent[], lockCone = ROCKET_LOCK_CONE): GameState {
   let { ship, projectiles, nextProjectileId } = state;
   const forward = rotate(ship.rot, LOCAL_FORWARD);
   const right = rotate(ship.rot, LOCAL_RIGHT);
@@ -69,7 +69,7 @@ export function fire(state: GameState, input: Input, events: SimEvent[]): GameSt
   ship = { ...ship, photonCooldown: cooldown };
   if (input.fireRocket && ship.rockets > 0) {
     const pos = muzzle(0);
-    const target = crosshairTarget(ship.pos, forward, state.asteroids);
+    const target = crosshairTarget(ship.pos, forward, state.asteroids, lockCone);
     projectiles = [...projectiles, { id: nextProjectileId, kind: 'rocket', pos, dir: forward, age: 0, target }];
     events.push({ type: 'rocketFired', id: nextProjectileId, pos, target });
     nextProjectileId++;

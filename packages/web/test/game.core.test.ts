@@ -48,7 +48,7 @@ describe('run stats', () => {
       { type: 'rocketFired', id: 5, pos: [0, 0, 0], target: 1 },
       { type: 'earthHit', id: 2, size: 'small', damage: 2, pos: [0, 0, 0] },
     ]);
-    expect(s).toEqual({ kills: 2, bigKills: 1, photonsFired: 4, photonHits: 2, rocketsFired: 1, earthHits: 1 });
+    expect(s).toEqual({ kills: 2, bigKills: 1, photonsFired: 4, photonHits: 2, rocketsFired: 1, earthHits: 1, wavesCleared: 0, objectivesMet: 0 });
     expect(accuracy(s)).toBe(50);
     expect(accuracy(EMPTY_STATS)).toBe(0);
   });

@@ -1,8 +1,8 @@
-/** The run flow (P07): title → playing ⇄ paused → over → playing, plus run stats and the stored best score. Pure. */
+/** The run flow (P07, P08): title → playing ⇄ paused → (won → playing | over) → over → playing, plus run stats and the stored best score. Pure. */
 import type { SimEvent } from '@asteroid/sim';
 
-export type Phase = 'title' | 'playing' | 'paused' | 'over';
-export type FlowAction = 'start' | 'pause' | 'resume' | 'end' | 'restart';
+export type Phase = 'title' | 'playing' | 'paused' | 'won' | 'over';
+export type FlowAction = 'start' | 'pause' | 'resume' | 'end' | 'restart' | 'win' | 'continue' | 'finish';
 
 /** The phase after an action; actions that don't apply in a phase leave it unchanged. */
 export function nextPhase(phase: Phase, action: FlowAction): Phase {
@@ -17,6 +17,12 @@ export function nextPhase(phase: Phase, action: FlowAction): Phase {
       return phase === 'playing' || phase === 'paused' ? 'over' : phase;
     case 'restart':
       return phase === 'over' ? 'playing' : phase;
+    case 'win':
+      return phase === 'playing' ? 'won' : phase;
+    case 'continue':
+      return phase === 'won' ? 'playing' : phase;
+    case 'finish':
+      return phase === 'won' ? 'over' : phase;
   }
 }
 
@@ -27,9 +33,11 @@ export interface RunStats {
   readonly photonHits: number;
   readonly rocketsFired: number;
   readonly earthHits: number;
+  readonly wavesCleared: number;
+  readonly objectivesMet: number;
 }
 
-export const EMPTY_STATS: RunStats = { kills: 0, bigKills: 0, photonsFired: 0, photonHits: 0, rocketsFired: 0, earthHits: 0 };
+export const EMPTY_STATS: RunStats = { kills: 0, bigKills: 0, photonsFired: 0, photonHits: 0, rocketsFired: 0, earthHits: 0, wavesCleared: 0, objectivesMet: 0 };
 
 export function addStats(stats: RunStats, events: readonly SimEvent[]): RunStats {
   let s = stats;
@@ -39,6 +47,8 @@ export function addStats(stats: RunStats, events: readonly SimEvent[]): RunStats
     else if (e.type === 'photonFired') s = { ...s, photonsFired: s.photonsFired + 1 };
     else if (e.type === 'rocketFired') s = { ...s, rocketsFired: s.rocketsFired + 1 };
     else if (e.type === 'earthHit') s = { ...s, earthHits: s.earthHits + 1 };
+    else if (e.type === 'waveCleared') s = { ...s, wavesCleared: s.wavesCleared + 1 };
+    else if (e.type === 'objectiveMet') s = { ...s, objectivesMet: s.objectivesMet + 1 };
   }
   return s;
 }

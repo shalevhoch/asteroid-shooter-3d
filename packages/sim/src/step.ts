@@ -1,8 +1,9 @@
 /** `step(state, input) → { state, events }`: one 40 ms tick (SPEC §7). Pure and deterministic. */
-import { moveAsteroids, spawn } from './asteroids.js';
+import { moveAsteroids } from './asteroids.js';
 import { fly } from './flight.js';
 import { applyHazards } from './hazards.js';
 import { fire, moveProjectiles } from './weapons.js';
+import { PRESETS, trackWave, updateWaves } from './waves.js';
 import type { GameState, Input, RunEndReason, SimEvent, StepResult } from './state.js';
 
 export function step(state: GameState, input: Input): StepResult {
@@ -10,15 +11,16 @@ export function step(state: GameState, input: Input): StepResult {
   const events: SimEvent[] = [];
   const tick = state.tick + 1;
   // 1. Apply input.
-  const flown = fly(state.ship, input);
+  const preset = PRESETS[state.difficulty];
+  const flown = fly(state.ship, input, preset.fuelDrain);
   events.push(...flown.events);
-  let s: GameState = fire({ ...state, tick, ship: flown.ship }, input, events);
+  let s: GameState = fire({ ...state, tick, ship: flown.ship }, input, events, preset.rocketLockCone);
   // 2. Ship hazards.
   s = { ...s, ship: applyHazards(s.ship, events) };
-  // 3. Spawn. 4. Move asteroids, resolve Earth impacts.
-  s = moveAsteroids(spawn(s, tick, events), events);
-  // 5. Move projectiles, resolve hits, expire. 6. Run end.
-  s = moveProjectiles(s, events);
+  // 3. Waves: lead-in, spawns, wave clear. 4. Move asteroids, resolve Earth impacts.
+  s = moveAsteroids(updateWaves(s, events), events, preset.earthDamageScale);
+  // 5. Move projectiles, resolve hits, expire. 6. Objective tallies, run end.
+  s = trackWave(moveProjectiles(s, events), events);
   const ended: RunEndReason | null = s.earthHealth <= 0 ? 'earthDestroyed' : s.ship.hull <= 0 ? 'shipDestroyed' : null;
   if (ended) {
     s = { ...s, ended };

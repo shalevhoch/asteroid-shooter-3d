@@ -1,7 +1,6 @@
-/** Asteroids (SPEC §4): spawning, motion toward Earth, Earth impacts, and destruction with the big → small split. */
+/** Asteroids (SPEC §4): construction, motion toward Earth, Earth impacts, and destruction with the big → small split. */
 import {
   ASTEROID_SPEED,
-  BIG_CHANCE,
   BIG_EARTH_DAMAGE,
   BIG_HP,
   BIG_PHOTON_POINTS,
@@ -14,13 +13,8 @@ import {
   SMALL_EARTH_DAMAGE,
   SMALL_HP,
   SMALL_RADIUS,
-  SPAWN_INTERVAL,
-  SPAWN_SPREAD_MAX,
-  SPAWN_SPREAD_MIN,
-  SPAWN_X,
   SPLIT_OFFSETS,
 } from './constants.js';
-import { nextFloat, nextRange } from './rng.js';
 import type { AsteroidSize, AsteroidState, GameState, KillCause, SimEvent } from './state.js';
 import { add, addScaled, distance, normalize, sub, type Vec3 } from './vec3.js';
 
@@ -34,30 +28,18 @@ export function pointsFor(size: AsteroidSize, by: KillCause): number {
   return by === 'photon' ? SMALL_PHOTON_POINTS : SMALL_ROCKET_POINTS;
 }
 
-export function makeAsteroid(id: number, size: AsteroidSize, pos: Vec3): AsteroidState {
-  return { id, size, pos, dir: normalize(sub(EARTH_POS, pos)), hp: hpOf(size) };
+export function makeAsteroid(id: number, size: AsteroidSize, pos: Vec3, speed = ASTEROID_SPEED): AsteroidState {
+  return { id, size, pos, dir: normalize(sub(EARTH_POS, pos)), hp: hpOf(size), speed };
 }
 
-/** Spawns one asteroid when `tick` (the tick being entered) is a positive multiple of SPAWN_INTERVAL. RNG order: y, z, size. */
-export function spawn(state: GameState, tick: number, events: SimEvent[]): GameState {
-  if (tick <= 0 || tick % SPAWN_INTERVAL !== 0) return state;
-  const [y, r1] = nextRange(state.rng, SPAWN_SPREAD_MIN, SPAWN_SPREAD_MAX);
-  const [z, r2] = nextRange(r1, SPAWN_SPREAD_MIN, SPAWN_SPREAD_MAX);
-  const [roll, r3] = nextFloat(r2);
-  const size: AsteroidSize = roll < BIG_CHANCE ? 'big' : 'small';
-  const a = makeAsteroid(state.nextId, size, [SPAWN_X, y, z]);
-  events.push({ type: 'asteroidSpawned', id: a.id, size });
-  return { ...state, rng: r3, asteroids: [...state.asteroids, a], nextId: state.nextId + 1 };
-}
-
-/** Moves every asteroid ASTEROID_SPEED along its direction, then resolves Earth impacts in id order. */
-export function moveAsteroids(state: GameState, events: SimEvent[]): GameState {
+/** Moves every asteroid its speed along its direction, then resolves Earth impacts in id order (damage × the preset's scale). */
+export function moveAsteroids(state: GameState, events: SimEvent[], earthDamageScale = 1): GameState {
   let earthHealth = state.earthHealth;
   const survivors: AsteroidState[] = [];
   for (const a of state.asteroids) {
-    const pos = addScaled(a.pos, a.dir, ASTEROID_SPEED);
+    const pos = addScaled(a.pos, a.dir, a.speed);
     if (distance(pos, EARTH_POS) <= EARTH_RADIUS + radiusOf(a.size)) {
-      const damage = earthDamageOf(a.size);
+      const damage = Math.max(1, Math.round(earthDamageOf(a.size) * earthDamageScale));
       earthHealth = Math.max(0, earthHealth - damage);
       events.push({ type: 'earthHit', id: a.id, size: a.size, damage, pos });
     } else survivors.push({ ...a, pos });
@@ -77,6 +59,6 @@ export function destroyAsteroid(state: GameState, id: number, by: KillCause, eve
   const rest = state.asteroids.filter((a) => a.id !== id);
   const score = state.score + points;
   if (target.size !== 'big' || by !== 'photon') return { ...state, asteroids: rest, score };
-  const pieces = SPLIT_OFFSETS.map((o, i) => makeAsteroid(state.nextId + i, 'small', add(target.pos, o)));
+  const pieces = SPLIT_OFFSETS.map((o, i) => makeAsteroid(state.nextId + i, 'small', add(target.pos, o), target.speed));
   return { ...state, asteroids: [...rest, ...pieces], nextId: state.nextId + pieces.length, score };
 }
