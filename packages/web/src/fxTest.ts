@@ -1,5 +1,5 @@
 /**
- * The FX visual test page (P11): every effect on demand next to a big asteroid (to check sprites never cut into it),
+ * The FX visual test page (P11, P12): every effect on demand next to a big asteroid (to check sprites never cut into it),
  * and a stress mode that holds 2000 particles with an fps readout. Public at `fx.html`, not linked from the game.
  */
 import * as THREE from 'three';
@@ -12,6 +12,7 @@ import { BillboardBatch } from './fx/batch.js';
 import type { Recipe } from './fx/bus.js';
 import { EXPLOSION_SIZE } from './fx/bus.js';
 import { FxEngine, MAX_PARTICLES } from './fx/engine.js';
+import { ShockwaveLayer } from './fx/shockwave.js';
 
 const base = import.meta.env.BASE_URL;
 const url = (p: string) => assetUrl(base, p);
@@ -52,7 +53,9 @@ const box = new THREE.Box3().setFromObject(rock);
 rock.scale.setScalar((2 * BIG_RADIUS) / Math.max(...box.getSize(new THREE.Vector3()).toArray()));
 scene.add(rock);
 
-const batch = new BillboardBatch(await buildAtlas(url), MAX_PARTICLES + 64);
+const atlas = await buildAtlas(url);
+const batch = new BillboardBatch(atlas, MAX_PARTICLES + 64);
+const shockwaves = new ShockwaveLayer(scene, atlas);
 scene.add(batch.mesh);
 const fx = new FxEngine();
 
@@ -62,8 +65,10 @@ let prevShots: readonly ProjectileState[] = [];
 let rocketTicks = 0;
 let atmosphereTicks = 0;
 let stress = false;
+/** Headless checks freeze the clock and step it by hand. */
+let frozen = false;
 
-const surface: Vec3 = [0, 0, BIG_RADIUS];
+const surface: Vec3 = [0, 0, BIG_RADIUS * 1.1];
 const RECIPES: Record<string, () => Recipe[]> = {
   big: () => [
     {
@@ -87,7 +92,15 @@ const RECIPES: Record<string, () => Recipe[]> = {
 
 function trigger(name: string): void {
   const r = RECIPES[name];
-  if (r) fx.apply(r());
+  const e = camera.matrixWorld.elements;
+  if (r) fx.apply(r(), [e[4], e[5], e[6]]);
+  // The big explosion destroys the test asteroid, as in the game; it comes back after a few seconds.
+  if (name === 'big') {
+    rock.visible = false;
+    setTimeout(() => {
+      rock.visible = true;
+    }, 3000);
+  }
   else if (name === 'rocket') rocketTicks = 60;
   else if (name === 'atmosphere') atmosphereTicks = 50;
   else if (name === 'stress') {
@@ -148,6 +161,7 @@ let fps = 0;
 renderer.setAnimationLoop((now: number) => {
   acc += Math.min(250, now - last);
   last = now;
+  if (frozen) acc = 0;
   while (acc >= TICK_MS) {
     simTick();
     acc -= TICK_MS;
@@ -157,6 +171,7 @@ renderer.setAnimationLoop((now: number) => {
   batch.begin();
   fx.draw(batch, acc / TICK_MS, prevShots, state.projectiles);
   const drawn = batch.end(camera);
+  shockwaves.sync(fx.shockwaves);
   renderer.render(scene, camera);
   frames++;
   if (now - fpsT >= 500) {
@@ -169,5 +184,17 @@ renderer.setAnimationLoop((now: number) => {
 
 // For headless checks.
 Object.assign(window, {
-  fxTest: { trigger, count: () => fx.particles.length, fps: () => fps },
+  fxTest: {
+    trigger,
+    engine: fx,
+    camera,
+    count: () => fx.particles.length,
+    fps: () => fps,
+    freeze: (on: boolean) => {
+      frozen = on;
+    },
+    advance: (ticks: number) => {
+      for (let i = 0; i < ticks; i++) simTick();
+    },
+  },
 });

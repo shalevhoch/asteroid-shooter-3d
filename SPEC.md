@@ -265,15 +265,37 @@ P11: the original's sprite particles, drawn by the web layer from sim events. No
 
   | Sim event or state | Effect |
   |---|---|
-  | `asteroidDestroyed`, `earthHit` | explosion, size 3 (big) or 0.25 (small): 10 flashes + 40 flames |
+  | `asteroidDestroyed`, `earthHit` | explosion, size 3 (big) or 0.25 (small), with a shockwave facing away from Earth |
   | `projectileSpent` on Earth or the mothership | explosion, size 0.25 (photon) or 1 (rocket) |
-  | `asteroidHit` (photon chip) | 2 small flashes (P12 replaces these with sparks and smoke) |
+  | `asteroidHit` (photon chip) | on the surface, on the side the photon came from: 1 small flash + 3 sparks + 5 smoke streaks |
   | `hullBurning` | 2 glints at the ship |
   | `runEnded: shipDestroyed` | explosion, size 3, at the ship |
-  | each tick, per flying rocket | 8 trail flares |
+  | each tick, per flying rocket | 8 trail flares + 1 smoke streak over the last tick of flight |
   | each tick, per asteroid in the atmosphere | a flare tail (16 big / 4 small) and, for a big one, 3 flames |
 - A visual test page at `fx.html` triggers each effect next to a big asteroid and has a 2000-particle stress mode
   with an fps readout.
+
+P12 adds the full explosion and Earth-hit feedback:
+
+- **Explosion** (the original `Explosion`): a shockwave of size `10 × size` (only when it has a normal, i.e. asteroid
+  explosions), then 10 flashes, 40 flames, 50 smoke streaks and 100 sparks. Ship, rocket and photon explosions have
+  no shockwave, as in the original.
+- **Shockwave**: a ring on the plane ⊥ its normal, its up axis the camera's up at spawn projected onto that plane;
+  ×1.25 size and ×0.85 alpha per FX tick, gone under 0.1 alpha (15 ticks). At most 24 at once, oldest dropped. Drawn
+  before every sprite, view-plane flattened like them.
+- **Line sprites** (the original `LineSprite`): a quad from head to tail, `ratio × length` wide, its width ⊥ both the
+  line and the eye ray to its middle, flattened onto the head's view plane. Sparks (alpha ×0.88, then ×0.5 once under
+  ⅓) and smoke streaks (alpha ×0.85, tail fixed while the head runs out) are ported rule for rule.
+- **Rocket smoke** (new; the original rocket shed flares only): one streak per tick from where the rocket was to
+  where it is, fading ×0.9 and widening ×1.04.
+- **Chip point** (deviation): the original drew chip sparks at the asteroid's centre, where its depth test hid them.
+  Here they show on the surface (`1.02 × BIG_RADIUS` toward the photon's last position), with one small flash so a
+  chip reads at range.
+- **Earth hit**: the camera shakes (≤ 0.014 rad, 450 ms, quadratic fall-off) and the screen flashes red at the edges
+  (≤ 0.35 opacity, 550 ms), both scaled by damage ÷ big-asteroid damage (capped at 1). A stronger hit restarts a
+  running jolt; a weaker one doesn't cut it short.
+- **Shake setting** (decision): on by default, off by default when the browser asks for reduced motion; a stored
+  setting wins either way. The flash stays on with shake off. P13's settings screen exposes the toggle.
 
 ## Open
 

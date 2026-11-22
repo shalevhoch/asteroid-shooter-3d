@@ -5,7 +5,7 @@
  */
 import type { Cell } from './atlas.js';
 
-export type ParticleKind = 'flash' | 'flame' | 'flare' | 'glint';
+export type ParticleKind = 'flash' | 'flame' | 'flare' | 'glint' | 'spark' | 'smoke' | 'rocketSmoke';
 
 export interface Particle {
   kind: ParticleKind;
@@ -36,6 +36,21 @@ export interface Particle {
   grow: number;
   /** Flare: per-tick fade. */
   decay: number;
+  /** Line sprites (P12): width per unit of length; 0 for camera-facing sprites. */
+  ratio: number;
+  /** Line sprites: the tail, now and one tick ago. */
+  tx: number;
+  ty: number;
+  tz: number;
+  ptx: number;
+  pty: number;
+  ptz: number;
+  /** Line sprites: unit direction × 0.25, speed, and the alpha multiplier per tick. */
+  dx: number;
+  dy: number;
+  dz: number;
+  speed: number;
+  mul: number;
   dead: boolean;
 }
 
@@ -70,6 +85,18 @@ function base(kind: ParticleKind, cell: Cell, additive: boolean, p: V): Particle
     phase: 0,
     grow: 1,
     decay: 0,
+    ratio: 0,
+    tx: p[0],
+    ty: p[1],
+    tz: p[2],
+    ptx: p[0],
+    pty: p[1],
+    ptz: p[2],
+    dx: 0,
+    dy: 0,
+    dz: 0,
+    speed: 0,
+    mul: 1,
     dead: false,
   };
 }
@@ -142,6 +169,30 @@ export function glint(pos: V, rnd: Rnd): Particle {
   };
 }
 
+/** A line sprite from `head` back to `tail`, moving head-ward (`dir = normalize(head − tail) × 0.25`, as the originals). */
+function line(kind: ParticleKind, cell: Cell, head: V, tail: V, speed: number): Particle {
+  const d: V = [head[0] - tail[0], head[1] - tail[1], head[2] - tail[2]];
+  const l = Math.hypot(...d) || 1;
+  return { ...base(kind, cell, false, head), ratio: 0.25, tx: tail[0], ty: tail[1], tz: tail[2], ptx: tail[0], pty: tail[1], ptz: tail[2], dx: (d[0] / l) * 0.25, dy: (d[1] / l) * 0.25, dz: (d[2] / l) * 0.25, speed };
+}
+
+/** `Spark`: a streak flying out of an explosion; the head outruns the tail, alpha ×0.88 then ×0.5 under ⅓. Alpha-blended. */
+export function spark(pos: V, rnd: Rnd): Particle {
+  return { ...line('spark', 'spark', pos, noisy(pos, 2, rnd), 16), r: 0.9, g: 0.9, b: 0.6, a: 1, mul: 0.88 };
+}
+
+const SMOKE_CELLS: readonly Cell[] = ['smoke1', 'smoke2', 'smoke3', 'smoke4'];
+
+/** `SmokeTrail`: a smoke streak whose head runs out of the explosion while its tail stays; alpha ×0.85 per tick. Alpha-blended. */
+export function smoke(pos: V, rnd: Rnd): Particle {
+  return { ...line('smoke', pick(SMOKE_CELLS, rnd), pos, noisy(pos, 2, rnd), 10), r: 0.9, g: 0.75, b: 0.6, a: 1, mul: 0.85 };
+}
+
+/** A rocket's smoke streak (new in P12; the original rocket shed flares only): from where it was to where it is, fading ×0.9 and widening. */
+export function rocketSmoke(from: V, to: V, rnd: Rnd): Particle {
+  return { ...line('rocketSmoke', pick(SMOKE_CELLS, rnd), to, from, 0), ratio: 0.35, r: 0.75, g: 0.72, b: 0.7, a: 0.45, mul: 0.9 };
+}
+
 /** `noise(n)` on a direction, as the Java emitters do before normalising nothing: the caller passes it on as-is. */
 export const noisyDir = (d: V, n: number, rnd: Rnd): V => noisy(d, n, rnd);
 
@@ -170,6 +221,31 @@ export function updateParticle(p: Particle, rnd: Rnd): void {
       p.jitter = rnd() * 0.4 - 0.2;
       p.dead = p.a <= 0.05;
       return;
+    case 'spark':
+      p.x += p.dx * (p.speed + 1);
+      p.y += p.dy * (p.speed + 1);
+      p.z += p.dz * (p.speed + 1);
+      moveTail(p, p.speed * 0.96);
+      p.a *= p.mul;
+      p.speed *= 0.9;
+      if (p.a < 0.333) p.mul = 0.5;
+      p.dead = p.a < 0.025;
+      return;
+    case 'smoke':
+      p.x += p.dx * (p.speed + 2);
+      p.y += p.dy * (p.speed + 2);
+      p.z += p.dz * (p.speed + 2);
+      moveTail(p, 0);
+      p.a *= p.mul;
+      p.speed *= 0.975;
+      p.dead = p.a < 0.025;
+      return;
+    case 'rocketSmoke':
+      moveTail(p, 0);
+      p.a *= p.mul;
+      p.ratio *= 1.04;
+      p.dead = p.a < 0.025;
+      return;
     case 'glint':
       if (p.phase === 0) {
         p.size *= p.grow;
@@ -179,6 +255,15 @@ export function updateParticle(p: Particle, rnd: Rnd): void {
       p.dead = p.phase === 1 && p.a < 0.01;
       return;
   }
+}
+
+function moveTail(p: Particle, by: number): void {
+  p.ptx = p.tx;
+  p.pty = p.ty;
+  p.ptz = p.tz;
+  p.tx += p.dx * by;
+  p.ty += p.dy * by;
+  p.tz += p.dz * by;
 }
 
 function updateFlash(p: Particle): void {

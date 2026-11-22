@@ -86,11 +86,11 @@ describe('FX engine', () => {
     expect(fx.particles).toHaveLength(0);
   });
 
-  it('sheds 8 trail flares per rocket per tick, and a flare tail for asteroids in the atmosphere', () => {
+  it('sheds 8 trail flares and a smoke streak per rocket per tick, and a flare tail for asteroids in the atmosphere', () => {
     const fx = new FxEngine(seq(5));
     const rocket: ProjectileState = { id: 1, kind: 'rocket', pos: [0, 0, 0], dir: [1, 0, 0], age: 0, target: null };
     fx.ambient({ ...initialState(1), projectiles: [rocket, { ...rocket, id: 2 }] });
-    expect(fx.particles).toHaveLength(16);
+    expect(fx.particles).toHaveLength(2 * (8 + 1));
     fx.clear();
     fx.ambient({ ...initialState(1), asteroids: [makeAsteroid(1, 'big', [3000 - 1100, 0, 0]), makeAsteroid(2, 'small', [3000 - 1050, 0, 0])] });
     expect(fx.particles).toHaveLength(16 + 3 + 4);

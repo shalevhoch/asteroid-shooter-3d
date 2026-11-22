@@ -36,26 +36,27 @@ const asteroidExplosion = (size: AsteroidSize, pos: Vec3): Recipe => ({
   normal: awayFromEarth(pos),
 });
 
+/**
+ * Where a photon chip shows: on the big asteroid's surface, on the side the photon came in (its spent position comes just before
+ * the hit event). The original put the sparks at the asteroid's centre, where its depth test hid them.
+ */
+export function chipPoint(centre: Vec3, shotAt: Vec3 | null): Vec3 {
+  if (!shotAt) return centre;
+  const d = normalize(sub(shotAt, centre));
+  const r = BIG_RADIUS * 1.02;
+  return [centre[0] + d[0] * r, centre[1] + d[1] * r, centre[2] + d[2] * r];
+}
+
 export function recipesFor(events: readonly SimEvent[], state: GameState): Recipe[] {
   const out: Recipe[] = [];
+  let shotAt: Vec3 | null = null;
   for (const e of events) {
     if (e.type === 'asteroidDestroyed' || e.type === 'earthHit') out.push(asteroidExplosion(e.size, e.pos));
-    else if (e.type === 'asteroidHit') out.push({ kind: 'impact', pos: e.pos });
-    else if (e.type === 'projectileSpent' && e.on !== 'asteroid')
-      out.push({
-        kind: 'explosion',
-        pos: e.pos,
-        size: EXPLOSION_SIZE[e.kind],
-        normal: null,
-      });
+    else if (e.type === 'asteroidHit') out.push({ kind: 'impact', pos: chipPoint(e.pos, shotAt) });
+    else if (e.type === 'projectileSpent' && e.on === 'asteroid') shotAt = e.pos;
+    else if (e.type === 'projectileSpent') out.push({ kind: 'explosion', pos: e.pos, size: EXPLOSION_SIZE[e.kind], normal: null });
     else if (e.type === 'hullBurning') out.push({ kind: 'embers', pos: state.ship.pos });
-    else if (e.type === 'runEnded' && e.reason === 'shipDestroyed')
-      out.push({
-        kind: 'explosion',
-        pos: state.ship.pos,
-        size: EXPLOSION_SIZE.ship,
-        normal: null,
-      });
+    else if (e.type === 'runEnded' && e.reason === 'shipDestroyed') out.push({ kind: 'explosion', pos: state.ship.pos, size: EXPLOSION_SIZE.ship, normal: null });
   }
   return out;
 }
