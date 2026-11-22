@@ -33,7 +33,7 @@ for (let i = 0; i < starCount; i++) {
 }
 const starGeometry = new THREE.BufferGeometry();
 starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-const starTexture = new THREE.TextureLoader().load(assetUrl(base, 'textures/round_particle_16X16.png'));
+const starTexture = new THREE.TextureLoader().load(assetUrl(base, 'textures/round_particle_16x16.png'));
 const stars = new THREE.Points(
   starGeometry,
   new THREE.PointsMaterial({ size: 6, map: starTexture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }),

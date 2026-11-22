@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asteroid Shooter 3D: model gallery</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #05060a; color: #d8dce6; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+      #app { position: fixed; inset: 0 0 0 220px; }
+      #side { position: fixed; top: 0; bottom: 0; left: 0; width: 220px; overflow-y: auto; background: #0d1018; border-right: 1px solid #222838; padding: 10px; box-sizing: border-box; }
+      #side h1 { font-size: 1rem; margin: 0 0 8px; }
+      #side h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7d879c; margin: 12px 0 4px; }
+      #side button { display: block; width: 100%; text-align: left; background: none; border: 0; color: inherit; padding: 4px 6px; border-radius: 4px; cursor: pointer; font: inherit; font-size: 0.85rem; }
+      #side button:hover { background: #1b2030; }
+      #side button.on { background: #2b3550; color: #fff; }
+      #side label { display: block; font-size: 0.8rem; margin-top: 6px; }
+      #info { position: fixed; right: 10px; bottom: 10px; font-size: 0.8rem; color: #8b94a8; text-align: right; }
+      #side a { color: #f0d9a8; font-size: 0.8rem; }
+    </style>
+  </head>
+  <body>
+    <div id="side">
+      <h1>☄️ Model gallery</h1>
+      <a href="./">← back to the game</a>
+      <label><input type="checkbox" id="wire" /> wireframe</label>
+      <label><input type="checkbox" id="boxes" checked /> mothership collision boxes</label>
+      <div id="list"></div>
+    </div>
+    <div id="app"></div>
+    <div id="info"></div>
+    <script type="module" src="/src/gallery.ts"></script>
+  </body>
+</html>

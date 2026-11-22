@@ -1,0 +1,441 @@
+{
+  "generatedBy": "scripts/import-assets.mjs",
+  "models": [
+    {
+      "id": "ship1",
+      "format": "obj",
+      "file": "models/ship1/ship.obj",
+      "core": true
+    },
+    {
+      "id": "ship2",
+      "format": "obj",
+      "file": "models/ship2/ship.obj",
+      "core": false
+    },
+    {
+      "id": "mothership",
+      "format": "obj",
+      "file": "models/mothership/mothership.obj",
+      "core": true
+    },
+    {
+      "id": "earth",
+      "format": "obj",
+      "file": "models/earth/earth.obj",
+      "core": true
+    },
+    {
+      "id": "space",
+      "format": "obj",
+      "file": "models/space/space.obj",
+      "core": true
+    },
+    {
+      "id": "asteroid-small",
+      "format": "obj",
+      "file": "models/asteroids/astro01.obj",
+      "core": true
+    },
+    {
+      "id": "asteroid-big",
+      "format": "obj",
+      "file": "models/asteroids/astro02.obj",
+      "core": true
+    },
+    {
+      "id": "asteroid-01",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_01.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-02",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_02.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-03",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_03.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-04",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_04.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-05",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_05.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-06",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_06.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-07",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_07.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-08",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_08.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-09",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_09.obj",
+      "core": false
+    },
+    {
+      "id": "asteroid-10",
+      "format": "obj",
+      "file": "models/asteroids/asteroid_10.obj",
+      "core": false
+    },
+    {
+      "id": "barrack",
+      "format": "3ds",
+      "file": "models/extras/barrack/barrack.3ds",
+      "textures": [
+        "models/extras/barrack/metal03_.jpg",
+        "models/extras/barrack/metal07_.jpg",
+        "models/extras/barrack/metal_do.jpg",
+        "models/extras/barrack/metal_wi.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "graving-dock",
+      "format": "3ds",
+      "file": "models/extras/graving-dock/graving-dock.3ds",
+      "textures": [
+        "models/extras/graving-dock/metal07_.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "landing-dock",
+      "format": "3ds",
+      "file": "models/extras/landing-dock/landing-dock.3ds",
+      "textures": [
+        "models/extras/landing-dock/metal07_.jpg",
+        "models/extras/landing-dock/metal_do.jpg",
+        "models/extras/landing-dock/metal_la.jpg",
+        "models/extras/landing-dock/metal_wi.jpg",
+        "models/extras/landing-dock/warn_str.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "space-station",
+      "format": "3ds",
+      "file": "models/extras/space-station/space-station.3ds",
+      "textures": [
+        "models/extras/space-station/sp_st_25.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "space-fighter-01",
+      "format": "3ds",
+      "file": "models/extras/space-fighter-01/space-fighter-01.3ds",
+      "textures": [
+        "models/extras/space-fighter-01/f01_512.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "space-fighter-02",
+      "format": "3ds",
+      "file": "models/extras/space-fighter-02/space-fighter-02.3ds",
+      "textures": [
+        "models/extras/space-fighter-02/f02_512.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "space-fighter-03",
+      "format": "3ds",
+      "file": "models/extras/space-fighter-03/space-fighter-03.3ds",
+      "textures": [
+        "models/extras/space-fighter-03/f03_512.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "shuttle-01",
+      "format": "3ds",
+      "file": "models/extras/shuttle-01/shuttle-01.3ds",
+      "textures": [
+        "models/extras/shuttle-01/s01_512.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "shuttle-02",
+      "format": "3ds",
+      "file": "models/extras/shuttle-02/shuttle-02.3ds",
+      "textures": [
+        "models/extras/shuttle-02/s02_512.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "hover-car",
+      "format": "3ds",
+      "file": "models/extras/hover-car/hover-car.3ds",
+      "textures": [
+        "models/extras/hover-car/car07.jpg"
+      ],
+      "core": false
+    },
+    {
+      "id": "g-ship-01",
+      "format": "lwo",
+      "file": "models/extras/g-ship/g-ship-01.lwo",
+      "core": false
+    },
+    {
+      "id": "g-ship-02",
+      "format": "lwo",
+      "file": "models/extras/g-ship/g-ship-02.lwo",
+      "core": false
+    },
+    {
+      "id": "g-ship-03",
+      "format": "lwo",
+      "file": "models/extras/g-ship/g-ship-03.lwo",
+      "core": false
+    },
+    {
+      "id": "g-ship-04-mirrored",
+      "format": "lwo",
+      "file": "models/extras/g-ship/g-ship-04-mirrored.lwo",
+      "core": false
+    }
+  ],
+  "textures": [
+    {
+      "file": "textures/atmosphere_256x256.png",
+      "core": true
+    },
+    {
+      "file": "textures/cockpit/fuel0.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/fuel1.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/fuel2.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/fuel3.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/fuel4.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/fuel5.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/fuel6.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/panel.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/panel1.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/panel_all_tile_80x200.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/panel_border_tile_80x20.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/panel_tile.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/panel_tile_80x200.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/rocket0.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/rocket1.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/rocket2.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/rocket3.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed-1.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed-2.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed0.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed1.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed2.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed3.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed4.png",
+      "core": false
+    },
+    {
+      "file": "textures/cockpit/speed5.png",
+      "core": false
+    },
+    {
+      "file": "textures/flame_smoke_1_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flame_smoke_2_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flame_smoke_3_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flame_smoke_4_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flash_burst_1_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flash_burst_2_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flash_burst_3_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flash_burst_4_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/flying_spark_128x16.png",
+      "core": true
+    },
+    {
+      "file": "textures/ground.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/particle_32x32.png",
+      "core": true
+    },
+    {
+      "file": "textures/round_particle_16x16.png",
+      "core": true
+    },
+    {
+      "file": "textures/round_sparks_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/shockwave_128x128.png",
+      "core": true
+    },
+    {
+      "file": "textures/smoke_trail_1_256x64.png",
+      "core": true
+    },
+    {
+      "file": "textures/smoke_trail_2_256x64.png",
+      "core": true
+    },
+    {
+      "file": "textures/smoke_trail_3_256x64.png",
+      "core": true
+    },
+    {
+      "file": "textures/smoke_trail_4_256x64.png",
+      "core": true
+    },
+    {
+      "file": "textures/sparks_ring_256x256.png",
+      "core": true
+    },
+    {
+      "file": "textures/stars.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/wall.jpg",
+      "core": false
+    },
+    {
+      "file": "textures/white.png",
+      "core": false
+    },
+    {
+      "file": "textures/wood.gif",
+      "core": false
+    }
+  ],
+  "sounds": [
+    {
+      "file": "sounds/kaboom.wav",
+      "core": true
+    },
+    {
+      "file": "sounds/photon.wav",
+      "core": true
+    },
+    {
+      "file": "sounds/rocket.wav",
+      "core": true
+    }
+  ],
+  "mothershipBoxes": "models/mothership/boxes.json"
+}
