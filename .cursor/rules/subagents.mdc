@@ -1,0 +1,9 @@
+---
+description: Cursor subagent launch rules for asteroid-shooter-3d
+alwaysApply: true
+---
+
+# Cursor subagents
+
+`.cursor/agents/` files point at the live OpenCode agents in `.opencode/agent/`. When launching a Task,
+**omit the `model` argument** unless the human named one, because frontmatter is the pin. Skills are in `.claude/skills/`.

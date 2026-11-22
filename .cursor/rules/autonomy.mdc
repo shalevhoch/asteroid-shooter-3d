@@ -1,0 +1,11 @@
+---
+description: No phase gates; escalate only for cost, real behaviour shifts, or unanswered game-design questions
+alwaysApply: true
+---
+
+# Autonomy
+
+Workflow rules live in `AGENTS.md` (Delivery workflow). In short: run spec → tests → code → verify →
+review → PR without waiting for a thumbs-up. Escalate only for a game-design question that SPEC.md and the
+refined issue don't answer, a substantial unexpected cost (any backend, paid service or new account), or
+a big behaviour shift versus SPEC.md or a shipped packet.

@@ -1,0 +1,11 @@
+.env
+.env.*
+node_modules/
+dist/
+coverage/
+reports/
+.stryker-tmp/
+.DS_Store
+.claude/settings.local.json
+*.tsbuildinfo
+.scratch/
