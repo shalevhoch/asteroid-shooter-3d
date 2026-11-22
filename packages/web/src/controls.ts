@@ -34,7 +34,7 @@ export class Controls {
     });
     canvas.addEventListener('mousedown', (e) => {
       if (!this.locked) {
-        void canvas.requestPointerLock();
+        Promise.resolve(canvas.requestPointerLock()).catch(() => undefined);
         return;
       }
       const code = e.button === 0 ? MOUSE_LEFT : e.button === 2 ? MOUSE_RIGHT : undefined;
@@ -71,6 +71,15 @@ export class Controls {
     else if (action === 'throttleDown') this.throttleSteps -= 1;
     else if (action === 'fireRocket') this.rocketPresses = Math.min(this.rocketPresses + 1, 3);
     else this.toggles.push(action);
+  }
+
+  /** Drops queued presses and mouse movement, e.g. when a run starts or resumes. */
+  reset(): void {
+    this.throttleSteps = 0;
+    this.rocketPresses = 0;
+    this.mouseXPx = 0;
+    this.mouseYPx = 0;
+    this.heldCodes.clear();
   }
 
   /** UI toggles pressed since the last call (camera, layout, invert-Y, help). */

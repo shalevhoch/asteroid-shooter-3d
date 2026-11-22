@@ -57,3 +57,11 @@ export function nextFov(fov: number, ship: Pick<ShipState, 'turbo'>, dtSeconds: 
 }
 
 export const forwardOf = (rot: Quat): Vec3 => rotate(rot, LOCAL_FORWARD);
+
+/** How far ahead the crosshair marks the line of fire (photons travel 36 × 20 = 720 units). */
+export const AIM_DISTANCE = 600;
+
+/** The point `distance` ahead of the ship along its line of fire. */
+export function aimPoint(pose: Pose, distance: number): Vec3 {
+  return add(pose.pos, rotate(pose.rot, [0, 0, -distance]));
+}

@@ -24,7 +24,8 @@ export type Action =
   | 'toggleCamera'
   | 'toggleLayout'
   | 'toggleInvertY'
-  | 'toggleHelp';
+  | 'toggleHelp'
+  | 'toggleMute';
 
 export type Layout = 'modern' | 'classic';
 export const LAYOUTS: readonly Layout[] = ['modern', 'classic'];
@@ -40,6 +41,7 @@ const COMMON: Readonly<Record<string, Action>> = {
   KeyY: 'toggleInvertY',
   KeyH: 'toggleHelp',
   F1: 'toggleHelp',
+  KeyM: 'toggleMute',
 };
 
 /** `KeyboardEvent.code` (layout-independent physical keys) → action. */
@@ -90,7 +92,7 @@ export const KEYMAPS: Readonly<Record<Layout, Readonly<Record<string, Action>>>>
 };
 
 /** Actions that fire once per press (not held). */
-export const EDGE_ACTIONS: ReadonlySet<Action> = new Set<Action>(['throttleUp', 'throttleDown', 'fireRocket', 'toggleCamera', 'toggleLayout', 'toggleInvertY', 'toggleHelp']);
+export const EDGE_ACTIONS: ReadonlySet<Action> = new Set<Action>(['throttleUp', 'throttleDown', 'fireRocket', 'toggleCamera', 'toggleLayout', 'toggleInvertY', 'toggleHelp', 'toggleMute']);
 
 /** Human labels for the help overlay. */
 export const ACTION_LABELS: Readonly<Record<Action, string>> = {
@@ -114,6 +116,7 @@ export const ACTION_LABELS: Readonly<Record<Action, string>> = {
   toggleLayout: 'layout: modern / classic',
   toggleInvertY: 'invert mouse Y',
   toggleHelp: 'this help',
+  toggleMute: 'sound on / off',
 };
 
 /** The action a key code triggers in a layout, if any. In classic, L is yaw right, so T toggles the layout. */

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { IDENTITY, fromAxisAngle, initialState } from '@asteroid/sim';
 import { DEFAULT_SETTINGS, cycle, parseSettings } from '../src/settings.js';
-import { FOV_BASE, FOV_TURBO, cameraPose, interpolate, nextFov } from '../src/view.js';
+import { FOV_BASE, FOV_TURBO, aimPoint, cameraPose, interpolate, nextFov } from '../src/view.js';
 
 describe('interpolate', () => {
   const a = { pos: [0, 0, 0] as const, rot: IDENTITY };
@@ -62,9 +62,9 @@ describe('nextFov', () => {
 });
 
 describe('settings', () => {
-  it('defaults to modern, no invert, chase, help shown', () => {
+  it('defaults to modern, no invert, chase, help hidden in play', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);
-    expect(DEFAULT_SETTINGS).toEqual({ layout: 'modern', invertY: false, camera: 'chase', help: true });
+    expect(DEFAULT_SETTINGS).toEqual({ layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false });
   });
 
   it('keeps valid fields and drops bad ones', () => {
@@ -76,5 +76,15 @@ describe('settings', () => {
   it('cycles through a list', () => {
     expect(cycle(['a', 'b', 'c'], 'c')).toBe('a');
     expect(cycle(['a', 'b'], 'a')).toBe('b');
+  });
+});
+
+describe('aimPoint', () => {
+  it('lies straight ahead of the ship', () => {
+    const s = initialState(1).ship; // facing +Z
+    const p = aimPoint(s, 600);
+    expect(p[0]).toBeCloseTo(s.pos[0], 9);
+    expect(p[1]).toBeCloseTo(s.pos[1], 9);
+    expect(p[2]).toBeCloseTo(s.pos[2] + 600, 9);
   });
 });
