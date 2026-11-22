@@ -97,7 +97,8 @@ describe('asteroids', () => {
       [9, 'small', [80, 220, 300]],
     ]);
     expect(s.nextId).toBe(10);
-    expect(events).toEqual([{ type: 'asteroidDestroyed', id: 5, size: 'big', by: 'photon', pos: [100, 200, 300] }]);
+    expect(events).toEqual([{ type: 'asteroidDestroyed', id: 5, size: 'big', by: 'photon', pos: [100, 200, 300], points: 20 }]);
+    expect(s.score).toBe(20);
   });
 
   it('does not split a big asteroid destroyed by a rocket, nor a small one', () => {

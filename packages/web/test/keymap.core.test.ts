@@ -16,7 +16,7 @@ import {
   type TickControls,
 } from '../src/keymap.js';
 
-const controls = (over: Partial<TickControls> = {}): TickControls => ({ held: new Set(), throttleSteps: 0, mouseX: 0, mouseY: 0, invertY: false, ...over });
+const controls = (over: Partial<TickControls> = {}): TickControls => ({ held: new Set(), throttleSteps: 0, rocketPresses: 0, mouseX: 0, mouseY: 0, invertY: false, ...over });
 const FLIGHT: Action[] = ['pitchUp', 'pitchDown', 'yawLeft', 'yawRight', 'rollLeft', 'rollRight', 'throttleUp', 'throttleDown', 'turbo', 'strafeLeft', 'strafeRight', 'strafeUp', 'strafeDown', 'reverse', 'firePhoton', 'fireRocket'];
 
 describe('keymaps', () => {
@@ -67,7 +67,7 @@ describe('keymaps', () => {
 describe('toInput', () => {
   it('maps held actions to axes, cancelling opposites', () => {
     const i = toInput(controls({ held: new Set<Action>(['pitchUp', 'yawLeft', 'rollRight', 'rollLeft', 'strafeRight', 'strafeDown', 'turbo', 'reverse']) }));
-    expect(i).toEqual({ pitch: 1, yaw: -1, roll: 0, throttle: 0, turbo: true, strafeX: 1, strafeY: -1, reverse: true });
+    expect(i).toEqual({ pitch: 1, yaw: -1, roll: 0, throttle: 0, turbo: true, strafeX: 1, strafeY: -1, reverse: true, firePhoton: false, fireRocket: false });
   });
 
   it('adds the mouse to the keys and clamps', () => {
@@ -82,6 +82,14 @@ describe('toInput', () => {
     expect(toInput(controls({ throttleSteps: 3 })).throttle).toBe(1);
     expect(toInput(controls({ throttleSteps: -2 })).throttle).toBe(-1);
     expect(toInput(controls()).throttle).toBe(0);
+  });
+});
+
+describe('fire inputs', () => {
+  it('holds photons and sends one rocket per pending press', () => {
+    expect(toInput(controls({ held: new Set<Action>(['firePhoton']) })).firePhoton).toBe(true);
+    expect(toInput(controls({ rocketPresses: 2 })).fireRocket).toBe(true);
+    expect(toInput(controls()).fireRocket).toBe(false);
   });
 });
 

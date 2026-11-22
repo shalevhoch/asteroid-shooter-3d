@@ -11,6 +11,8 @@ const log: Input[] = Array.from({ length: 2000 }, (_, t) => ({
   strafeX: t % 7 === 0 ? 1 : 0,
   strafeY: t % 11 === 0 ? -1 : 0,
   reverse: t % 400 < 5,
+  firePhoton: t % 90 < 30,
+  fireRocket: t % 500 === 250,
 }));
 
 describe('replay', () => {

@@ -2,6 +2,7 @@
 import { moveAsteroids, spawn } from './asteroids.js';
 import { fly } from './flight.js';
 import { applyHazards } from './hazards.js';
+import { fire, moveProjectiles } from './weapons.js';
 import type { GameState, Input, RunEndReason, SimEvent, StepResult } from './state.js';
 
 export function step(state: GameState, input: Input): StepResult {
@@ -11,11 +12,13 @@ export function step(state: GameState, input: Input): StepResult {
   // 1. Apply input.
   const flown = fly(state.ship, input);
   events.push(...flown.events);
+  let s: GameState = fire({ ...state, tick, ship: flown.ship }, input, events);
   // 2. Ship hazards.
-  let s: GameState = { ...state, tick, ship: applyHazards(flown.ship, events) };
+  s = { ...s, ship: applyHazards(s.ship, events) };
   // 3. Spawn. 4. Move asteroids, resolve Earth impacts.
   s = moveAsteroids(spawn(s, tick, events), events);
-  // 5. Projectiles land in P06. 6. Run end.
+  // 5. Move projectiles, resolve hits, expire. 6. Run end.
+  s = moveProjectiles(s, events);
   const ended: RunEndReason | null = s.earthHealth <= 0 ? 'earthDestroyed' : s.ship.hull <= 0 ? 'shipDestroyed' : null;
   if (ended) {
     s = { ...s, ended };

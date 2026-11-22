@@ -5,6 +5,8 @@
 import * as THREE from 'three';
 import { EARTH_MAX_HEALTH, FUEL_MAX, HULL_MAX, TICK_MS, initialState, step, ticksFor, type GameState } from '@asteroid/sim';
 import { AsteroidView } from './asteroidView.js';
+import { ProjectileView } from './projectileView.js';
+import { assetUrl } from './assetUrl.js';
 import { Controls } from './controls.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { buildWorld } from './scene.js';
@@ -74,6 +76,7 @@ function applyToggles() {
 
 const world = await buildWorld(base);
 const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
+const shots = new ProjectileView(world.scene, await new THREE.TextureLoader().loadAsync(assetUrl(base, 'textures/particle_32x32.png')));
 intro.classList.add('ready');
 
 let prev: GameState = initialState(Date.now() >>> 0);
@@ -90,6 +93,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Enter' && curr.ended) {
     prev = curr = initialState(Date.now() >>> 0);
     asteroids.clear();
+    shots.clear();
   }
 });
 let accMs = 0;
@@ -121,11 +125,12 @@ renderer.setAnimationLoop((nowMs: number) => {
   camera.updateProjectionMatrix();
   world.sky.position.copy(camera.position);
   asteroids.update(prev.asteroids, curr.asteroids, accMs / TICK_MS, curr.tick);
+  shots.update(prev.projectiles, curr.projectiles, accMs / TICK_MS);
   world.earth.rotation.y = (curr.tick * TICK_MS) / 1000 / 120;
 
   const s = curr.ship;
   const pct = (v: number, max: number) => `${String(Math.round((100 * v) / max))}%`;
   const end = curr.ended ? `${curr.ended === 'earthDestroyed' ? 'EARTH DESTROYED' : 'SHIP DESTROYED'}: press Enter to restart · ` : '';
-  hud.textContent = `${end}Earth ${pct(curr.earthHealth, EARTH_MAX_HEALTH)} · hull ${pct(s.hull, HULL_MAX)} · asteroids ${String(curr.asteroids.length)} · throttle ${String(s.throttle)}${s.turbo ? ' · TURBO' : ''} · fuel ${String(Math.round((100 * s.fuel) / FUEL_MAX))}% · camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H]${controls.locked ? '' : ' · click to fly'}`;
+  hud.textContent = `${end}score ${String(curr.score)} · rockets ${String(s.rockets)} · Earth ${pct(curr.earthHealth, EARTH_MAX_HEALTH)} · hull ${pct(s.hull, HULL_MAX)} · asteroids ${String(curr.asteroids.length)} · throttle ${String(s.throttle)}${s.turbo ? ' · TURBO' : ''} · fuel ${String(Math.round((100 * s.fuel) / FUEL_MAX))}% · camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H]${controls.locked ? '' : ' · click to fly'}`;
   renderer.render(world.scene, camera);
 });

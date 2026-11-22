@@ -76,12 +76,19 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
   - Hit: a photon hits the first asteroid (lowest id) whose sphere its tick path segment intersects. It deals 1 damage
     and is consumed. A photon that touches Earth or a mothership box is consumed.
 - **Rocket**:
-  - Carry: up to `ROCKET_MAX = 3`. One is fired per press of the rocket input if rockets > 0, from the same muzzle point.
+  - Carry: up to `ROCKET_MAX = 3`. One is fired per press of the rocket input if rockets > 0, from the centre muzzle
+    point (`forward × 50 − up × 8`).
   - Flight: moves `ROCKET_SPEED = 15` per tick and lives `ROCKET_LIFE = 400` ticks.
-  - **Homing**: while it has no target, each tick it searches a radius `200 + 10 × ticksSinceLaunch` and locks the nearest
-    asteroid whose sphere overlaps that radius (ties go to the lowest id). While locked, each tick its direction becomes
-    `normalize(dir + normalize(target − pos) × 6 / distance)`. If its target is destroyed, it unlocks and searches again.
-  - Hit: like a photon (swept segment). It destroys the asteroid it hits regardless of HP, and is consumed.
+  - **Lock at launch**: the asteroid with the smallest angle to the ship's forward within `ROCKET_LOCK_CONE = 30°` (the
+    one nearest the crosshair; ties go to the lowest id).
+  - **Unlocked**: if nothing is in the cone, or its target is destroyed, the rocket locks the asteroid nearest to itself
+    each tick until it finds one (ties go to the lowest id; `rocketLocked` fires).
+  - **Homing**: while locked, each tick before moving its direction becomes
+    `normalize(dir + normalize(target − pos) × max(ROCKET_STEER / distance, ROCKET_MIN_STEER))` (`ROCKET_STEER = 6`,
+    `ROCKET_MIN_STEER = 0.15`). Within `ROCKET_TERMINAL_RANGE = 200` it aims straight at the target, so a locked rocket
+    always reaches its target unless something else is in the way.
+  - Hit: like a photon (swept segment, consumed by Earth and the mothership). It destroys the asteroid it hits regardless
+    of HP, and is consumed.
 - Within a tick, projectiles resolve in projectile-id order. An asteroid destroyed earlier in the tick can't be hit again.
 
 ## 6. Scoring and run end
@@ -93,7 +100,7 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 | small, by photons | `SMALL_PHOTON_POINTS = 10` |
 | small, by rocket | `SMALL_ROCKET_POINTS = 8` |
 
-- The score starts at 0 and only increases.
+- The score starts at 0 and only increases. Each kill's `asteroidDestroyed` event carries its `points`.
 - The run ends on the tick Earth's health or the hull reaches 0 (clamped at 0). After that, `step` returns the state unchanged.
 - The best score is kept per browser (the storage format is owned by P07).
 
@@ -108,7 +115,8 @@ Each tick, in this order:
 6. Expire projectiles whose life ran out, and check the run's end.
 
 The sim emits **events** for anything the renderer, audio or HUD react to (`turboStarted`, `turboEnded`,
-`fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired`, `asteroidHit`, `asteroidDestroyed {by, size, pos}`,
+`fuelEmpty`, `mothershipBump`, `photonFired`, `rocketFired {target}`, `rocketLocked`, `projectileSpent`, `asteroidHit {hp}`,
+`asteroidDestroyed {by, size, pos, points}`,
 `asteroidSpawned`, `earthHit`, `shipReloaded`, `hullBurning`, `runEnded`).
 
 ## 8. Controls and camera
