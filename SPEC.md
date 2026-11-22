@@ -102,7 +102,7 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
 
 - The score starts at 0 and only increases. Each kill's `asteroidDestroyed` event carries its `points`.
 - The run ends on the tick Earth's health or the hull reaches 0 (clamped at 0). After that, `step` returns the state unchanged.
-- The best score is kept per browser (the storage format is owned by P07).
+- The best score is kept per browser (`localStorage`). Only a strictly higher score replaces it.
 
 ## 7. Tick order
 
@@ -138,7 +138,8 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - C switches the camera.
   - L switches the layout (T in classic, where L is yaw).
   - Y inverts the mouse's Y axis.
-  - H or F1 shows the controls.
+  - H or F1 shows the controls during play. They're always shown on the title and pause screens.
+  - M mutes. P pauses.
 - **Mouse aim**: `MOUSE_PX_PER_TICK = 6` px of movement in one tick is a full-rate turn (axis 1).
   - Faster movement queues up, to at most `MOUSE_BUFFER_TICKS = 4` ticks of full-rate turn, and turns over the next ticks.
   - Mouse up is nose up; invert-Y defaults to off.
@@ -149,12 +150,34 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
 - **FOV**: 50°, easing toward 80° while the turbo is moving the ship.
 - The renderer draws the state interpolated between the last two ticks. It never feeds rendering back into the sim.
 
+## 9. Run flow, HUD and audio
+
+- **Flow**: title → playing → game over → playing again.
+  - Leaving pointer lock (Esc), switching tabs, the window losing focus, or P pauses a run. The sim doesn't tick while paused.
+  - Click or Enter starts, resumes and restarts.
+- **Game over** shows:
+  - the cause (Earth fell, or the ship was destroyed);
+  - the score, the best score, and "NEW BEST!" when this run set it;
+  - time survived, asteroids destroyed (and how many were big), photon accuracy, rockets fired and Earth hits taken;
+  - Play again, and a link back to all games.
+- **HUD**:
+  - score and best;
+  - Earth, hull and fuel bars, which flash at ≤ 30 %;
+  - rocket pips, and a speed gauge (throttle, full under turbo);
+  - warnings: Earth critical, hull damaged or critical, no fuel, no rockets;
+  - a crosshair on the line of fire, `AIM_DISTANCE = 600` units ahead.
+- **Audio**: the original's three sounds.
+  - `photon`: a photon fired.
+  - `rocket`: a rocket fired.
+  - `kaboom`: a kill, an Earth hit or the run ending.
+  - At most `MAX_CUES_PER_TICK = 4` sounds per tick. Audio starts on the first input; M mutes and the choice is kept.
+- **Placeholder FX**: kills, Earth hits and photon hits flash a growing, fading sprite. A destroyed ship leaves one big flash.
+
 ## Open
 
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P07**: the end-of-run flow, and how the best score is stored.
 - **P08**: waves, objectives and difficulty presets that replace the steady spawn of §4.
 - **P10**: scoring v2 (combos, multipliers, the run summary) on top of §6.
 - **P16**: the achievement list.

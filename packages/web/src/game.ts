@@ -1,0 +1,66 @@
+/** The run flow (P07): title → playing ⇄ paused → over → playing, plus run stats and the stored best score. Pure. */
+import type { SimEvent } from '@asteroid/sim';
+
+export type Phase = 'title' | 'playing' | 'paused' | 'over';
+export type FlowAction = 'start' | 'pause' | 'resume' | 'end' | 'restart';
+
+/** The phase after an action; actions that don't apply in a phase leave it unchanged. */
+export function nextPhase(phase: Phase, action: FlowAction): Phase {
+  switch (action) {
+    case 'start':
+      return phase === 'title' ? 'playing' : phase;
+    case 'pause':
+      return phase === 'playing' ? 'paused' : phase;
+    case 'resume':
+      return phase === 'paused' ? 'playing' : phase;
+    case 'end':
+      return phase === 'playing' || phase === 'paused' ? 'over' : phase;
+    case 'restart':
+      return phase === 'over' ? 'playing' : phase;
+  }
+}
+
+export interface RunStats {
+  readonly kills: number;
+  readonly bigKills: number;
+  readonly photonsFired: number;
+  readonly photonHits: number;
+  readonly rocketsFired: number;
+  readonly earthHits: number;
+}
+
+export const EMPTY_STATS: RunStats = { kills: 0, bigKills: 0, photonsFired: 0, photonHits: 0, rocketsFired: 0, earthHits: 0 };
+
+export function addStats(stats: RunStats, events: readonly SimEvent[]): RunStats {
+  let s = stats;
+  for (const e of events) {
+    if (e.type === 'asteroidDestroyed') s = { ...s, kills: s.kills + 1, bigKills: s.bigKills + (e.size === 'big' ? 1 : 0), photonHits: s.photonHits + (e.by === 'photon' ? 1 : 0) };
+    else if (e.type === 'asteroidHit') s = { ...s, photonHits: s.photonHits + 1 };
+    else if (e.type === 'photonFired') s = { ...s, photonsFired: s.photonsFired + 1 };
+    else if (e.type === 'rocketFired') s = { ...s, rocketsFired: s.rocketsFired + 1 };
+    else if (e.type === 'earthHit') s = { ...s, earthHits: s.earthHits + 1 };
+  }
+  return s;
+}
+
+/** Photon accuracy in whole percent; 0 before the first shot. */
+export const accuracy = (s: RunStats): number => (s.photonsFired > 0 ? Math.round((100 * s.photonHits) / s.photonsFired) : 0);
+
+export const BEST_KEY = 'asteroid-shooter-3d.best.v1';
+
+/** The stored best score; anything missing, negative or non-numeric reads as 0. */
+export function parseBest(raw: string | null): number {
+  const n = raw === null ? NaN : Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
+/** The new best and whether this run set it. A tie is not a new best. */
+export function updateBest(best: number, score: number): { best: number; isNew: boolean } {
+  return score > best ? { best: score, isNew: true } : { best, isNew: false };
+}
+
+/** m:ss from ticks at 25 Hz. */
+export function formatTime(ticks: number, tickHz = 25): string {
+  const total = Math.max(0, Math.floor(ticks / tickHz));
+  return `${String(Math.floor(total / 60))}:${String(total % 60).padStart(2, '0')}`;
+}

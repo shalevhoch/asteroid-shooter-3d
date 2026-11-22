@@ -10,29 +10,49 @@
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; color: #f0d9a8; }
       #app { position: fixed; inset: 0; }
       #app canvas { display: block; cursor: crosshair; }
-      #hud { position: fixed; left: 12px; bottom: 10px; font-size: 13px; color: #a8c9b0; text-shadow: 0 1px 4px #000; pointer-events: none; }
+      #status { position: fixed; left: 12px; bottom: 8px; font-size: 11px; color: #6f7a8e; pointer-events: none; }
       #help { position: fixed; right: 12px; top: 12px; background: rgba(8, 10, 18, 0.78); border: 1px solid #2a3148; border-radius: 8px; padding: 8px 12px; font-size: 12px; pointer-events: none; }
       #help h2 { font-size: 13px; margin: 0 0 6px; }
       #help td { padding: 1px 8px 1px 0; color: #d8dce6; }
       #help td:first-child { color: #f0d9a8; white-space: nowrap; }
       #help p { margin: 6px 0 0; color: #8b94a8; }
-      #intro { position: fixed; left: 0; right: 0; top: 10%; text-align: center; pointer-events: none; text-shadow: 0 2px 8px #000; transition: opacity 1.5s 4s; }
-      #intro.ready { opacity: 0; }
-      #intro h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: 0.04em; }
-      #intro p { margin: 4px 0; color: #a8c9b0; }
-      #links { position: fixed; left: 12px; top: 10px; font-size: 12px; }
-      #links a { color: #8b94a8; }
+      #hud { position: fixed; inset: 0; pointer-events: none; text-shadow: 0 1px 4px #000; font-variant-numeric: tabular-nums; }
+      #hud .tl { position: absolute; left: 16px; top: 12px; }
+      #hud .score { font-size: 34px; font-weight: 600; letter-spacing: 0.03em; }
+      #hud .best { font-size: 12px; color: #a8c9b0; }
+      #hud .bars { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: flex; gap: 14px; }
+      #hud .bar { width: 150px; height: 8px; background: rgba(255, 255, 255, 0.12); border-radius: 4px; position: relative; }
+      #hud .bar span { position: absolute; top: -15px; left: 0; font-size: 10px; letter-spacing: 0.12em; color: #a8c9b0; }
+      #hud .bar i { display: block; height: 100%; border-radius: 4px; background: #6fd08c; transition: width 0.15s; }
+      #hud .bar.earth i { background: #5fa8ff; }
+      #hud .bar.fuel i { background: #f0c060; }
+      #hud .bar.low i { background: #ff5a4a; animation: blink 0.8s infinite; }
+      #hud .br { position: absolute; right: 16px; bottom: 22px; text-align: right; font-size: 13px; letter-spacing: 0.08em; line-height: 1.6; }
+      #hud .warn { position: absolute; left: 0; right: 0; top: 18%; text-align: center; color: #ff7a5a; font-weight: 600; letter-spacing: 0.12em; animation: blink 1s infinite; }
+      #hud .crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 28px; color: rgba(160, 255, 200, 0.75); }
+      @keyframes blink { 50% { opacity: 0.45; } }
+      #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+      #overlay[data-phase='playing'] { display: none; }
+      #overlay .card { background: rgba(6, 8, 16, 0.82); border: 1px solid #2a3148; border-radius: 12px; padding: 22px 30px; text-align: center; max-width: 460px; }
+      #overlay h1 { margin: 0 0 10px; font-size: clamp(1.4rem, 3.4vw, 2.2rem); }
+      #overlay p { color: #c8d0dc; margin: 8px 0; }
+      #overlay .dim { color: #8b94a8; font-size: 13px; }
+      #overlay button { margin: 12px 0 4px; font: inherit; font-size: 17px; padding: 9px 26px; border-radius: 8px; border: 1px solid #f0d9a8; background: #2b2416; color: #f0d9a8; cursor: pointer; }
+      #overlay button:hover { background: #3d331f; }
+      #overlay .final { font-size: 52px; font-weight: 700; }
+      #overlay .newbest { color: #7fffb0; font-weight: 700; letter-spacing: 0.15em; }
+      #overlay .stats { margin: 10px auto; font-size: 14px; color: #d8dce6; }
+      #overlay .stats td { padding: 2px 10px; text-align: left; }
+      #overlay .stats td:last-child { text-align: right; color: #f0d9a8; }
+      #overlay a { color: #8b94a8; }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="intro">
-      <h1>☄️ Asteroid Shooter 3D</h1>
-      <p>Flight test: fly out of the hangar, around Earth and the mothership. Asteroids and weapons come next.</p>
-    </div>
-    <div id="links"><a href="/">← all games</a> · <a href="https://github.com/hochgi/astroid-shooter-3D">the original</a></div>
+    <div id="hud"></div>
     <div id="help"></div>
-    <div id="hud">loading…</div>
+    <div id="status"></div>
+    <div id="overlay"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

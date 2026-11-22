@@ -7,9 +7,10 @@ export interface Settings {
   invertY: boolean;
   camera: CameraMode;
   help: boolean;
+  muted: boolean;
 }
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: true };
+export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false };
 export const SETTINGS_KEY = 'asteroid-shooter-3d.settings.v1';
 
 export function parseSettings(raw: string | null): Settings {
@@ -22,11 +23,12 @@ export function parseSettings(raw: string | null): Settings {
     return s;
   }
   if (typeof v !== 'object' || v === null) return s;
-  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown };
+  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown };
   if (LAYOUTS.includes(o.layout as Layout)) s.layout = o.layout as Layout;
   if (CAMERA_MODES.includes(o.camera as CameraMode)) s.camera = o.camera as CameraMode;
   if (typeof o.invertY === 'boolean') s.invertY = o.invertY;
   if (typeof o.help === 'boolean') s.help = o.help;
+  if (typeof o.muted === 'boolean') s.muted = o.muted;
   return s;
 }
 
