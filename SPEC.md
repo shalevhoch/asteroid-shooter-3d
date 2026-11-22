@@ -328,10 +328,34 @@ P12 adds the full explosion and Earth-hit feedback:
 - **Shake setting** (decision): on by default, off by default when the browser asks for reduced motion; a stored
   setting wins either way. The flash stays on with shake off. P13's settings screen exposes the toggle.
 
+## 13. Achievements
+
+P16: twelve achievements, read off sim events and state by a pure run tracker (`trackAchievements`). Unlocks persist
+per browser with their date. A new one toasts during play, the game-over card lists the run's new unlocks, and the
+title card has the full list.
+
+| Achievement | How |
+|---|---|
+| First contact | Destroy an asteroid. |
+| Chain reaction | A 10-kill combo chain. |
+| Perfect wave | Clear a wave without an Earth hit. |
+| Earth untouched | Clear wave 5 without an Earth hit all run. |
+| Close call | Clear a wave with Earth at 10 % or less, before the clear's repair and regen. |
+| Sharpshooter | 20 photon hits in a row: a photon that expires or hits Earth or the mothership breaks the streak. |
+| Lock-on | 10 rocket kills in one run. |
+| Long haul | Survive 5 minutes (7500 ticks) in one run. |
+| Earth is safe | Clear all 10 waves. |
+| Photons only | Win the campaign without firing a rocket. |
+| Hardened | Win the campaign on Hard. |
+| Beyond the campaign | Clear a wave in endless mode. |
+
+- **Decision**: the list is the Coder Bot's pick (the issue's examples plus a spread from easy to hard). Gilad or
+  Shalev can rename, swap or retune any of them; an unlock is keyed by id, so renames keep progress.
+- No points or gameplay effect; achievements are cosmetic.
+
 ## Open
 
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P16**: the achievement list.
 - **P17**: per-craft stat differences against §3.
