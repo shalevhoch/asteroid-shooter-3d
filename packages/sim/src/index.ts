@@ -1,0 +1,22 @@
+/**
+ * @asteroid/sim — the pure game core (ADR 0001).
+ *
+ * `step(state, input) → { state, events }` lands in P03. Until then this module only fixes the
+ * tick contract every later packet builds on. No DOM, no three.js, no clock, no Math.random here.
+ */
+
+/** Sim ticks per second. The original game's physics timer ran every 40 ms. */
+export const TICK_HZ = 25;
+
+/** Milliseconds per tick, derived from {@link TICK_HZ}. */
+export const TICK_MS = 1000 / TICK_HZ;
+
+/**
+ * How many whole ticks fit in an accumulated frame time, and the remainder to carry.
+ * The renderer's fixed-step loop calls this each animation frame.
+ */
+export function ticksFor(accumulatedMs: number): { ticks: number; remainderMs: number } {
+  if (!Number.isFinite(accumulatedMs) || accumulatedMs <= 0) return { ticks: 0, remainderMs: 0 };
+  const ticks = Math.floor(accumulatedMs / TICK_MS);
+  return { ticks, remainderMs: accumulatedMs - ticks * TICK_MS };
+}

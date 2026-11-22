@@ -1,0 +1,35 @@
+{
+  "name": "asteroid-shooter-3d",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --filter @asteroid/web dev",
+    "build": "pnpm --filter @asteroid/web build",
+    "build:pages": "pnpm --filter @asteroid/web build:pages",
+    "typecheck": "tsc --build --force && pnpm --filter @asteroid/web typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:harness": "node scripts/check-harness.mjs",
+    "check:packet-pr": "node scripts/check-packet-pr.mjs",
+    "verify": "pnpm check:harness && pnpm typecheck && pnpm lint && pnpm test",
+    "crap": "vitest run --coverage && node scripts/crap-report.cjs",
+    "test:mutation": "stryker run",
+    "test:mutation:incremental": "stryker run --incremental",
+    "test:mutation:report": "node scripts/format-stryker-report.cjs",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@stryker-mutator/core": "^8.7.1",
+    "@stryker-mutator/vitest-runner": "^8.7.1",
+    "@vitest/coverage-istanbul": "^2.1.9",
+    "eslint": "^9.17.0",
+    "lefthook": "^2.1.10",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^2.1.8"
+  }
+}

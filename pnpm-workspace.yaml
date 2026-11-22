@@ -1,0 +1,11 @@
+packages:
+  - 'packages/*'
+
+# pnpm 11: only these packages may run lifecycle scripts.
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook
+
+allowBuilds:
+  esbuild: true
+  lefthook: true

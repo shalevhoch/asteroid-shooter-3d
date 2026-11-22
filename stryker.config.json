@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "ignorePatterns": [".claude", ".agents", "packages/web/dist"],
+  "reporters": ["html", "json", "clear-text", "progress"],
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": { "configFile": "vitest.config.ts" },
+  "coverageAnalysis": "perTest",
+  "timeoutMS": 60000,
+  "concurrency": 2,
+  "incremental": false,
+  "incrementalFile": ".stryker-tmp/incremental.json",
+  "disableTypeChecks": "{packages,vitest.config.ts}/**/*.{ts,tsx}",
+  "mutate": ["packages/sim/src/**/*.ts", "!packages/sim/src/index.ts"],
+  "mutator": { "excludedMutations": ["StringLiteral", "ObjectLiteral"] },
+  "thresholds": { "high": 80, "low": 60, "break": null },
+  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" }
+}
