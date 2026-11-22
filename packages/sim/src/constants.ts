@@ -11,6 +11,10 @@ export const MOTHERSHIP_POS: Vec3 = [0, -1180, 40];
 export const MOTHERSHIP_SCALE = 5;
 export const HANGAR_OFFSET: Vec3 = [0, 150, 0];
 export const HANGAR_RADIUS = 100;
+/** The space station (P18): a landmark above the asteroid lane, between the spawn line and Earth. */
+export const STATION_POS: Vec3 = [1000, 1000, 0];
+/** Flying within this of the station's centre reloads the ship, like the hangar. */
+export const STATION_DOCK_RADIUS = 150;
 
 // §3 Ship
 export const SHIP_START: Vec3 = [0, -960, 0];

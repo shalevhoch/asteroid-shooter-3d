@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader.js';
-import { ATMOSPHERE_RADIUS, EARTH_POS, MOTHERSHIP_POS, MOTHERSHIP_SCALE, type CraftId } from '@asteroid/sim';
+import { ATMOSPHERE_RADIUS, EARTH_POS, MOTHERSHIP_POS, MOTHERSHIP_SCALE, STATION_DOCK_RADIUS, STATION_POS, type CraftId } from '@asteroid/sim';
 import { assetUrl } from './assetUrl.js';
 
 export const SKY_RADIUS = 9000;
@@ -38,20 +38,58 @@ export const CRAFT_MODELS: Readonly<Record<CraftId, { readonly file: string; rea
   shuttle: { file: 'models/extras/shuttle-01/shuttle-01.3ds', euler: [-Math.PI / 2, 0, 0] },
 };
 
+/** A 3DS model with the loader's own Phong materials (as the gallery shows them), textures in sRGB. */
+async function load3ds(base: string, file: string): Promise<THREE.Object3D> {
+  const dir = file.slice(0, file.lastIndexOf('/') + 1);
+  const obj = await new TDSLoader().setResourcePath(assetUrl(base, dir)).loadAsync(assetUrl(base, file));
+  obj.traverse((c) => {
+    if (c instanceof THREE.Mesh) for (const m of (Array.isArray(c.material) ? c.material : [c.material]) as THREE.MeshPhongMaterial[]) if (m.map) m.map.colorSpace = THREE.SRGBColorSpace;
+  });
+  return obj;
+}
+
+/** Centres a 3DS model (Z up) on the origin, turned Y-up, scaled so its longest side is `size`. */
+function fitted(obj: THREE.Object3D, size: number, euler: readonly [number, number, number] = [-Math.PI / 2, 0, 0]): THREE.Group {
+  const holder = new THREE.Group();
+  obj.rotation.set(...euler);
+  holder.add(obj);
+  holder.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(holder);
+  const dims = box.getSize(new THREE.Vector3());
+  obj.position.sub(box.getCenter(new THREE.Vector3()));
+  holder.scale.setScalar(size / Math.max(dims.x, dims.y, dims.z));
+  return holder;
+}
+
+/**
+ * The space station landmark (P18): the station above its landing dock, which is the reload point at `STATION_POS`,
+ * with the graving dock and barrack as dressing, and a slowly pulsing green ring marking where to fly in. Loaded after
+ * the game starts; returns the ring so the loop can pulse it.
+ */
+export async function addStation(scene: THREE.Scene, base: string): Promise<THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>> {
+  const x = (f: string) => load3ds(base, `models/extras/${f}`);
+  const [station, dock, graving, barrack] = await Promise.all([x('space-station/space-station.3ds'), x('landing-dock/landing-dock.3ds'), x('graving-dock/graving-dock.3ds'), x('barrack/barrack.3ds')]);
+  const group = new THREE.Group();
+  group.position.set(...STATION_POS);
+  const place = (o: THREE.Object3D, size: number, at: readonly [number, number, number], euler?: readonly [number, number, number]) => {
+    const f = fitted(o, size, euler);
+    f.position.set(...at);
+    group.add(f);
+  };
+  place(station, 700, [0, 520, 0]);
+  place(dock, 2.4 * STATION_DOCK_RADIUS, [0, 0, 0], [-Math.PI / 2, 0, Math.PI / 2]);
+  place(graving, 320, [0, 200, -360]);
+  place(barrack, 260, [0, 200, 360]);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(STATION_DOCK_RADIUS, 4, 8, 48), new THREE.MeshBasicMaterial({ color: 0x5dff9a, transparent: true, opacity: 0.6, depthWrite: false }));
+  ring.rotation.y = Math.PI / 2;
+  group.add(ring);
+  scene.add(group);
+  return ring;
+}
+
 async function loadCraft(base: string, id: CraftId): Promise<THREE.Object3D> {
   const m = CRAFT_MODELS[id];
-  if (m.file.endsWith('.3ds')) {
-    const dir = m.file.slice(0, m.file.lastIndexOf('/') + 1);
-    const obj = await new TDSLoader().setResourcePath(assetUrl(base, dir)).loadAsync(assetUrl(base, m.file));
-    obj.traverse((c) => {
-      if (c instanceof THREE.Mesh) {
-        const old = c.material as THREE.MeshPhongMaterial;
-        if (old.map) old.map.colorSpace = THREE.SRGBColorSpace;
-        c.material = new THREE.MeshStandardMaterial({ map: old.map ?? null, color: old.map ? 0xffffff : old.color, roughness: 0.85, metalness: 0.1 });
-      }
-    });
-    return obj;
-  }
+  if (m.file.endsWith('.3ds')) return load3ds(base, m.file);
   return loadObj(base, m.file, m.texture);
 }
 

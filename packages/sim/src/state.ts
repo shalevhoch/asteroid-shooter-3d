@@ -119,7 +119,7 @@ export type KillCause = 'photon' | 'rocket';
 
 export type SimEvent =
   | { readonly type: 'mothershipBump' }
-  | { readonly type: 'shipReloaded' }
+  | { readonly type: 'shipReloaded'; readonly at: 'mothership' | 'station' }
   | { readonly type: 'hullBurning' }
   | { readonly type: 'asteroidSpawned'; readonly id: number; readonly size: AsteroidSize }
   | { readonly type: 'earthHit'; readonly id: number; readonly size: AsteroidSize; readonly damage: number; readonly pos: Vec3 }

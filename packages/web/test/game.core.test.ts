@@ -87,7 +87,7 @@ describe('HUD model', () => {
     const m = hudModel(s, 300);
     expect(m.best).toBe(500);
     expect(m.speed).toBe(m.speedMax);
-    expect(m.warnings).toEqual(['EARTH CRITICAL', 'HULL CRITICAL', 'NO FUEL', 'NO ROCKETS: RELOAD AT THE MOTHERSHIP']);
+    expect(m.warnings).toEqual(['EARTH CRITICAL', 'HULL CRITICAL', 'NO FUEL', 'NO ROCKETS: RELOAD AT THE MOTHERSHIP OR STATION']);
   });
 });
 

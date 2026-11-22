@@ -31,7 +31,7 @@ export { fly, turn, axis } from './flight.js';
 export { MOTHERSHIP_WORLD_BOXES, resolveMothership, sphereHitsBox, pushOut, type Box } from './mothership.js';
 export { step, run } from './step.js';
 export { makeAsteroid, moveAsteroids, destroyAsteroid, radiusOf, hpOf, earthDamageOf, timeToImpact, mostUrgent } from './asteroids.js';
-export { applyHazards, HANGAR_CENTRE } from './hazards.js';
+export { applyHazards, reloadPoint, HANGAR_CENTRE } from './hazards.js';
 export { pointsFor } from './asteroids.js';
 export { fire, moveProjectiles, crosshairTarget, nearestTarget } from './weapons.js';
 export { segmentHitsSphere, segmentHitsBox } from './collide.js';

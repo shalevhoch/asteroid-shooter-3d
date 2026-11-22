@@ -39,7 +39,7 @@ export function hudModel(s: GameState, best: number): HudModel {
   if (s.earthHealth <= EARTH_MAX_HEALTH * 0.3) warnings.push('EARTH CRITICAL');
   if (s.ship.hull < hullMax) warnings.push(s.ship.hull <= hullMax * 0.3 ? 'HULL CRITICAL' : 'HULL DAMAGED');
   if (s.ship.fuel === 0) warnings.push('NO FUEL');
-  if (s.ship.rockets === 0) warnings.push('NO ROCKETS: RELOAD AT THE MOTHERSHIP');
+  if (s.ship.rockets === 0) warnings.push('NO ROCKETS: RELOAD AT THE MOTHERSHIP OR STATION');
   return {
     score: s.score,
     best: Math.max(best, s.score),
