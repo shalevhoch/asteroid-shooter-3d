@@ -48,6 +48,20 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
   penetration, and the throttle drops by 1 level.
 - **Hangar**: while the ship's position is inside the hangar sphere, fuel, rockets and hull refill to their maxima
   (`shipReloaded` fires on the tick anything actually refilled).
+- **Crafts** (P17): picked on the title card and kept per browser. The Fighter is the original ship with exactly the
+  numbers above. The others trade against it:
+
+  | Craft | Model | Turn | Fuel | Hull | Rockets |
+  |---|---|---|---|---|---|
+  | Fighter (default) | ship1 | `TURN_RATE` | 600 | 100 | 3 |
+  | Interceptor | ship2 | ×1.25 | 450 | 75 | 2 |
+  | Shuttle | shuttle-01 (3DS) | ×0.8 | 900 | 140 | 5 |
+
+  - Turbo, throttle, strafe and weapons are the same for every craft. The hangar refills to the craft's own maxima,
+    and the HUD bars and rocket pips use them too.
+  - Every model is scaled to the Fighter's length, so the 20-unit collision sphere fits them all.
+  - **Decisions**: real trade-offs, with the Fighter unchanged as the default, so no existing tuning knob moves. The
+    g_ship models are left out: they're LWO, whose three.js loader is deprecated (a follow-up can bake them to GLB).
 
 ## 4. Asteroids
 
@@ -358,4 +372,3 @@ title card has the full list.
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.
 
-- **P17**: per-craft stat differences against §3.

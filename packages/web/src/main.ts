@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -167,6 +167,7 @@ function applyToggles() {
 }
 
 const world = await buildWorld(base);
+void world.setCraft(settings.craft);
 const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
 const atlas = await buildAtlas((p) => assetUrl(base, p));
 const batch = new BillboardBatch(atlas, MAX_PARTICLES + 64);
@@ -227,6 +228,21 @@ function achievementsPanel(): string {
   return `<details class="settings ach"><summary>Achievements ${String(unlockedCount(unlocks))}/${String(ACHIEVEMENT_IDS.length)}</summary><table>${rows}</table></details>`;
 }
 
+const CRAFT_LABELS = {
+  fighter: { name: 'Fighter', blurb: 'The original ship. Balanced.' },
+  interceptor: { name: 'Interceptor', blurb: 'Turns faster; less fuel, hull and one rocket fewer.' },
+  shuttle: { name: 'Shuttle', blurb: 'Turns slower; more fuel, a tougher hull and five rockets.' },
+} as const;
+
+/** The craft picker (P17): name, a blurb and the stats against the Fighter. */
+function craftPicker(): string {
+  const c = CRAFTS[settings.craft];
+  const f = CRAFTS.fighter;
+  const pct = (v: number, base: number) => `${String(Math.round((v / base) * 100))}%`;
+  return `<div class="diff craft">${CRAFT_IDS.map((id) => `<button data-craft="${id}" class="${id === settings.craft ? 'on' : ''}">${CRAFT_LABELS[id].name}</button>`).join('')}</div>
+    <p class="dim">${CRAFT_LABELS[settings.craft].blurb}<br>turn ${pct(c.turnRate, f.turnRate)} · fuel ${String(c.fuelMax)} · hull ${String(c.hullMax)} · rockets ${String(c.rocketMax)}</p>`;
+}
+
 /** A function, so TypeScript doesn't narrow `phase` across calls that change it. */
 const isPlaying = (): boolean => phase === 'playing';
 /** Whether the title card's settings panel is unfolded (kept across re-renders). */
@@ -241,7 +257,7 @@ function renderOverlay() {
   if (phase === 'title') {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
-      <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}
+      <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}${craftPicker()}
       <button id="go">${touchMode ? "Tap" : "Click"} to start</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${touchMode ? "Tap" : "Click"} to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
@@ -278,6 +294,16 @@ function renderOverlay() {
       saveSettings();
       renderOverlay();
       renderHelp();
+    });
+  }
+  for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-craft]')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = CRAFT_IDS.find((x) => x === b.dataset['craft']);
+      if (c) settings.craft = c;
+      saveSettings();
+      void world.setCraft(settings.craft);
+      renderOverlay();
     });
   }
   for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-diff]')) {
@@ -336,7 +362,8 @@ function dispatch(action: FlowAction) {
 }
 
 function newRun() {
-  prev = curr = initialState(Date.now() >>> 0, settings.difficulty);
+  prev = curr = initialState(Date.now() >>> 0, settings.difficulty, settings.craft);
+  void world.setCraft(settings.craft);
   stats = EMPTY_STATS;
   newBest = false;
   rank = null;

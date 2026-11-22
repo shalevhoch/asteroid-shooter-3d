@@ -1,5 +1,6 @@
 /** Game state, input and events: the sim's whole public data model (ADR 0001). */
-import { EARTH_MAX_HEALTH, ROCKET_MAX, SHIP_START, FUEL_MAX, HULL_MAX } from './constants.js';
+import { EARTH_MAX_HEALTH, SHIP_START } from './constants.js';
+import { CRAFTS, type CraftId } from './crafts.js';
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
@@ -72,6 +73,8 @@ export interface GameState {
   /** The kill chain behind the combo multiplier (SPEC §6). */
   readonly combo: ComboState;
   readonly difficulty: Difficulty;
+  /** The player's ship (P17). */
+  readonly craft: CraftId;
   readonly wave: WaveState;
   /** Set on the tick the run ends; `step` is then a no-op. */
   readonly ended: RunEndReason | null;
@@ -143,11 +146,12 @@ export interface StepResult {
 /** Start facing +Z, out of the hangar bay's open end, with up +Y: local −Z turned 180° about +Y. */
 export const START_ROT: Quat = fromAxisAngle([0, 1, 0], Math.PI);
 
-export function initialState(seed: number, difficulty: Difficulty = 'normal'): GameState {
+export function initialState(seed: number, difficulty: Difficulty = 'normal', craft: CraftId = 'fighter'): GameState {
+  const c = CRAFTS[craft];
   return {
     tick: 0,
     rng: seedRng(seed),
-    ship: { pos: SHIP_START, rot: START_ROT, throttle: 0, fuel: FUEL_MAX, hull: HULL_MAX, turbo: false, rockets: ROCKET_MAX, photonCooldown: 0, photonSide: 1 },
+    ship: { pos: SHIP_START, rot: START_ROT, throttle: 0, fuel: c.fuelMax, hull: c.hullMax, turbo: false, rockets: c.rocketMax, photonCooldown: 0, photonSide: 1 },
     asteroids: [],
     projectiles: [],
     nextProjectileId: 1,
@@ -156,6 +160,7 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal'): G
     nextId: 1,
     earthHealth: EARTH_MAX_HEALTH,
     difficulty,
+    craft,
     wave: INITIAL_WAVE,
     ended: null,
   };
