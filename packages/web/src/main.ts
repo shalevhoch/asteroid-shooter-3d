@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { CAMPAIGN_WAVES, DIFFICULTIES, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { CAMPAIGN_WAVES, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
 import { AudioBank, cuesFor } from './audio.js';
@@ -15,6 +15,7 @@ import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { ProjectileView } from './projectileView.js';
 import { buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, cycle, parseSettings } from './settings.js';
+import { ThreatView } from './threatView.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
 
@@ -84,6 +85,8 @@ const controls = new Controls(renderer.domElement, settings);
 const audio = new AudioBank(base);
 audio.muted = settings.muted;
 const hud = new Hud(el('hud'));
+const threat = new ThreatView(el('threat') as HTMLCanvasElement);
+const viewProj = new THREE.Matrix4();
 
 function renderHelp(): void {
   const rows = bindings(settings.layout)
@@ -281,6 +284,15 @@ renderer.setAnimationLoop((nowMs: number) => {
   shots.update(prev.projectiles, curr.projectiles, alpha);
   fx.update(nowMs);
 
+  camera.updateMatrixWorld();
+  if (phase === 'title') threat.clear();
+  else {
+    viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    const rocketTargets = new Set<number>();
+    for (const p of curr.projectiles) if (p.kind === 'rocket' && p.target !== null) rocketTargets.add(p.target);
+    const aimTarget = curr.ship.rockets > 0 ? crosshairTarget(curr.ship.pos, rotate(curr.ship.rot, LOCAL_FORWARD), curr.asteroids, PRESETS[curr.difficulty].rocketLockCone) : null;
+    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets });
+  }
   hud.show(phase !== 'title');
   hud.render(hudModel(curr, best));
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
