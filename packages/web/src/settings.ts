@@ -18,14 +18,19 @@ export interface Settings {
   volume: number;
   /** The ship flown (P17). */
   craft: CraftId;
+  /** Render quality (P23): auto (the P20 step-down) or a fixed level. */
+  quality: QualitySetting;
 }
+
+export const QUALITY_SETTINGS = ['auto', 'high', 'medium', 'low'] as const;
+export type QualitySetting = (typeof QUALITY_SETTINGS)[number];
 
 export const SENSITIVITY_MIN = 0.25;
 export const SENSITIVITY_MAX = 3;
 export const SENSITIVITY_STEP = 0.25;
 export const VOLUME_STEP = 0.1;
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1, craft: 'fighter' };
+export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1, craft: 'fighter', quality: 'auto' };
 export const SETTINGS_KEY = 'asteroid-shooter-3d.settings.v1';
 
 /**
@@ -42,7 +47,7 @@ export function parseSettings(raw: string | null, reducedMotion = false, touch =
     return s;
   }
   if (typeof v !== 'object' || v === null) return s;
-  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown; difficulty?: unknown; shake?: unknown; sensitivity?: unknown; volume?: unknown; craft?: unknown };
+  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown; difficulty?: unknown; shake?: unknown; sensitivity?: unknown; volume?: unknown; craft?: unknown; quality?: unknown };
   if (LAYOUTS.includes(o.layout as Layout)) s.layout = o.layout as Layout;
   if (CAMERA_MODES.includes(o.camera as CameraMode)) s.camera = o.camera as CameraMode;
   if (typeof o.invertY === 'boolean') s.invertY = o.invertY;
@@ -52,6 +57,7 @@ export function parseSettings(raw: string | null, reducedMotion = false, touch =
   if (typeof o.shake === 'boolean') s.shake = o.shake;
   if (typeof o.sensitivity === 'number' && Number.isFinite(o.sensitivity)) s.sensitivity = clampStep(o.sensitivity, SENSITIVITY_MIN, SENSITIVITY_MAX, SENSITIVITY_STEP);
   if (CRAFT_IDS.includes(o.craft as CraftId)) s.craft = o.craft as CraftId;
+  if (QUALITY_SETTINGS.includes(o.quality as QualitySetting)) s.quality = o.quality as QualitySetting;
   if (typeof o.volume === 'number' && Number.isFinite(o.volume)) s.volume = clampStep(o.volume, 0, 1, VOLUME_STEP);
   return s;
 }
@@ -66,7 +72,7 @@ export function clampStep(v: number, min: number, max: number, step: number): nu
 }
 
 /** Ids of the rows on the settings panel (P13), in display order. */
-export const SETTING_IDS = ['layout', 'camera', 'invertY', 'sensitivity', 'volume', 'muted', 'shake', 'help', 'difficulty'] as const;
+export const SETTING_IDS = ['layout', 'camera', 'invertY', 'sensitivity', 'volume', 'muted', 'shake', 'quality', 'help', 'difficulty'] as const;
 export type SettingId = (typeof SETTING_IDS)[number];
 
 export interface SettingRow {
@@ -80,8 +86,11 @@ export interface SettingRow {
 
 const onOff = (b: boolean) => (b ? 'on' : 'off');
 
-/** The settings panel's rows. Mid-run (`midRun`), difficulty only applies to the next run, and says so. */
-export function settingRows(s: Readonly<Settings>, difficultyNames: Readonly<Record<Difficulty, string>>, midRun: boolean): SettingRow[] {
+/**
+ * The settings panel's rows. Mid-run (`midRun`), difficulty only applies to the next run, and says so. `liveQuality` is
+ * the level in use (shown beside "auto"); `qualityPinned` says a `?quality=` URL overrides the setting.
+ */
+export function settingRows(s: Readonly<Settings>, difficultyNames: Readonly<Record<Difficulty, string>>, midRun: boolean, liveQuality?: string, qualityPinned = false): SettingRow[] {
   return [
     { id: 'layout', label: 'Keys', value: s.layout, kind: 'toggle' },
     { id: 'camera', label: 'Camera', value: s.camera, kind: 'toggle' },
@@ -90,6 +99,7 @@ export function settingRows(s: Readonly<Settings>, difficultyNames: Readonly<Rec
     { id: 'volume', label: 'Volume', value: `${String(Math.round(s.volume * 100))}%`, kind: 'range' },
     { id: 'muted', label: 'Sound', value: onOff(!s.muted), kind: 'toggle' },
     { id: 'shake', label: 'Screen shake', value: onOff(s.shake), kind: 'toggle' },
+    { id: 'quality', label: 'Graphics', value: s.quality === 'auto' && liveQuality ? `auto · ${liveQuality}` : s.quality, kind: 'toggle', ...(qualityPinned ? { note: 'set by URL' } : {}) },
     { id: 'help', label: 'Controls in play', value: onOff(s.help), kind: 'toggle' },
     { id: 'difficulty', label: 'Difficulty', value: difficultyNames[s.difficulty], kind: 'toggle', ...(midRun ? { note: 'next run' } : {}) },
   ];
@@ -103,6 +113,9 @@ export function changeSetting(s: Settings, id: SettingId, dir: 1 | -1 = 1): void
       return;
     case 'camera':
       s.camera = cycle(CAMERA_MODES, s.camera);
+      return;
+    case 'quality':
+      s.quality = cycle(QUALITY_SETTINGS, s.quality);
       return;
     case 'difficulty':
       s.difficulty = cycle(DIFFICULTIES, s.difficulty);

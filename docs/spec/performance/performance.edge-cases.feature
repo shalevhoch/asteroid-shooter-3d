@@ -15,3 +15,8 @@ Feature: Performance and loading edge cases (SPEC §14, P20)
   Scenario: Fast desktop
     Given a device holding 60 fps
     Then quality stays high for the whole run
+
+  Scenario: URL beats the setting (P23)
+    Given Graphics is set to low
+    When the page opens with ?quality=high
+    Then high is used and the Graphics row says "set by URL"
