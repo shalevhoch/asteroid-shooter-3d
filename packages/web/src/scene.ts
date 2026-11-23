@@ -121,6 +121,26 @@ async function loadObj(base: string, path: string, texture?: string): Promise<TH
   return obj;
 }
 
+/** Loads the sky texture after the world is up (P24) and fades it in over ~0.6 s. A failure leaves the sky black. */
+async function loadSkyTexture(base: string, mat: THREE.MeshBasicMaterial): Promise<void> {
+  try {
+    const map = await new THREE.TextureLoader().loadAsync(assetUrl(base, 'models/space/space.jpg'));
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = 4;
+    mat.map = map;
+    mat.needsUpdate = true;
+    const t0 = performance.now();
+    const fade = () => {
+      const k = Math.min(1, (performance.now() - t0) / 600);
+      mat.color.setScalar(k);
+      if (k < 1) requestAnimationFrame(fade);
+    };
+    fade();
+  } catch {
+    // Dressing only: the game plays fine on a black sky.
+  }
+}
+
 export async function buildWorld(base: string): Promise<World> {
   const scene = new THREE.Scene();
   scene.add(new THREE.AmbientLight(0x8890a8, 0.55));
@@ -129,7 +149,7 @@ export async function buildWorld(base: string): Promise<World> {
   scene.add(sun);
 
   const [sky, earth, mothership, shipModel, bigRock, smallRock] = await Promise.all([
-    loadObj(base, 'models/space/space.obj', 'models/space/space.jpg'),
+    loadObj(base, 'models/space/space.obj'),
     loadObj(base, 'models/earth/earth.obj', 'models/earth/earth.jpg'),
     loadObj(base, 'models/mothership/mothership.obj', 'models/mothership/mothership.jpg'),
     loadObj(base, 'models/ship1/ship.obj', 'models/ship1/f02_512.jpg'),
@@ -138,13 +158,15 @@ export async function buildWorld(base: string): Promise<World> {
   ]);
 
   // Sky: the unit sphere, scaled up, drawn first and unlit, following the camera.
+  // P24: its 0.5 MB texture isn't on the first-play path. The sky starts black and the stars fade in once loaded.
+  const skyMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide, depthWrite: false });
   sky.traverse((c) => {
     if (c instanceof THREE.Mesh) {
-      const old = c.material as THREE.MeshStandardMaterial;
-      c.material = new THREE.MeshBasicMaterial({ map: old.map, side: THREE.BackSide, depthWrite: false });
+      c.material = skyMat;
       c.renderOrder = -1;
     }
   });
+  void loadSkyTexture(base, skyMat);
   sky.scale.setScalar(SKY_RADIUS);
   scene.add(sky);
 

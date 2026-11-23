@@ -19,4 +19,5 @@ flowchart LR
 - **INV-4**: Frames longer than STALL_MS and the warm-up shall never cause a step.
 - **INV-5**: The FX engine shall keep at most min(particleCap, MAX_PARTICLES) particles.
 - **INV-7** (P23): The Graphics setting shall persist; a fixed level shall never change by itself; `?quality=` shall override it.
+- **INV-8** (P24): earth.jpg shall stay ≤ 200 kB, and the world shall be built without waiting for the sky texture.
 - **INV-6**: Quality shall never change the sim's state or its replays.

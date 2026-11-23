@@ -408,6 +408,9 @@ title card has the full list.
   averages under 40 fps steps quality down one level, at once, down to low. It never steps back up in a run of the
   page, so it can't oscillate; frames over 250 ms (tab hidden, hitches) are ignored. `?quality=high|medium|low`
   pins a level and turns the auto step off.
+- **Texture budget** (P24): earth.jpg is re-encoded at JPEG q85, 4:4:4, progressive (564 kB → 184 kB, PSNR 40 dB).
+  The sky texture (space.jpg, 491 kB, kept as is) is no longer on the first-play path: the sky starts black and the
+  stars fade in over ~0.6 s once it loads; if it fails, the sky stays black.
 - **Graphics setting** (P23): the settings panel's Graphics row cycles auto → high → medium → low (default auto)
   and persists per browser. Auto shows the live level ("auto · medium") and keeps the step-down; a fixed level pins
   it. A change applies at once and restarts auto from the device's starting level. `?quality=` beats the setting and
