@@ -15,3 +15,8 @@ Feature: Gamepad edge cases (SPEC §8, P19)
   Scenario: Non-standard pad
     Given a pad without the standard mapping or with fewer buttons
     Then missing buttons and axes read as rest
+
+  Scenario: Prompts follow the pad (P22)
+    Given the title card says "Click to start"
+    When a pad connects
+    Then it says "Press Start to play"; after pausing, "Press Start to resume"; unplugging reverts to "Click to resume"

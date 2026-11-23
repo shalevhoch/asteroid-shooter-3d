@@ -210,6 +210,9 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
     Back cycles the camera and Start starts, pauses and resumes.
   - Stick axes add to the keyboard and mouse and clamp to [−1, 1]; buttons OR with the keys.
   - The controls list adds a gamepad section while a pad is connected. Disconnecting releases everything.
+  - **Card prompts** (P22): while a pad is connected the title and pause buttons read "Press Start to play" /
+    "Press Start to resume", and the win and game-over buttons Start triggers get "(Start)". They update live on
+    connect and disconnect; otherwise "Tap" (touch) or "Click".
   - **Decisions**: no rebinding, rumble or menu navigation by d-pad for now; the mapping is fixed and documented.
 - **Pause and settings overlay** (P13):
   - Esc (leaving pointer lock, or a plain keypress in the classic layout) or P pauses; click, Enter or P resumes.

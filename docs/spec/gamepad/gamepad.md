@@ -20,3 +20,4 @@ flowchart LR
 - **INV-3**: The merged pitch, yaw, roll and strafe shall stay within [−1, 1].
 - **INV-4**: With no pad connected, the merged input shall equal the keyboard/mouse/touch input.
 - **INV-5**: When the pad disconnects, every held control shall release.
+- **INV-6** (P22): While a pad is connected, every card button Start triggers shall name Start; after a disconnect the prompts shall revert to Tap / Click.
