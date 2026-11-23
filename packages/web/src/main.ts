@@ -24,7 +24,7 @@ import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, se
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
 import { LoadProgress } from './loading.js';
-import { QualityGovernor, initialQuality, type QualityLevel } from './quality.js';
+import { QualityGovernor, initialQuality, urlQuality, type QualityLevel } from './quality.js';
 import { GamepadInput, mergePad, type PadPress } from './gamepad.js';
 import { mergeTouch, wantsTouch } from './touch.js';
 import { TouchControls } from './touchControls.js';
@@ -111,7 +111,7 @@ function nextToast() {
 let rank: number | null = null;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-const quality = new QualityGovernor(initialQuality(location.search, touchMode));
+const quality = new QualityGovernor(initialQuality(location.search, touchMode, settings.quality));
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.current.dprCap));
 renderer.setSize(window.innerWidth, window.innerHeight);
 host.appendChild(renderer.domElement);
@@ -247,7 +247,7 @@ function difficultyPicker(): string {
 
 /** The settings panel (P13): every row changes and persists at once. Folded on the title card, open on the pause card. */
 function settingsPanel(open: boolean): string {
-  const rows = settingRows(settings, DIFFICULTY_NAMES, phase === 'paused')
+  const rows = settingRows(settings, DIFFICULTY_NAMES, phase === 'paused', quality.current.name, urlQuality(location.search) !== null)
     .map((r) => {
       const ctl =
         r.kind === 'range'
@@ -330,7 +330,9 @@ function renderOverlay() {
   for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-set]')) {
     b.addEventListener('click', (e) => {
       e.stopPropagation();
-      changeSetting(settings, b.dataset['set'] as SettingId, b.dataset['dir'] === '-1' ? -1 : 1);
+      const id = b.dataset['set'] as SettingId;
+      changeSetting(settings, id, b.dataset['dir'] === '-1' ? -1 : 1);
+      if (id === 'quality') applyQuality(quality.reset(initialQuality(location.search, touchMode, settings.quality)));
       audio.muted = settings.muted;
       audio.volume = settings.volume;
       saveSettings();

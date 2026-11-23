@@ -18,4 +18,5 @@ flowchart LR
 - **INV-3**: A pinned quality (`?quality=`) shall never change.
 - **INV-4**: Frames longer than STALL_MS and the warm-up shall never cause a step.
 - **INV-5**: The FX engine shall keep at most min(particleCap, MAX_PARTICLES) particles.
+- **INV-7** (P23): The Graphics setting shall persist; a fixed level shall never change by itself; `?quality=` shall override it.
 - **INV-6**: Quality shall never change the sim's state or its replays.

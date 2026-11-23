@@ -35,10 +35,19 @@ export interface QualityChoice {
   readonly auto: boolean;
 }
 
-/** Starting level: `?quality=high|medium|low` pins it; otherwise touch devices start at medium, the rest at high. */
-export function initialQuality(search: string, touch: boolean): QualityChoice {
+/** A level name from `?quality=`, or null. */
+export function urlQuality(search: string): QualityLevel['name'] | null {
   const q = new URLSearchParams(search).get('quality');
-  const pinned = QUALITY_LEVELS.findIndex((l) => l.name === q);
+  return QUALITY_LEVELS.find((l) => l.name === q)?.name ?? null;
+}
+
+/**
+ * Starting level: `?quality=high|medium|low` pins it, then the settings choice (P23: a fixed level pins it too);
+ * on auto, touch devices start at medium, the rest at high.
+ */
+export function initialQuality(search: string, touch: boolean, setting: 'auto' | QualityLevel['name'] = 'auto'): QualityChoice {
+  const name = urlQuality(search) ?? (setting === 'auto' ? null : setting);
+  const pinned = QUALITY_LEVELS.findIndex((l) => l.name === name);
   if (pinned >= 0) return { level: pinned, auto: false };
   return { level: touch ? 1 : 0, auto: true };
 }
@@ -49,7 +58,7 @@ export function initialQuality(search: string, touch: boolean): QualityChoice {
  */
 export class QualityGovernor {
   level: number;
-  private readonly auto: boolean;
+  private auto: boolean;
   private elapsed = 0;
   private windowMs = 0;
   private frames = 0;
@@ -57,6 +66,14 @@ export class QualityGovernor {
   constructor(choice: QualityChoice) {
     this.level = choice.level;
     this.auto = choice.auto;
+  }
+
+  /** Starts over with a new choice (P23: the settings changed). */
+  reset(choice: QualityChoice): QualityLevel {
+    this.level = choice.level;
+    this.auto = choice.auto;
+    this.elapsed = this.windowMs = this.frames = 0;
+    return this.current;
   }
 
   get current(): QualityLevel {

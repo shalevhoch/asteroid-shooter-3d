@@ -408,12 +408,16 @@ title card has the full list.
   averages under 40 fps steps quality down one level, at once, down to low. It never steps back up in a run of the
   page, so it can't oscillate; frames over 250 ms (tab hidden, hitches) are ignored. `?quality=high|medium|low`
   pins a level and turns the auto step off.
+- **Graphics setting** (P23): the settings panel's Graphics row cycles auto → high → medium → low (default auto)
+  and persists per browser. Auto shows the live level ("auto · medium") and keeps the step-down; a fixed level pins
+  it. A change applies at once and restarts auto from the device's starting level. `?quality=` beats the setting and
+  the row says "set by URL".
 - **Budget**: the title card is ready in about 3.4 s on an emulated 4G link (9 Mbit/s, 150 ms RTT) against the
   uncompressed preview server; GitHub Pages gzips the 560 kB script to ~140 kB.
 - **Decisions**: the reference device is a play-test item (Shalev's tablet); the 30 fps floor is checked there. No
   KTX2/GLB conversion for now: the first-play payload is ~2 MB of mostly JPEG, and a KTX2 transcoder plus re-encode
-  would add complexity for little gain. Baking the LWO and 3DS models to GLB is a follow-up. No quality picker in the
-  settings yet; `?quality=` covers testing.
+  would add complexity for little gain. Baking the LWO and 3DS models to GLB is a follow-up. The quality picker landed in
+  P23.
 
 ## Open
 
