@@ -3,7 +3,7 @@
  * reference exists under the exact (case-sensitive) name, as GitHub Pages requires.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, posix } from 'node:path';
+import { join, posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MOTHERSHIP_BOXES } from '@asteroid/sim';
 import type { AssetManifest } from '../src/manifest.js';
@@ -83,10 +83,14 @@ describe('asset manifest', () => {
     for (const b of MOTHERSHIP_BOXES) for (let a = 0; a < 3; a++) expect(b.min[a]).toBeLessThan(b.max[a] ?? -Infinity);
   });
 
-  it('keeps every 3DS texture next to its model', () => {
-    for (const m of manifest.models.filter((x) => x.format === '3ds')) {
-      expect(m.textures?.length).toBeGreaterThan(0);
-      for (const t of m.textures ?? []) expect(dirname(t)).toBe(dirname(m.file));
+  it('ships no 3DS / LWO models: each is a GLB baked from a source kept in assets-src/ (P25)', () => {
+    expect(manifest.models.map((m) => m.format as string).filter((f) => f !== 'obj' && f !== 'glb')).toEqual([]);
+    const baked = manifest.models.filter((m) => m.format === 'glb');
+    expect(baked).toHaveLength(14);
+    for (const m of baked) {
+      expect(m.source).toMatch(/\.(3ds|lwo)$/);
+      expect(existsSync(join(import.meta.dirname, '../assets-src', m.source ?? ''))).toBe(true);
+      expect(readFileSync(join(ROOT, m.file)).subarray(0, 4).toString()).toBe('glTF');
     }
   });
 });

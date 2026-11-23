@@ -55,13 +55,14 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
   |---|---|---|---|---|---|
   | Fighter (default) | ship1 | `TURN_RATE` | 600 | 100 | 3 |
   | Interceptor | ship2 | ×1.25 | 450 | 75 | 2 |
-  | Shuttle | shuttle-01 (3DS) | ×0.8 | 900 | 140 | 5 |
+  | Shuttle | shuttle-01 (3DS, baked to GLB) | ×0.8 | 900 | 140 | 5 |
 
   - Turbo, throttle, strafe and weapons are the same for every craft. The hangar refills to the craft's own maxima,
     and the HUD bars and rocket pips use them too.
   - Every model is scaled to the Fighter's length, so the 20-unit collision sphere fits them all.
   - **Decisions**: real trade-offs, with the Fighter unchanged as the default, so no existing tuning knob moves. The
-    g_ship models are left out: they're LWO, whose three.js loader is deprecated (a follow-up can bake them to GLB).
+    g_ship models are left out for now; since P25 they're baked to GLB like every 3DS model, so a later packet can add one
+    as a craft.
 - **Space station** (P18): a second reload point and landmark at `STATION_POS = (1000, 1000, 0)`, above the
   asteroid lane between the spawn line and Earth, on the opposite side from the mothership.
   - Inside `STATION_DOCK_RADIUS = 150` of it, the ship refills exactly as in the hangar. `shipReloaded` carries
@@ -411,6 +412,12 @@ title card has the full list.
 - **Texture budget** (P24): earth.jpg is re-encoded at JPEG q85, 4:4:4, progressive (564 kB → 184 kB, PSNR 40 dB).
   The sky texture (space.jpg, 491 kB, kept as is) is no longer on the first-play path: the sky starts black and the
   stars fade in over ~0.6 s once it loads; if it fails, the sky stays black.
+- **GLB models** (P25): every 3DS and LWO model (station, docks, barrack, Shuttle, the gallery extras, the four g_ships)
+  ships as GLB, baked by `scripts/bake-glb.mjs` with textures embedded. Sources move to `packages/web/assets-src/`
+  (kept for re-baking, not deployed). The bake keeps node transforms and records each Phong material in glTF extras,
+  so the game rebuilds the same materials: craft and station renders are pixel-identical. GLTFLoader is imported on
+  demand (the station and Shuttle load behind the title card), and no TDSLoader or LWOLoader ships. The gallery now
+  shows 3DS textures in sRGB, matching the game (before, it showed them unconverted, a little brighter).
 - **Graphics setting** (P23): the settings panel's Graphics row cycles auto → high → medium → low (default auto)
   and persists per browser. Auto shows the live level ("auto · medium") and keeps the step-down; a fixed level pins
   it. A change applies at once and restarts auto from the device's starting level. `?quality=` beats the setting and
@@ -419,7 +426,7 @@ title card has the full list.
   uncompressed preview server; GitHub Pages gzips the 560 kB script to ~140 kB.
 - **Decisions**: the reference device is a play-test item (Shalev's tablet); the 30 fps floor is checked there. No
   KTX2/GLB conversion for now: the first-play payload is ~2 MB of mostly JPEG, and a KTX2 transcoder plus re-encode
-  would add complexity for little gain. Baking the LWO and 3DS models to GLB is a follow-up. The quality picker landed in
+  would add complexity for little gain. P25 baked the LWO and 3DS models to GLB (below). The quality picker landed in
   P23.
 
 ## Open

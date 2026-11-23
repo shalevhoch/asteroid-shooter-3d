@@ -6,8 +6,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
-import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader.js';
-import { LWOLoader } from 'three/examples/jsm/loaders/LWOLoader.js';
+import { loadGlb } from './glb.js';
 import { assetUrl } from './assetUrl.js';
 import type { AssetManifest, ModelEntry } from './manifest.js';
 
@@ -51,15 +50,7 @@ resize();
 const dir = (file: string) => url(file.slice(0, file.lastIndexOf('/') + 1));
 
 async function load(m: ModelEntry): Promise<THREE.Object3D> {
-  if (m.format === '3ds') return new TDSLoader().setResourcePath(dir(m.file)).loadAsync(url(m.file));
-  if (m.format === 'lwo') {
-    // LWOLoader goes away in three r195. Bake the four g_ship models to GLB before upgrading past it (or if a game packet uses them).
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    const lwo = await new LWOLoader().loadAsync(url(m.file));
-    const group = new THREE.Group();
-    for (const mesh of lwo.meshes) group.add(mesh);
-    return group;
-  }
+  if (m.format === 'glb') return loadGlb(url(m.file));
   const text = await (await fetch(url(m.file))).text();
   const mtl = /^mtllib (.+)$/m.exec(text)?.[1];
   const loader = new OBJLoader();
@@ -149,8 +140,8 @@ const manifest = (await (await fetch(url('manifest.json'))).json()) as AssetMani
 const groups: [string, (m: ModelEntry) => boolean][] = [
   ['Used by the game', (m) => m.core],
   ['Other OBJ models', (m) => !m.core && m.format === 'obj'],
-  ['3DS models', (m) => m.format === '3ds'],
-  ['LWO models', (m) => m.format === 'lwo'],
+  ['3DS models (baked to GLB)', (m) => m.format === 'glb' && !m.source?.endsWith('.lwo')],
+  ['LWO models (baked to GLB)', (m) => m.format === 'glb' && m.source?.endsWith('.lwo') === true],
 ];
 let first: (() => void) | null = null;
 for (const [title, pick] of groups) {

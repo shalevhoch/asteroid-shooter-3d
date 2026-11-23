@@ -1,7 +1,6 @@
 /** The P04 scene: sky sphere, Earth with an atmosphere glow, the mothership and the player's ship. */
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { TDSLoader } from 'three/examples/jsm/loaders/TDSLoader.js';
 import { ATMOSPHERE_RADIUS, EARTH_POS, MOTHERSHIP_POS, MOTHERSHIP_SCALE, STATION_DOCK_RADIUS, STATION_POS, type CraftId } from '@asteroid/sim';
 import { assetUrl } from './assetUrl.js';
 
@@ -35,17 +34,15 @@ function firstGeometry(obj: THREE.Object3D): THREE.BufferGeometry {
 export const CRAFT_MODELS: Readonly<Record<CraftId, { readonly file: string; readonly texture?: string; readonly euler: readonly [number, number, number] }>> = {
   fighter: { file: 'models/ship1/ship.obj', texture: 'models/ship1/f02_512.jpg', euler: [0, 0, 0] },
   interceptor: { file: 'models/ship2/ship.obj', texture: 'models/ship2/f03_512.jpg', euler: [0, 0, 0] },
-  shuttle: { file: 'models/extras/shuttle-01/shuttle-01.3ds', euler: [-Math.PI / 2, 0, 0] },
+  shuttle: { file: 'models/extras/shuttle-01/shuttle-01.glb', euler: [-Math.PI / 2, 0, 0] },
 };
 
-/** A 3DS model with the loader's own Phong materials (as the gallery shows them), textures in sRGB. */
-async function load3ds(base: string, file: string): Promise<THREE.Object3D> {
-  const dir = file.slice(0, file.lastIndexOf('/') + 1);
-  const obj = await new TDSLoader().setResourcePath(assetUrl(base, dir)).loadAsync(assetUrl(base, file));
-  obj.traverse((c) => {
-    if (c instanceof THREE.Mesh) for (const m of (Array.isArray(c.material) ? c.material : [c.material]) as THREE.MeshPhongMaterial[]) if (m.map) m.map.colorSpace = THREE.SRGBColorSpace;
-  });
-  return obj;
+/** A model baked from 3DS to GLB (P25), with its original Phong materials, textures in sRGB. */
+// GLTFLoader is imported on demand: these models (station, Shuttle) load behind the title card, so it stays off the
+// first-play path.
+async function loadBaked(base: string, file: string): Promise<THREE.Object3D> {
+  const { loadGlb } = await import('./glb.js');
+  return loadGlb(assetUrl(base, file));
 }
 
 /** Centres a 3DS model (Z up) on the origin, turned Y-up, scaled so its longest side is `size`. */
@@ -67,8 +64,8 @@ function fitted(obj: THREE.Object3D, size: number, euler: readonly [number, numb
  * the game starts; returns the ring so the loop can pulse it.
  */
 export async function addStation(scene: THREE.Scene, base: string): Promise<THREE.Mesh<THREE.TorusGeometry, THREE.MeshBasicMaterial>> {
-  const x = (f: string) => load3ds(base, `models/extras/${f}`);
-  const [station, dock, graving, barrack] = await Promise.all([x('space-station/space-station.3ds'), x('landing-dock/landing-dock.3ds'), x('graving-dock/graving-dock.3ds'), x('barrack/barrack.3ds')]);
+  const x = (f: string) => loadBaked(base, `models/extras/${f}`);
+  const [station, dock, graving, barrack] = await Promise.all([x('space-station/space-station.glb'), x('landing-dock/landing-dock.glb'), x('graving-dock/graving-dock.glb'), x('barrack/barrack.glb')]);
   const group = new THREE.Group();
   group.position.set(...STATION_POS);
   const place = (o: THREE.Object3D, size: number, at: readonly [number, number, number], euler?: readonly [number, number, number]) => {
@@ -89,7 +86,7 @@ export async function addStation(scene: THREE.Scene, base: string): Promise<THRE
 
 async function loadCraft(base: string, id: CraftId): Promise<THREE.Object3D> {
   const m = CRAFT_MODELS[id];
-  if (m.file.endsWith('.3ds')) return load3ds(base, m.file);
+  if (m.file.endsWith('.glb')) return loadBaked(base, m.file);
   return loadObj(base, m.file, m.texture);
 }
 

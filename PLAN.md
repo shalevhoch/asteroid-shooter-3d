@@ -47,7 +47,7 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P22: "Press Start" on the title card when a gamepad is connected | [#64](https://github.com/shalevhoch/asteroid-shooter-3d/issues/64) | polish | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#69](https://github.com/shalevhoch/asteroid-shooter-3d/pull/69) |
 | [x] | P23: Quality option in settings | [#65](https://github.com/shalevhoch/asteroid-shooter-3d/issues/65) | polish | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#70](https://github.com/shalevhoch/asteroid-shooter-3d/pull/70) |
 | [x] | P24: Re-encode the Earth and sky textures for load headroom | [#66](https://github.com/shalevhoch/asteroid-shooter-3d/issues/66) | polish | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#71](https://github.com/shalevhoch/asteroid-shooter-3d/pull/71) |
-| [ ] | P25: Convert the LWO/3DS ship models to GLB | [#67](https://github.com/shalevhoch/asteroid-shooter-3d/issues/67) | polish | 📋 | | |
+| [x] | P25: Convert the LWO/3DS ship models to GLB | [#67](https://github.com/shalevhoch/asteroid-shooter-3d/issues/67) | polish | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#72](https://github.com/shalevhoch/asteroid-shooter-3d/pull/72) |
 
 New packets get the next free `PNN`, an issue, and a row here, in the PR that discovers them.
 
