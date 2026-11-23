@@ -22,6 +22,7 @@ import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
 import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
+import { actionPrompt, inputKind, withStart } from './prompts.js';
 import { LoadProgress } from './loading.js';
 import { QualityGovernor, initialQuality, type QualityLevel } from './quality.js';
 import { GamepadInput, mergePad, type PadPress } from './gamepad.js';
@@ -154,6 +155,8 @@ const TOUCH_HELP = [
 ];
 
 const padRows = (): string => (gamepad.connected ? `<tr><th colspan="2">Gamepad</th></tr>${PAD_HELP.map(([k, v]) => `<tr><td>${k ?? ''}</td><td>${v ?? ''}</td></tr>`).join('')}` : '');
+
+const cardInput = () => inputKind(gamepad.connected, touchMode);
 
 function renderHelp(): void {
   if (touchMode) {
@@ -297,19 +300,19 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
       <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}${craftPicker()}
-      <button id="go">${touchMode ? "Tap" : "Click"} to start</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
+      <button id="go">${actionPrompt(cardInput(), 'start')}</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${touchMode ? "Tap" : "Click"} to resume</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
+    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${actionPrompt(cardInput(), 'resume')}</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
     overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
       <div class="final">${String(curr.score)}</div>
-      <div class="row"><button id="go">Keep going: endless mode</button><button id="finish">Finish the run</button></div></div>`;
+      <div class="row"><button id="go">${withStart('Keep going: endless mode', cardInput())}</button><button id="finish">Finish the run</button></div></div>`;
   } else {
     overlay.innerHTML = `<div class="card wide"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
       <div class="final">${String(curr.score)}</div>${newBest ? '<div class="newbest">NEW BEST!</div>' : `<p class="dim">Best ${String(best)}</p>`}
       ${runUnlocks.length ? `<p class="unlocked">🏆 Unlocked: ${runUnlocks.map((id) => ACHIEVEMENTS[id].name).join(' · ')}</p>` : ''}
       <div class="summary">${summaryTable()}${topTable()}</div>
-      <button id="go">Play again</button>${PORTAL_LINK}</div>`;
+      <button id="go">${withStart('Play again', cardInput())}</button>${PORTAL_LINK}</div>`;
   }
   document.getElementById('go')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -479,6 +482,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   if (gamepad.connected !== padShown) {
     padShown = gamepad.connected;
     renderHelp();
+    if (phase !== 'playing') renderOverlay();
   }
   applyToggles();
   if (phase === 'playing') {
