@@ -20,3 +20,7 @@ Feature: Performance and loading edge cases (SPEC §14, P20)
     Given Graphics is set to low
     When the page opens with ?quality=high
     Then high is used and the Graphics row says "set by URL"
+
+  Scenario: Sky texture fails (P24)
+    When space.jpg fails to load
+    Then the sky stays black and the game plays normally

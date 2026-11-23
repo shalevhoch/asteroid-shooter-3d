@@ -19,3 +19,7 @@ Feature: Performance and loading (SPEC §14, P20)
   Scenario: Graphics setting (P23)
     When the player sets Graphics to low in the settings panel
     Then the pixel ratio cap drops to 1 and the particle cap to 1000 at once, and the choice is kept after a reload
+
+  Scenario: Lighter first play (P24)
+    When the page opens on emulated 4G
+    Then the title card is ready without waiting for the sky texture, and the stars fade in shortly after
