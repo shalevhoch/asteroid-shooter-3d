@@ -6,6 +6,8 @@
 //   ASSET_SRC=/path/to/astroid-shooter-3D node scripts/import-assets.mjs
 //
 // Needs `unzip` (3DS packs ship zipped) and `ffmpeg` (re-encodes the 4096² sky texture).
+// Then run `node scripts/bake-glb.mjs` (P25): it bakes the 3DS / LWO models to GLB and moves their sources to
+// packages/web/assets-src/.
 // Every output file name is lowercase, so references resolve the same on case-sensitive Pages.
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';

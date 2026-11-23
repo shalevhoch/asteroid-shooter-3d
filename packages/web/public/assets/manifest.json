@@ -105,123 +105,100 @@
     },
     {
       "id": "barrack",
-      "format": "3ds",
-      "file": "models/extras/barrack/barrack.3ds",
-      "textures": [
-        "models/extras/barrack/metal03_.jpg",
-        "models/extras/barrack/metal07_.jpg",
-        "models/extras/barrack/metal_do.jpg",
-        "models/extras/barrack/metal_wi.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/barrack/barrack.glb",
+      "source": "models/extras/barrack/barrack.3ds",
       "core": false
     },
     {
       "id": "graving-dock",
-      "format": "3ds",
-      "file": "models/extras/graving-dock/graving-dock.3ds",
-      "textures": [
-        "models/extras/graving-dock/metal07_.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/graving-dock/graving-dock.glb",
+      "source": "models/extras/graving-dock/graving-dock.3ds",
       "core": false
     },
     {
       "id": "landing-dock",
-      "format": "3ds",
-      "file": "models/extras/landing-dock/landing-dock.3ds",
-      "textures": [
-        "models/extras/landing-dock/metal07_.jpg",
-        "models/extras/landing-dock/metal_do.jpg",
-        "models/extras/landing-dock/metal_la.jpg",
-        "models/extras/landing-dock/metal_wi.jpg",
-        "models/extras/landing-dock/warn_str.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/landing-dock/landing-dock.glb",
+      "source": "models/extras/landing-dock/landing-dock.3ds",
       "core": false
     },
     {
       "id": "space-station",
-      "format": "3ds",
-      "file": "models/extras/space-station/space-station.3ds",
-      "textures": [
-        "models/extras/space-station/sp_st_25.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/space-station/space-station.glb",
+      "source": "models/extras/space-station/space-station.3ds",
       "core": false
     },
     {
       "id": "space-fighter-01",
-      "format": "3ds",
-      "file": "models/extras/space-fighter-01/space-fighter-01.3ds",
-      "textures": [
-        "models/extras/space-fighter-01/f01_512.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/space-fighter-01/space-fighter-01.glb",
+      "source": "models/extras/space-fighter-01/space-fighter-01.3ds",
       "core": false
     },
     {
       "id": "space-fighter-02",
-      "format": "3ds",
-      "file": "models/extras/space-fighter-02/space-fighter-02.3ds",
-      "textures": [
-        "models/extras/space-fighter-02/f02_512.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/space-fighter-02/space-fighter-02.glb",
+      "source": "models/extras/space-fighter-02/space-fighter-02.3ds",
       "core": false
     },
     {
       "id": "space-fighter-03",
-      "format": "3ds",
-      "file": "models/extras/space-fighter-03/space-fighter-03.3ds",
-      "textures": [
-        "models/extras/space-fighter-03/f03_512.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/space-fighter-03/space-fighter-03.glb",
+      "source": "models/extras/space-fighter-03/space-fighter-03.3ds",
       "core": false
     },
     {
       "id": "shuttle-01",
-      "format": "3ds",
-      "file": "models/extras/shuttle-01/shuttle-01.3ds",
-      "textures": [
-        "models/extras/shuttle-01/s01_512.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/shuttle-01/shuttle-01.glb",
+      "source": "models/extras/shuttle-01/shuttle-01.3ds",
       "core": false
     },
     {
       "id": "shuttle-02",
-      "format": "3ds",
-      "file": "models/extras/shuttle-02/shuttle-02.3ds",
-      "textures": [
-        "models/extras/shuttle-02/s02_512.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/shuttle-02/shuttle-02.glb",
+      "source": "models/extras/shuttle-02/shuttle-02.3ds",
       "core": false
     },
     {
       "id": "hover-car",
-      "format": "3ds",
-      "file": "models/extras/hover-car/hover-car.3ds",
-      "textures": [
-        "models/extras/hover-car/car07.jpg"
-      ],
+      "format": "glb",
+      "file": "models/extras/hover-car/hover-car.glb",
+      "source": "models/extras/hover-car/hover-car.3ds",
       "core": false
     },
     {
       "id": "g-ship-01",
-      "format": "lwo",
-      "file": "models/extras/g-ship/g-ship-01.lwo",
+      "format": "glb",
+      "file": "models/extras/g-ship/g-ship-01.glb",
+      "source": "models/extras/g-ship/g-ship-01.lwo",
       "core": false
     },
     {
       "id": "g-ship-02",
-      "format": "lwo",
-      "file": "models/extras/g-ship/g-ship-02.lwo",
+      "format": "glb",
+      "file": "models/extras/g-ship/g-ship-02.glb",
+      "source": "models/extras/g-ship/g-ship-02.lwo",
       "core": false
     },
     {
       "id": "g-ship-03",
-      "format": "lwo",
-      "file": "models/extras/g-ship/g-ship-03.lwo",
+      "format": "glb",
+      "file": "models/extras/g-ship/g-ship-03.glb",
+      "source": "models/extras/g-ship/g-ship-03.lwo",
       "core": false
     },
     {
       "id": "g-ship-04-mirrored",
-      "format": "lwo",
-      "file": "models/extras/g-ship/g-ship-04-mirrored.lwo",
+      "format": "glb",
+      "file": "models/extras/g-ship/g-ship-04-mirrored.glb",
+      "source": "models/extras/g-ship/g-ship-04-mirrored.lwo",
       "core": false
     }
   ],
