@@ -1,4 +1,5 @@
 /** The station shop (P29): the saved wallet and the shop panel. Credits are global; upgrades are saved per ship. */
+import { t, type Lang } from './i18n.js';
 import { CRAFT_IDS, UPGRADE_IDS, UPGRADE_MAX, parseUpgrades, priceOf, type CraftId, type GameState, type RunOptions, type UpgradeId, type Upgrades } from '@asteroid/sim';
 
 export const WALLET_KEY = 'asteroid-shooter-3d.wallet.v1';
@@ -48,15 +49,15 @@ export const UPGRADE_LABELS: Readonly<Record<UpgradeId, { readonly name: string;
 const pips = (n: number): string => '●'.repeat(n) + '○'.repeat(UPGRADE_MAX - n);
 
 /** The shop panel: one button per upgrade (key 1–7), greyed out when capped or too dear. */
-export function shopPanel(s: GameState): string {
+export function shopPanel(s: GameState, lang: Lang = 'en'): string {
   const rows = UPGRADE_IDS.map((id, i) => {
     const price = priceOf(s.upgrades, id);
     const label = UPGRADE_LABELS[id];
     const cost = price === null ? 'MAX' : `◆ ${String(price)}`;
     const off = price === null || price > s.credits ? ' disabled' : '';
-    return `<button class="buy" data-buy="${id}"${off}><b>${String(i + 1)}</b> ${label.name} <span class="pips">${pips(s.upgrades[id])}</span> <span class="cost">${cost}</span><br><small>${label.blurb}</small></button>`;
+    return `<button class="buy" data-buy="${id}"${off}><b>${String(i + 1)}</b> ${t(lang, label.name)} <span class="pips">${pips(s.upgrades[id])}</span> <span class="cost">${cost}</span><br><small>${t(lang, label.blurb)}</small></button>`;
   }).join('');
-  return `<div class="shop"><h2>🛰️ Station shop · ◆ ${String(s.credits)} credits</h2><div class="buys">${rows}</div><p class="dim">1–7 or click buys · upgrades stay with this ship · B or Enter flies on</p></div>`;
+  return `<div class="shop"><h2>${t(lang, '🛰️ Station shop · ◆ {credits} credits', { credits: s.credits })}</h2><div class="buys">${rows}</div><p class="dim">${t(lang, '1–7 or click buys · upgrades stay with this ship · B or Enter flies on')}</p></div>`;
 }
 
 /** The upgrade a digit key buys, if any. */

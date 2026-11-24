@@ -1,5 +1,6 @@
 /** HUD v0 (P07): a clean DOM HUD. `hudModel` is the pure part (what to show); `Hud` writes it to the page. */
 import { waveLine } from './waveUi.js';
+import { t, type Lang } from './i18n.js';
 import { activePerkLine } from './perksUi.js';
 import { formatImpact, urgency, type Urgency } from './threat.js';
 import { hpOf, missileVolley, shopOpen, upgradedCraft, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
@@ -82,7 +83,21 @@ export function hudModel(s: GameState, best: number): HudModel {
   };
 }
 
+/** The HUD's English wave line in Hebrew (P36): the fixed words only; mission progress stays as written. */
+export function localWaveLine(line: string, lang: Lang): string {
+  if (lang === 'en') return line;
+  return line.replace('next wave incoming', 'הגל הבא בדרך').replace('incoming', 'בדרך').replace(/^WAVE /, 'גל ').replace(/^ENDLESS /, 'אינסופי ');
+}
+
 export class Hud {
+  private lang: Lang = 'en';
+
+  /** Switches the HUD's language (P36). */
+  setLang(lang: Lang): void {
+    this.lang = lang;
+    for (const k of ['earth', 'hull', 'fuel'] as const) this.q(`.bar.${k} span`).textContent = t(lang, k.toUpperCase());
+  }
+
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
       <div class="tl"><div class="score">0</div><div class="best">best 0</div><div class="credits"></div><div class="wave"></div><div class="combo"></div><div class="perks"></div></div>
@@ -106,11 +121,12 @@ export class Hud {
 
   render(m: HudModel): void {
     this.q('.score').textContent = String(m.score);
-    this.q('.best').textContent = `best ${String(m.best)}`;
-    this.q('.wave').textContent = m.wave;
+    const L = this.lang;
+    this.q('.best').textContent = t(L, 'best {best}', { best: m.best });
+    this.q('.wave').textContent = localWaveLine(m.wave, L);
     this.q('.combo').textContent = m.combo;
     this.q('.perks').textContent = m.perks;
-    this.q('.credits').textContent = m.credits;
+    this.q('.credits').textContent = m.credits.replace('B: STATION SHOP', t(L, 'B: STATION SHOP'));
     const boss = this.q('.bossbar');
     boss.style.display = m.boss === null ? 'none' : '';
     if (m.boss !== null) this.q('.bossbar i').style.width = `${String(Math.round(m.boss * 100))}%`;
@@ -119,9 +135,9 @@ export class Hud {
       bar.style.width = `${String(Math.round(m[k] * 100))}%`;
       bar.parentElement?.classList.toggle('low', m[k] <= 0.3);
     }
-    this.q('.rockets').textContent = `${m.missiles ? `${m.missiles} · ` : ''}ROCKETS ${'▲'.repeat(m.rockets)}${'△'.repeat(Math.max(0, m.rocketMax - m.rockets))}`;
-    this.q('.speed').textContent = `SPEED ${'■'.repeat(m.speed)}${'□'.repeat(m.speedMax - m.speed)}${m.turbo ? ' TURBO' : ''}`;
-    this.q('.warn').textContent = m.warnings.join(' · ');
+    this.q('.rockets').textContent = `${m.missiles ? `${m.missiles} · ` : ''}${t(L, 'ROCKETS')} ${'▲'.repeat(m.rockets)}${'△'.repeat(Math.max(0, m.rocketMax - m.rockets))}`;
+    this.q('.speed').textContent = `${t(L, 'SPEED')} ${'■'.repeat(m.speed)}${'□'.repeat(m.speedMax - m.speed)}${m.turbo ? ` ${t(L, 'TURBO')}` : ''}`;
+    this.q('.warn').textContent = m.warnings.map((w) => t(L, w)).join(' · ');
     const impact = this.q('.impact');
     impact.textContent = m.impact?.text ?? '';
     impact.dataset['urgency'] = m.impact?.urgency ?? '';

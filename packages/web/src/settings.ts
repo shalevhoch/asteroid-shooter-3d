@@ -1,4 +1,5 @@
 /** Player settings kept per browser (P04, P08, P12, P13): layout, invert-Y, camera, help, sound, volume, mouse sensitivity, difficulty, shake. Unknown or corrupt values fall back to defaults. */
+import { LANGS, LANG_NAMES, type Lang } from './i18n.js';
 import { CRAFT_IDS, DIFFICULTIES, type CraftId, type Difficulty } from '@asteroid/sim';
 import { LAYOUTS, type Layout } from './keymap.js';
 import { CAMERA_MODES, type CameraMode } from './view.js';
@@ -20,6 +21,8 @@ export interface Settings {
   craft: CraftId;
   /** Render quality (P23): auto (the P20 step-down) or a fixed level. */
   quality: QualitySetting;
+  /** UI language (P36). */
+  lang: Lang;
 }
 
 export const QUALITY_SETTINGS = ['auto', 'high', 'medium', 'low'] as const;
@@ -30,7 +33,7 @@ export const SENSITIVITY_MAX = 3;
 export const SENSITIVITY_STEP = 0.25;
 export const VOLUME_STEP = 0.1;
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1, craft: 'fighter', quality: 'auto' };
+export const DEFAULT_SETTINGS: Readonly<Settings> = { layout: 'modern', invertY: false, camera: 'chase', help: false, muted: false, difficulty: 'normal', shake: true, sensitivity: 1, volume: 1, craft: 'fighter', quality: 'auto', lang: 'en' };
 export const SETTINGS_KEY = 'asteroid-shooter-3d.settings.v1';
 
 /**
@@ -47,7 +50,7 @@ export function parseSettings(raw: string | null, reducedMotion = false, touch =
     return s;
   }
   if (typeof v !== 'object' || v === null) return s;
-  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown; difficulty?: unknown; shake?: unknown; sensitivity?: unknown; volume?: unknown; craft?: unknown; quality?: unknown };
+  const o = v as { layout?: unknown; camera?: unknown; invertY?: unknown; help?: unknown; muted?: unknown; difficulty?: unknown; shake?: unknown; sensitivity?: unknown; volume?: unknown; craft?: unknown; quality?: unknown; lang?: unknown };
   if (LAYOUTS.includes(o.layout as Layout)) s.layout = o.layout as Layout;
   if (CAMERA_MODES.includes(o.camera as CameraMode)) s.camera = o.camera as CameraMode;
   if (typeof o.invertY === 'boolean') s.invertY = o.invertY;
@@ -58,6 +61,7 @@ export function parseSettings(raw: string | null, reducedMotion = false, touch =
   if (typeof o.sensitivity === 'number' && Number.isFinite(o.sensitivity)) s.sensitivity = clampStep(o.sensitivity, SENSITIVITY_MIN, SENSITIVITY_MAX, SENSITIVITY_STEP);
   if (CRAFT_IDS.includes(o.craft as CraftId)) s.craft = o.craft as CraftId;
   if (QUALITY_SETTINGS.includes(o.quality as QualitySetting)) s.quality = o.quality as QualitySetting;
+  if (LANGS.includes(o.lang as Lang)) s.lang = o.lang as Lang;
   if (typeof o.volume === 'number' && Number.isFinite(o.volume)) s.volume = clampStep(o.volume, 0, 1, VOLUME_STEP);
   return s;
 }
@@ -72,7 +76,7 @@ export function clampStep(v: number, min: number, max: number, step: number): nu
 }
 
 /** Ids of the rows on the settings panel (P13), in display order. */
-export const SETTING_IDS = ['layout', 'camera', 'invertY', 'sensitivity', 'volume', 'muted', 'shake', 'quality', 'help', 'difficulty'] as const;
+export const SETTING_IDS = ['lang', 'layout', 'camera', 'invertY', 'sensitivity', 'volume', 'muted', 'shake', 'quality', 'help', 'difficulty'] as const;
 export type SettingId = (typeof SETTING_IDS)[number];
 
 export interface SettingRow {
@@ -92,6 +96,7 @@ const onOff = (b: boolean) => (b ? 'on' : 'off');
  */
 export function settingRows(s: Readonly<Settings>, difficultyNames: Readonly<Record<Difficulty, string>>, midRun: boolean, liveQuality?: string, qualityPinned = false): SettingRow[] {
   return [
+    { id: 'lang', label: 'Language', value: LANG_NAMES[s.lang], kind: 'toggle' },
     { id: 'layout', label: 'Keys', value: s.layout, kind: 'toggle' },
     { id: 'camera', label: 'Camera', value: s.camera, kind: 'toggle' },
     { id: 'invertY', label: 'Invert mouse Y', value: onOff(s.invertY), kind: 'toggle' },
@@ -116,6 +121,9 @@ export function changeSetting(s: Settings, id: SettingId, dir: 1 | -1 = 1): void
       return;
     case 'quality':
       s.quality = cycle(QUALITY_SETTINGS, s.quality);
+      return;
+    case 'lang':
+      s.lang = cycle(LANGS, s.lang);
       return;
     case 'difficulty':
       s.difficulty = cycle(DIFFICULTIES, s.difficulty);
