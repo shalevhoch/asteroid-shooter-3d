@@ -4,8 +4,8 @@
  */
 import { FUEL_MAX, HULL_MAX, ROCKET_MAX, TURN_RATE } from './constants.js';
 
-export type CraftId = 'fighter' | 'interceptor' | 'shuttle';
-export const CRAFT_IDS: readonly CraftId[] = ['fighter', 'interceptor', 'shuttle'];
+export type CraftId = 'fighter' | 'interceptor' | 'shuttle' | 'gship';
+export const CRAFT_IDS: readonly CraftId[] = ['fighter', 'interceptor', 'shuttle', 'gship'];
 
 export interface Craft {
   /** Radians per tick at full axis. */
@@ -22,4 +22,6 @@ export const CRAFTS: Readonly<Record<CraftId, Craft>> = {
   interceptor: { turnRate: TURN_RATE * 1.25, fuelMax: FUEL_MAX * 0.75, rocketMax: ROCKET_MAX - 1, hullMax: HULL_MAX * 0.75 },
   /** Heavy hauler: turns 20 % slower, 1.5× the fuel, 5 rockets, 1.4× the hull. */
   shuttle: { turnRate: TURN_RATE * 0.8, fuelMax: FUEL_MAX * 1.5, rocketMax: ROCKET_MAX + 2, hullMax: HULL_MAX * 1.4 },
+  /** G-Ship (P35): an all-rounder that edges the Fighter on turning and fuel, with an extra rocket, for 20 % less hull. */
+  gship: { turnRate: TURN_RATE * 1.1, fuelMax: FUEL_MAX * 1.15, rocketMax: ROCKET_MAX + 1, hullMax: HULL_MAX * 0.8 },
 };

@@ -37,6 +37,7 @@ export const CRAFT_MODELS: Readonly<Record<CraftId, { readonly file: string; rea
   fighter: { file: 'models/ship1/ship.obj', texture: 'models/ship1/f02_512.jpg', euler: [0, 0, 0] },
   interceptor: { file: 'models/ship2/ship.obj', texture: 'models/ship2/f03_512.jpg', euler: [0, 0, 0] },
   shuttle: { file: 'models/extras/shuttle-01/shuttle-01.glb', euler: [-Math.PI / 2, 0, 0] },
+  gship: { file: 'models/extras/g-ship/g-ship-04-mirrored.glb', euler: [0, Math.PI, 0] },
 };
 
 /** A model baked from 3DS to GLB (P25), with its original Phong materials, textures in sRGB. */
