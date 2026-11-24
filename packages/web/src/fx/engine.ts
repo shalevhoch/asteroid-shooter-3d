@@ -85,6 +85,15 @@ export class FxEngine {
       this.add(flare(p.pos, ROCKET_SPEED * (this.rnd() * 0.45 + 0.45), noisyDir(p.dir, 0.005, this.rnd), 0.25, 'roundParticle', this.rnd));
   }
 
+  /** One tick of hyperdrive exhaust (P28): hot flares streaming back from each nozzle, plus a flame puff. */
+  thrusterTrail(points: readonly Vec3[], back: Vec3, speed: number): void {
+    for (const p of points) {
+      for (let i = 0; i < 3; i++) this.add(flare(p, speed * (this.rnd() * 0.5 + 0.6), noisyDir(back, 0.04, this.rnd), 0.9, 'roundParticle', this.rnd));
+      this.add(flame(p, 0.6, this.rnd));
+    }
+    this.enforceCap();
+  }
+
   /** One 40 ms step for every particle; the dead are dropped. */
   tick(): void {
     let w = 0;
