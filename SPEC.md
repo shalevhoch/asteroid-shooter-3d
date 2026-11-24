@@ -202,6 +202,7 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
 - **Daily challenge** (P33): a title-card button starts the UTC day's seeded run (Normal, Fighter, no upgrades, no credits). Today's best is kept locally, separate from the all-time best and top 10. See [daily-challenge](docs/spec/daily-challenge/daily-challenge.md).
 - **Boss waves** (P34): every 5th wave opens with a boss asteroid (radius 220, 120 hp, slow) that sheds a fragment every 5 s and hits Earth for 40. Rockets chip it for 15 and bombs for 30. Defeat pays 300 points plus 100 credits. A HUD bar shows its health. See [boss-waves](docs/spec/boss-waves/boss-waves.md).
 - **G-Ship** (P35): a fourth craft on the picker. It turns 10 % faster, carries 15 % more fuel and an extra rocket, and has 20 % less hull than the Fighter. Built from the mirrored g-ship model. See [g-ship](docs/spec/g-ship/g-ship.md).
+- **Hebrew and tutorial** (P36): an English / עברית language toggle on the title card and in settings (Hebrew is right to left). A five-step first-run tutorial covers aim, fire, rocket, throttle and reload; K skips it, and it can be replayed from the title card. See [i18n-tutorial](docs/spec/i18n-tutorial/i18n-tutorial.md).
 - **Touch controls** (P15), for tablets and phones in landscape:
   - Shown during play when the primary pointer is coarse and the device has touch points. `?touch` forces them
     on and `?touch=0` off. The keyboard and mouse keep working alongside.

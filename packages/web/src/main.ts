@@ -23,6 +23,8 @@ import { SKY_RADIUS, addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
+import { LANGS, LANG_NAMES, bannerTitle, isRtl, t } from './i18n.js';
+import { TUTORIAL_KEY, TUTORIAL_STEPS, advanceTutorial, tutorialHint } from './tutorial.js';
 import { DAILY_CRAFT, DAILY_DIFFICULTY, DAILY_KEY, DAILY_OPTIONS, dailyBest, dailySeed, recordDaily, utcDate } from './daily.js';
 import { WALLET_KEY, parseWallet, runOptions, shopPanel, upgradeForKey, withRun } from './shop.js';
 import { comboBadge, damageSmoke, flashAt, hitMarker, hitStopMs, killFlash } from './lookfeel.js';
@@ -52,7 +54,7 @@ const bannerEl = el('banner');
 let bannerTimer: ReturnType<typeof setTimeout> | undefined;
 function showBanner(b: Banner) {
   const [h, p] = [bannerEl.querySelector('h2'), bannerEl.querySelector('p')];
-  if (h) h.textContent = b.title;
+  if (h) h.textContent = bannerTitle(settings.lang, b.title);
   if (p) p.textContent = b.subtitle;
   bannerEl.classList.add('on');
   clearTimeout(bannerTimer);
@@ -90,6 +92,16 @@ const settings = (() => {
 const saveSettings = () => {
   storage.set(SETTINGS_KEY, JSON.stringify(settings));
 };
+/** UI text in the chosen language (P36). */
+const T = (en: string, vars?: Readonly<Record<string, string | number>>): string => t(settings.lang, en, vars);
+const langButtons = (): string => LANGS.map((l) => `<button data-lang="${l}" class="${l === settings.lang ? 'on' : ''}">${LANG_NAMES[l]}</button>`).join('');
+/** The tutorial (P36): shown on the first normal run until finished or skipped. */
+let tutorialDone = storage.get(TUTORIAL_KEY) === 'done';
+let tutorialStep: number | null = null;
+const tutorialEl = document.createElement('div');
+tutorialEl.id = 'tutorial';
+document.body.appendChild(tutorialEl);
+
 let top: ScoreEntry[] = parseTop(storage.get(TOP_KEY));
 /** The best score: the stored best, or the top-10's first run if that is higher. */
 let best = Math.max(parseBest(storage.get(BEST_KEY)), top[0]?.score ?? 0);
@@ -160,6 +172,13 @@ const audio = new AudioBank(base);
 audio.muted = settings.muted;
 audio.volume = settings.volume;
 const hud = new Hud(el('hud'));
+/** Applies the language: the page's lang and direction, and the HUD's labels. */
+function applyLang() {
+  document.documentElement.lang = settings.lang;
+  document.documentElement.dir = isRtl(settings.lang) ? 'rtl' : 'ltr';
+  hud.setLang(settings.lang);
+}
+applyLang();
 const threat = new ThreatView(el('threat') as HTMLCanvasElement);
 const viewProj = new THREE.Matrix4();
 
@@ -277,7 +296,7 @@ const PORTAL_LINK = '<p class="portal"><a href="/">← all games · games.hochgi
 const END_TEXT = { earthDestroyed: 'Earth has fallen.', shipDestroyed: 'Your ship was destroyed.' } as const;
 
 function difficultyPicker(): string {
-  return `<div class="diff">${DIFFICULTIES.map((d) => `<button data-diff="${d}" class="${d === settings.difficulty ? 'on' : ''}">${DIFFICULTY_LABELS[d].name}</button>`).join('')}</div><p class="dim">${DIFFICULTY_LABELS[settings.difficulty].blurb}</p>`;
+  return `<div class="diff">${DIFFICULTIES.map((d) => `<button data-diff="${d}" class="${d === settings.difficulty ? 'on' : ''}">${T(DIFFICULTY_LABELS[d].name)}</button>`).join('')}</div><p class="dim">${T(DIFFICULTY_LABELS[settings.difficulty].blurb)}</p>`;
 }
 
 /** The settings panel (P13): every row changes and persists at once. Folded on the title card, open on the pause card. */
@@ -287,11 +306,11 @@ function settingsPanel(open: boolean): string {
       const ctl =
         r.kind === 'range'
           ? `<button data-set="${r.id}" data-dir="-1" aria-label="less">−</button><span class="val">${r.value}</span><button data-set="${r.id}" data-dir="1" aria-label="more">+</button>`
-          : `<button data-set="${r.id}" class="val">${r.value}</button>`;
-      return `<tr><td>${r.label}${r.note ? ` <span class="dim">(${r.note})</span>` : ''}</td><td class="ctl">${ctl}</td></tr>`;
+          : `<button data-set="${r.id}" class="val">${T(r.value)}</button>`;
+      return `<tr><td>${T(r.label)}${r.note ? ` <span class="dim">(${T(r.note)})</span>` : ''}</td><td class="ctl">${ctl}</td></tr>`;
     })
     .join('');
-  return `<details class="settings"${open ? ' open' : ''}><summary>Settings</summary><table>${rows}</table></details>`;
+  return `<details class="settings"${open ? ' open' : ''}><summary>${T('Settings')}</summary><table>${rows}</table></details>`;
 }
 
 const DIFFICULTY_NAMES = Object.fromEntries(DIFFICULTIES.map((d) => [d, DIFFICULTY_LABELS[d].name])) as Record<(typeof DIFFICULTIES)[number], string>;
@@ -302,7 +321,7 @@ function achievementsPanel(): string {
     const d = unlocks[id];
     return `<tr class="${d ? 'got' : 'locked'}"><td>${d ? '🏆' : '·'}</td><td><b>${ACHIEVEMENTS[id].name}</b><br><span class="dim">${ACHIEVEMENTS[id].how}</span></td><td class="dim">${d ?? ''}</td></tr>`;
   }).join('');
-  return `<details class="settings ach"><summary>Achievements ${String(unlockedCount(unlocks))}/${String(ACHIEVEMENT_IDS.length)}</summary><table>${rows}</table></details>`;
+  return `<details class="settings ach"><summary>${T('Achievements {n}/{total}', { n: unlockedCount(unlocks), total: ACHIEVEMENT_IDS.length })}</summary><table>${rows}</table></details>`;
 }
 
 const CRAFT_LABELS = {
@@ -318,7 +337,7 @@ function craftPicker(): string {
   const f = CRAFTS.fighter;
   const pct = (v: number, base: number) => `${String(Math.round((v / base) * 100))}%`;
   return `<div class="diff craft">${CRAFT_IDS.map((id) => `<button data-craft="${id}" class="${id === settings.craft ? 'on' : ''}">${CRAFT_LABELS[id].name}</button>`).join('')}</div>
-    <p class="dim">${CRAFT_LABELS[settings.craft].blurb}<br>turn ${pct(c.turnRate, f.turnRate)} · fuel ${String(c.fuelMax)} · hull ${String(c.hullMax)} · rockets ${String(c.rocketMax)}</p>`;
+    <p class="dim">${T(CRAFT_LABELS[settings.craft].blurb)}<br>${T('turn {turn} · fuel {fuel} · hull {hull} · rockets {rockets}', { turn: pct(c.turnRate, f.turnRate), fuel: c.fuelMax, hull: c.hullMax, rockets: c.rocketMax })}</p>`;
 }
 
 /** A function, so TypeScript doesn't narrow `phase` across calls that change it. */
@@ -334,24 +353,41 @@ function renderOverlay() {
   }
   if (phase === 'title') {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
-      <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
-      <p class="dim">Best score: ${String(best)} · ◆ ${String(wallet.credits)} credits</p>${difficultyPicker()}${craftPicker()}
-      <button id="go">${actionPrompt(cardInput(), 'start')}</button><br><button id="daily" class="daily">📅 Daily challenge · ${today()}${todaysBest() > 0 ? ` · best ${String(todaysBest())}` : ''}</button><p class="dim">Same asteroids for everyone today · Normal · Fighter · no upgrades</p><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
+      <p>${T("Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.")}</p>
+      <p class="dim">${T('Best score: {best} · ◆ {credits} credits', { best, credits: wallet.credits })}</p><div class="row lang">${langButtons()}</div>${difficultyPicker()}${craftPicker()}
+      <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button><br><button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${actionPrompt(cardInput(), 'resume')}</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
+    overlay.innerHTML = `<div class="card"><h1>${T('Paused')}</h1><button id="go">${T(actionPrompt(cardInput(), 'resume'))}</button><p class="dim">${T('Score {score} · Enter or P also resumes', { score: curr.score })}</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr, settings.lang) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
-    overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
+    overlay.innerHTML = `<div class="card"><h1>${T('🌍 Earth is safe!')}</h1><p>${T('You cleared all {waves} waves on {difficulty}.', { waves: CAMPAIGN_WAVES, difficulty: T(DIFFICULTY_LABELS[curr.difficulty].name) })}</p>
       <div class="final">${String(curr.score)}</div>
-      <div class="row"><button id="go">${withStart('Keep going: endless mode', cardInput())}</button><button id="finish">Finish the run</button></div></div>`;
+      <div class="row"><button id="go">${withStart(T('Keep going: endless mode'), cardInput())}</button><button id="finish">${T('Finish the run')}</button></div></div>`;
   } else {
-    overlay.innerHTML = `<div class="card wide"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
-      ${dailyMode ? `<p class="dim">📅 Daily challenge · ${today()}</p>` : ''}<div class="final">${String(curr.score)}</div>${newBest ? `<div class="newbest">${dailyMode ? "NEW DAILY BEST!" : 'NEW BEST!'}</div>` : `<p class="dim">${dailyMode ? `Today's best ${String(todaysBest())}` : `Best ${String(best)}`}</p>`}
-      ${runUnlocks.length ? `<p class="unlocked">🏆 Unlocked: ${runUnlocks.map((id) => ACHIEVEMENTS[id].name).join(' · ')}</p>` : ''}
+    overlay.innerHTML = `<div class="card wide"><h1>${T(wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over')}</h1>
+      ${dailyMode ? `<p class="dim">${T('📅 Daily challenge · {date}', { date: today() })}</p>` : ''}<div class="final">${String(curr.score)}</div>${newBest ? `<div class="newbest">${T(dailyMode ? 'NEW DAILY BEST!' : 'NEW BEST!')}</div>` : `<p class="dim">${dailyMode ? T("Today's best {best}", { best: todaysBest() }) : T('Best {best}', { best })}</p>`}
+      ${runUnlocks.length ? `<p class="unlocked">${T('🏆 Unlocked: {list}', { list: runUnlocks.map((id) => ACHIEVEMENTS[id].name).join(' · ') })}</p>` : ''}
       <div class="summary">${summaryTable()}${topTable()}</div>
-      <button id="go">${withStart('Play again', cardInput())}</button>${PORTAL_LINK}</div>`;
+      <button id="go">${withStart(T('Play again'), cardInput())}</button>${PORTAL_LINK}</div>`;
   }
   document.getElementById('go')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    advance();
+  });
+  for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const l = LANGS.find((x) => x === b.dataset['lang']);
+      if (l) settings.lang = l;
+      saveSettings();
+      applyLang();
+      renderOverlay();
+      renderHelp();
+    });
+  }
+  document.getElementById('tutorial')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    tutorialDone = false;
+    storage.set(TUTORIAL_KEY, '');
     advance();
   });
   document.getElementById('daily')?.addEventListener('click', (e) => {
@@ -374,6 +410,7 @@ function renderOverlay() {
       e.stopPropagation();
       const id = b.dataset['set'] as SettingId;
       changeSetting(settings, id, b.dataset['dir'] === '-1' ? -1 : 1);
+      if (id === 'lang') applyLang();
       if (id === 'quality') applyQuality(quality.reset(initialQuality(location.search, touchMode, settings.quality)));
       audio.muted = settings.muted;
       audio.volume = settings.volume;
@@ -415,19 +452,19 @@ const row = (label: string, value: string): string => `<tr><td>${label}</td><td>
 /** The run breakdown (P10): how the score was made, then the run's stats. */
 function summaryTable(): string {
   const pts = (n: number) => String(n);
-  return `<table class="stats"><tr><th colspan="2">This run</th></tr>${[
-    row(`Kills (${String(stats.kills)}, ${String(stats.bigKills)} big)`, pts(stats.killPoints)),
-    row(`Combo bonus (best chain ${String(stats.bestCombo)})`, pts(stats.comboPoints)),
-    row(`Objectives (${String(stats.objectivesMet)})`, pts(stats.objectivePoints)),
-    row(`Wave clears (${String(stats.wavesCleared)})`, pts(stats.clearPoints)),
-    row('Earth bonus', pts(stats.earthPoints)),
-    `<tr class="total"><td>Total</td><td>${String(curr.score)}</td></tr>`,
-    ...(curr.earnsCredits ? [row('Credits earned', `◆ ${String(Math.max(0, curr.credits - runStartCredits))} (wallet ${String(curr.credits)})`)] : []),
-    row('Difficulty', DIFFICULTY_LABELS[curr.difficulty].name),
-    row('Time', formatTime(curr.tick)),
-    row('Photon accuracy', `${String(accuracy(stats))}%`),
-    row('Rockets fired', String(stats.rocketsFired)),
-    row('Earth hits taken', String(stats.earthHits)),
+  return `<table class="stats"><tr><th colspan="2">${T('This run')}</th></tr>${[
+    row(T('Kills ({kills}, {big} big)', { kills: stats.kills, big: stats.bigKills }), pts(stats.killPoints)),
+    row(T('Combo bonus (best chain {n})', { n: stats.bestCombo }), pts(stats.comboPoints)),
+    row(T('Objectives ({n})', { n: stats.objectivesMet }), pts(stats.objectivePoints)),
+    row(T('Wave clears ({n})', { n: stats.wavesCleared }), pts(stats.clearPoints)),
+    row(T('Earth bonus'), pts(stats.earthPoints)),
+    `<tr class="total"><td>${T('Total')}</td><td>${String(curr.score)}</td></tr>`,
+    ...(curr.earnsCredits ? [row(T('Credits earned'), T('◆ {earned} (wallet {wallet})', { earned: Math.max(0, curr.credits - runStartCredits), wallet: curr.credits }))] : []),
+    row(T('Difficulty'), T(DIFFICULTY_LABELS[curr.difficulty].name)),
+    row(T('Time'), formatTime(curr.tick)),
+    row(T('Photon accuracy'), `${String(accuracy(stats))}%`),
+    row(T('Rockets fired'), String(stats.rocketsFired)),
+    row(T('Earth hits taken'), String(stats.earthHits)),
   ].join('')}</table>`;
 }
 
@@ -459,6 +496,7 @@ function dispatch(action: FlowAction) {
 function newRun() {
   prev = curr = dailyMode ? initialState(dailySeed(today()), DAILY_DIFFICULTY, DAILY_CRAFT, DAILY_OPTIONS) : initialState(Date.now() >>> 0, settings.difficulty, settings.craft, runOptions(wallet, settings.craft));
   runStartCredits = wallet.credits;
+  tutorialStep = !tutorialDone && !dailyMode ? 0 : null;
   void world.setCraft(curr.craft);
   stats = EMPTY_STATS;
   newBest = false;
@@ -485,6 +523,34 @@ function advance() {
   }
 }
 
+/** Ends the tutorial (finished or skipped) and remembers it. */
+function endTutorial() {
+  tutorialStep = null;
+  tutorialDone = true;
+  storage.set(TUTORIAL_KEY, 'done');
+}
+
+/** The tutorial box: this step's hint and a skip button; hidden outside play. */
+function renderTutorial() {
+  if (tutorialStep !== null && tutorialStep >= TUTORIAL_STEPS.length) {
+    endTutorial();
+    showBanner({ title: T('Tutorial done. Good luck, pilot!'), subtitle: '', durationMs: 2500 });
+  }
+  const step = tutorialStep === null ? undefined : TUTORIAL_STEPS[tutorialStep];
+  const show = phase === 'playing' && step !== undefined;
+  tutorialEl.style.display = show ? '' : 'none';
+  if (!show || tutorialStep === null) return;
+  const html = `<b>${T('Tutorial {n}/{total}', { n: tutorialStep + 1, total: TUTORIAL_STEPS.length })}</b> ${T(tutorialHint(step, touchMode))} <button id="skiptut">${T('Skip (K)')}</button>`;
+  if (tutorialEl.dataset['html'] !== html) {
+    tutorialEl.innerHTML = html;
+    tutorialEl.dataset['html'] = html;
+    tutorialEl.querySelector('#skiptut')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      endTutorial();
+    });
+  }
+}
+
 /** Buys an upgrade at the station shop (P29): only while paused in a wave's lead-in. */
 function buy(id: UpgradeId) {
   if (phase !== 'paused') return;
@@ -501,6 +567,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyB' && curr.earnsCredits && shopOpen(curr)) dispatch(phase === 'paused' ? 'resume' : 'pause');
   const up = phase === 'paused' ? upgradeForKey(e.code) : null;
   if (up) buy(up);
+  if (e.code === 'KeyK' && phase === 'playing' && tutorialStep !== null) endTutorial();
   if (e.code === 'KeyP') dispatch(phase === 'paused' ? 'resume' : 'pause');
   // Esc pauses in the classic layout too, where there is no pointer lock to leave.
   if (e.code === 'Escape' && phase === 'playing') dispatch('pause');
@@ -523,6 +590,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     asteroidPhase: () => phase,
     asteroidWallet: () => wallet,
+    asteroidTutorial: () => ({ step: tutorialStep, done: tutorialDone }),
     asteroidDaily: () => ({ mode: dailyMode, today: today(), seed: dailySeed(today()), best: todaysBest() }),
     asteroidQuality: () => ({ ...quality.current, pixelRatio: renderer.getPixelRatio(), particles: fx.particles.length }),
     asteroidStart: () => {
@@ -601,6 +669,7 @@ renderer.setAnimationLoop((nowMs: number) => {
       const base = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
       const input = mergePad(base, gamepad.nextHeld(), settings.sensitivity);
       const r = step(curr, input);
+      if (tutorialStep !== null) tutorialStep = advanceTutorial(tutorialStep, curr, r.state, r.events);
       curr = r.state;
       onEvents(r.events, nowMs);
       fx.ambient(curr);
@@ -660,6 +729,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   touchUi?.show(phase === 'playing');
   touchUi?.syncThrottle(curr.ship.throttle);
   hud.render(hudModel(curr, dailyMode ? todaysBest() : best));
+  renderTutorial();
   hud.badge(phase === 'playing' ? comboBadge(curr) : { text: '', scale: 1 });
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
   hud.aim(v.z < 1 ? { x: v.x, y: v.y } : null);
