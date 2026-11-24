@@ -1,5 +1,5 @@
 /** Wave UI (P08): banners for wave events, the HUD's wave line, difficulty labels. Pure, so it's tested. */
-import { CAMPAIGN_WAVES, describeObjective, waveDef, type Difficulty, type GameState, type Objective, type SimEvent, type WaveState } from '@asteroid/sim';
+import { CAMPAIGN_WAVES, describeObjective, missionFor, waveDef, type Difficulty, type GameState, type Objective, type SimEvent, type WaveState } from '@asteroid/sim';
 
 export interface Banner {
   readonly title: string;
@@ -11,22 +11,24 @@ export interface Banner {
 export function bannerFor(events: readonly SimEvent[]): Banner | null {
   let banner: Banner | null = null;
   let bonus = '';
+  let mission = '';
   for (const e of events) {
     if (e.type === 'objectiveMet') bonus = `Objective met: +${String(e.points)} points${e.repair > 0 ? `, Earth +${String(e.repair)}` : ''}`;
+    else if (e.type === 'missionComplete') mission = `Mission complete: +◆ ${String(e.credits)}`;
     else if (e.type === 'waveCleared') {
       const regen = e.regen > 0 ? `Earth regenerates +${String(e.regen)}` : '';
       const clear = `Clear bonus +${String(e.clearBonus)} · Earth bonus +${String(e.earthBonus)}`;
-      banner = { title: `Wave ${String(e.wave)} cleared`, subtitle: [clear, bonus, regen].filter(Boolean).join(' · '), durationMs: 3500 };
+      banner = { title: `Wave ${String(e.wave)} cleared`, subtitle: [mission, clear, bonus, regen].filter(Boolean).join(' · '), durationMs: 3500 };
     } else if (e.type === 'waveStarted') {
       const label = e.wave > CAMPAIGN_WAVES ? `Endless wave ${String(e.wave)}` : `Wave ${String(e.wave)} of ${String(CAMPAIGN_WAVES)}`;
-      banner = { title: label, subtitle: `${String(e.count)} asteroids${e.objective ? ` · ${describeObjective(e.objective)}` : ''}`, durationMs: 3000 };
+      banner = { title: label, subtitle: `${String(e.count)} asteroids${e.objective ? ` · Mission: ${describeObjective(e.objective)}` : ''}`, durationMs: 3000 };
     }
   }
   return banner;
 }
 
 /** Objective progress for the HUD, e.g. "Rocket kills 1/2"; empty when the wave has no objective. */
-export function objectiveProgress(o: Objective | null, w: WaveState): string {
+export function objectiveProgress(o: Objective | null, w: WaveState, allSpawned = false): string {
   if (!o) return '';
   switch (o.kind) {
     case 'noEarthHit':
@@ -37,6 +39,12 @@ export function objectiveProgress(o: Objective | null, w: WaveState): string {
       return `Big kills ${String(Math.min(w.bigKills, o.count))}/${String(o.count)}`;
     case 'photonOnly':
       return w.rocketsFired === 0 ? 'Photons only ✓' : 'Photons only ✗';
+    case 'fastClear':
+      return allSpawned ? `Clear in ${String(Math.max(0, Math.ceil(o.seconds - w.sinceSpawn / 25)))} s` : `Fast clear (${String(o.seconds)} s)`;
+    case 'combo':
+      return `Best chain ${String(Math.min(w.bestCombo, o.count))}/${String(o.count)}`;
+    case 'noHullDamage':
+      return w.hullBurns === 0 ? 'No hull burns ✓' : 'No hull burns ✗';
   }
 }
 
@@ -45,7 +53,7 @@ export function waveLine(s: GameState): string {
   const w = s.wave;
   const label = w.number > CAMPAIGN_WAVES ? `ENDLESS ${String(w.number)}` : `WAVE ${String(w.number)}/${String(CAMPAIGN_WAVES)}`;
   const next = w.phase === 'leadIn' ? (w.number === 1 ? ' · incoming' : ' · next wave incoming') : '';
-  const progress = w.phase === 'active' ? objectiveProgress(waveDef(w.number).objective, w) : '';
+  const progress = w.phase === 'active' ? objectiveProgress(missionFor(s.missionSeed, w.number), w, w.spawned >= waveDef(w.number).count) : '';
   return [label + next, progress].filter(Boolean).join(' · ');
 }
 

@@ -92,6 +92,8 @@ export interface GameState {
   readonly upgrades: Upgrades;
   /** False for runs that don't earn credits (the daily challenge, P33). */
   readonly earnsCredits: boolean;
+  /** The run's seed, for its seeded wave missions (P31). */
+  readonly missionSeed: number;
   readonly ended: RunEndReason | null;
 }
 
@@ -148,6 +150,7 @@ export type SimEvent =
   | { readonly type: 'runEnded'; readonly reason: RunEndReason }
   | { readonly type: 'waveStarted'; readonly wave: number; readonly count: number; readonly objective: Objective | null }
   | { readonly type: 'waveCleared'; readonly wave: number; readonly objectiveMet: boolean; readonly regen: number; readonly clearBonus: number; readonly earthBonus: number }
+  | { readonly type: 'missionComplete'; readonly wave: number; readonly mission: Objective; readonly credits: number }
   | { readonly type: 'objectiveMet'; readonly wave: number; readonly points: number; readonly repair: number }
   | { readonly type: 'campaignWon'; readonly wave: number }
   | { readonly type: 'turboStarted' }
@@ -201,6 +204,7 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal', cr
     credits: startCredits(options.credits),
     upgrades,
     earnsCredits: options.earnsCredits ?? true,
+    missionSeed: seed >>> 0,
     ended: null,
   };
 }

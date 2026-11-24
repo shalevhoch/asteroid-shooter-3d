@@ -37,7 +37,11 @@ export type Objective =
   | { readonly kind: 'noEarthHit' }
   | { readonly kind: 'rocketKills'; readonly count: number }
   | { readonly kind: 'bigKills'; readonly count: number }
-  | { readonly kind: 'photonOnly' };
+  | { readonly kind: 'photonOnly' }
+  // P31: seeded missions for waves without a campaign objective.
+  | { readonly kind: 'fastClear'; readonly seconds: number }
+  | { readonly kind: 'combo'; readonly count: number }
+  | { readonly kind: 'noHullDamage' };
 
 export interface WaveDef {
   /** Asteroids spawned in the wave. */
@@ -101,10 +105,14 @@ export interface WaveState {
   readonly rocketKills: number;
   readonly bigKills: number;
   readonly rocketsFired: number;
+  /** P31 mission tallies: ticks since the last spawn, the wave's best combo chain and atmosphere burns. */
+  readonly sinceSpawn: number;
+  readonly bestCombo: number;
+  readonly hullBurns: number;
 }
 
 /** Wave 1 starts SPAWN_INTERVAL ticks into the run, so the first asteroid arrives at the original's tick 200. */
-export const INITIAL_WAVE: WaveState = { number: 1, phase: 'leadIn', timer: SPAWN_INTERVAL, spawned: 0, earthHits: 0, rocketKills: 0, bigKills: 0, rocketsFired: 0 };
+export const INITIAL_WAVE: WaveState = { number: 1, phase: 'leadIn', timer: SPAWN_INTERVAL, spawned: 0, earthHits: 0, rocketKills: 0, bigKills: 0, rocketsFired: 0, sinceSpawn: 0, bestCombo: 0, hullBurns: 0 };
 
 export function objectiveMet(o: Objective | null, w: WaveState): boolean {
   if (!o) return false;
@@ -117,7 +125,39 @@ export function objectiveMet(o: Objective | null, w: WaveState): boolean {
       return w.bigKills >= o.count;
     case 'photonOnly':
       return w.rocketsFired === 0;
+    case 'fastClear':
+      return w.sinceSpawn <= o.seconds * TICKS_PER_SECOND;
+    case 'combo':
+      return w.bestCombo >= o.count;
+    case 'noHullDamage':
+      return w.hullBurns === 0;
   }
+}
+
+const TICKS_PER_SECOND = 25;
+/** Bonus credits for completing a wave's mission (P31): base + per wave number. */
+export const MISSION_CREDITS_BASE = 25;
+export const MISSION_CREDITS_PER_WAVE = 5;
+export const missionCredits = (wave: number): number => MISSION_CREDITS_BASE + MISSION_CREDITS_PER_WAVE * wave;
+
+/** An integer hash of (seed, wave), so a run's seeded missions don't touch the game's RNG streams. */
+function missionHash(seed: number, wave: number): number {
+  let h = Math.imul((seed ^ 0x9e3779b9) >>> 0, 0x85ebca6b) ^ Math.imul(wave, 0xc2b2ae35);
+  h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+  return (h ^ (h >>> 15)) >>> 0;
+}
+
+/** The seeded missions a wave without a campaign objective draws from. */
+export function seededMissions(wave: number): readonly Objective[] {
+  return [{ kind: 'fastClear', seconds: 15 }, { kind: 'combo', count: Math.min(6, 3 + Math.floor((wave - 1) / 10)) }, { kind: 'noHullDamage' }];
+}
+
+/** Wave `n`'s mission (P31): its campaign objective, else one drawn deterministically from the run's seed. */
+export function missionFor(seed: number, n: number): Objective {
+  const o = waveDef(n).objective;
+  if (o) return o;
+  const pool = seededMissions(n);
+  return pool[missionHash(seed, n) % pool.length] ?? { kind: 'noEarthHit' };
 }
 
 /** A short player-facing line for an objective. */
@@ -132,6 +172,12 @@ export function describeObjective(o: Objective | null): string {
       return `Destroy ${String(o.count)} big asteroids`;
     case 'photonOnly':
       return 'Photons only: fire no rockets';
+    case 'fastClear':
+      return `Clear the wave within ${String(o.seconds)} s of the last asteroid`;
+    case 'combo':
+      return `Chain a ${String(o.count)}-kill combo`;
+    case 'noHullDamage':
+      return 'Keep your hull out of the atmosphere';
   }
 }
 
@@ -154,14 +200,14 @@ export function updateWaves(state: GameState, events: SimEvent[]): GameState {
   const def = waveDef(w.number);
   if (w.phase === 'leadIn') {
     if (w.timer > 1) return { ...state, wave: { ...w, timer: w.timer - 1 } };
-    events.push({ type: 'waveStarted', wave: w.number, count: def.count, objective: def.objective });
+    events.push({ type: 'waveStarted', wave: w.number, count: def.count, objective: missionFor(state.missionSeed, w.number) });
     const s = spawnOne(state, def, preset, events);
-    return { ...s, wave: { ...w, phase: 'active', timer: scaledInterval(def, preset), spawned: 1 } };
+    return { ...s, wave: { ...w, phase: 'active', timer: scaledInterval(def, preset), spawned: 1, sinceSpawn: 0 } };
   }
   if (w.spawned < def.count) {
     if (w.timer > 1) return { ...state, wave: { ...w, timer: w.timer - 1 } };
     const s = spawnOne(state, def, preset, events);
-    return { ...s, wave: { ...w, timer: scaledInterval(def, preset), spawned: w.spawned + 1 } };
+    return { ...s, wave: { ...w, timer: scaledInterval(def, preset), spawned: w.spawned + 1, sinceSpawn: 0 } };
   }
   if (state.asteroids.length > 0) return state;
   return clearWave(state, def, preset, events);
@@ -169,18 +215,20 @@ export function updateWaves(state: GameState, events: SimEvent[]): GameState {
 
 function clearWave(state: GameState, def: WaveDef, preset: Preset, events: SimEvent[]): GameState {
   const w = state.wave;
-  const met = objectiveMet(def.objective, w);
+  const mission = missionFor(state.missionSeed, w.number);
+  const met = objectiveMet(mission, w);
   const bonus = clearBonus(w.number);
   const earth = earthBonus(state.earthHealth);
   let score = state.score + bonus + earth;
   let earthHealth = state.earthHealth;
-  if (met) {
+  if (met && def.objective) {
     const points = OBJECTIVE_POINTS_BASE + OBJECTIVE_POINTS_PER_WAVE * w.number;
     const repair = Math.min(OBJECTIVE_REPAIR, EARTH_MAX_HEALTH - earthHealth);
     score += points;
     earthHealth += repair;
     events.push({ type: 'objectiveMet', wave: w.number, points, repair });
   }
+  if (met) events.push({ type: 'missionComplete', wave: w.number, mission, credits: missionCredits(w.number) });
   const regen = Math.min(preset.earthRegen, EARTH_MAX_HEALTH - earthHealth);
   earthHealth += regen;
   events.push({ type: 'waveCleared', wave: w.number, objectiveMet: met, regen, clearBonus: bonus, earthBonus: earth });
@@ -191,8 +239,10 @@ function clearWave(state: GameState, def: WaveDef, preset: Preset, events: SimEv
 
 /** End of tick: fold this tick's events into the current wave's objective tallies. */
 export function trackWave(state: GameState, events: readonly SimEvent[]): GameState {
-  let w = state.wave;
+  let w = state.wave.phase === 'active' ? { ...state.wave, sinceSpawn: state.wave.sinceSpawn + 1 } : state.wave;
   for (const e of events) {
+    if (e.type === 'hullBurning') w = { ...w, hullBurns: w.hullBurns + 1 };
+    if (e.type === 'asteroidDestroyed' && e.combo > w.bestCombo) w = { ...w, bestCombo: e.combo };
     if (e.type === 'earthHit') w = { ...w, earthHits: w.earthHits + 1 };
     else if (e.type === 'rocketFired') w = { ...w, rocketsFired: w.rocketsFired + 1 };
     else if (e.type === 'asteroidDestroyed') w = { ...w, rocketKills: w.rocketKills + (e.by === 'rocket' ? 1 : 0), bigKills: w.bigKills + (e.size === 'big' ? 1 : 0) };
