@@ -18,7 +18,8 @@ import {
   ROCKET_TERMINAL_RANGE,
 } from './constants.js';
 import { MOTHERSHIP_WORLD_BOXES } from './mothership.js';
-import { rotate } from './quat.js';
+import { RAPID_FIRE_COOLDOWN, SPREAD_ANGLE } from './perks.js';
+import { fromAxisAngle, multiply, rotate } from './quat.js';
 import { LOCAL_FORWARD, LOCAL_RIGHT, LOCAL_UP, type AsteroidState, type GameState, type Input, type ProjectileState, type SimEvent } from './state.js';
 import { addScaled, distance, dot, normalize, sub, type Vec3 } from './vec3.js';
 
@@ -60,10 +61,14 @@ export function fire(state: GameState, input: Input, events: SimEvent[], lockCon
   let cooldown = Math.max(0, ship.photonCooldown - 1);
   if (input.firePhoton && cooldown === 0) {
     const pos = muzzle(ship.photonSide);
-    projectiles = [...projectiles, { id: nextProjectileId, kind: 'photon', pos, dir: forward, age: 0, target: null }];
-    events.push({ type: 'photonFired', id: nextProjectileId, pos });
-    nextProjectileId++;
-    cooldown = PHOTON_COOLDOWN;
+    // Spread shot (P26): two extra photons, turned ±SPREAD_ANGLE about the ship's up axis.
+    const dirs = state.perks.spreadShot > 0 ? [forward, ...[-1, 1].map((k) => rotate(multiply(ship.rot, fromAxisAngle(LOCAL_UP, k * SPREAD_ANGLE)), LOCAL_FORWARD))] : [forward];
+    for (const dir of dirs) {
+      projectiles = [...projectiles, { id: nextProjectileId, kind: 'photon', pos, dir, age: 0, target: null }];
+      events.push({ type: 'photonFired', id: nextProjectileId, pos });
+      nextProjectileId++;
+    }
+    cooldown = state.perks.rapidFire > 0 ? RAPID_FIRE_COOLDOWN : PHOTON_COOLDOWN;
     ship = { ...ship, photonSide: ship.photonSide === 1 ? -1 : 1 };
   }
   ship = { ...ship, photonCooldown: cooldown };

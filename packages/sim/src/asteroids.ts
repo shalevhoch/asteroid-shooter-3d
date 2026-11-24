@@ -33,14 +33,22 @@ export function makeAsteroid(id: number, size: AsteroidSize, pos: Vec3, speed = 
   return { id, size, pos, dir: normalize(sub(EARTH_POS, pos)), hp: hpOf(size), speed };
 }
 
-/** Moves every asteroid its speed along its direction, then resolves Earth impacts in id order (damage × the preset's scale). An impact breaks the combo. */
+/**
+ * Moves every asteroid its speed along its direction, then resolves Earth impacts in id order (damage × the preset's
+ * scale). An impact breaks the combo. While the shield perk is up (P26), impacts do no damage and keep the combo.
+ */
 export function moveAsteroids(state: GameState, events: SimEvent[], earthDamageScale = 1): GameState {
+  const shield = state.perks.shield > 0;
   let earthHealth = state.earthHealth;
   let hit = false;
   const survivors: AsteroidState[] = [];
   for (const a of state.asteroids) {
     const pos = addScaled(a.pos, a.dir, a.speed);
     if (distance(pos, EARTH_POS) <= EARTH_RADIUS + radiusOf(a.size)) {
+      if (shield) {
+        events.push({ type: 'shieldBlocked', id: a.id, size: a.size, pos });
+        continue;
+      }
       const damage = Math.max(1, Math.round(earthDamageOf(a.size) * earthDamageScale));
       earthHealth = Math.max(0, earthHealth - damage);
       hit = true;
