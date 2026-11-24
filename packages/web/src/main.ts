@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, type UpgradeId, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, upgradedCraft, type UpgradeId, type GameState, type SimEvent } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -19,11 +19,14 @@ import { TOP_KEY, insertScore, localDate, parseTop, type ScoreEntry } from './le
 import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase, type RunStats } from './game.js';
 import { Hud, hudModel } from './hud.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
-import { addStation, buildWorld } from './scene.js';
+import { SKY_RADIUS, addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
 import { WALLET_KEY, parseWallet, runOptions, shopPanel, upgradeForKey, withRun } from './shop.js';
+import { comboBadge, damageSmoke, flashAt, hitMarker, hitStopMs, killFlash } from './lookfeel.js';
+import { buildNebula } from './nebula.js';
+import { PostFx } from './postfx.js';
 import { nozzleLook, nozzleWorld, rampThrust } from './thrusters.js';
 import { PERK_LOOK, perkBanner, pickupLook } from './perksUi.js';
 import { LoadProgress } from './loading.js';
@@ -228,6 +231,19 @@ earthShield.position.set(...EARTH_POS);
 earthShield.visible = false;
 world.scene.add(earthShield);
 const hitFlash = el('hitflash');
+const killFlashEl = el('killflash');
+// P30: the nebula sky just inside the stars, and bloom (off on low quality).
+const nebula = buildNebula(SKY_RADIUS * 0.97);
+world.scene.add(nebula);
+const postFx = new PostFx(renderer, world.scene, camera);
+postFx.enabled = quality.current.bloom;
+window.addEventListener('resize', () => {
+  postFx.resize();
+});
+/** Hit-stop (P30): the sim holds until this time after a big hit. */
+let hitStopUntil = 0;
+let flashPeak = 0;
+let flashAtMs = -Infinity;
 const touchUi = touchMode
   ? new TouchControls(document.body, () => {
       dispatch('pause');
@@ -546,6 +562,8 @@ function applyQuality(q: QualityLevel) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.dprCap));
   renderer.setSize(window.innerWidth, window.innerHeight);
   fx.particleCap = q.particleCap;
+  postFx.enabled = q.bloom;
+  postFx.resize();
 }
 
 renderer.setAnimationLoop((nowMs: number) => {
@@ -563,7 +581,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   }
   applyToggles();
   if (phase === 'playing') {
-    const { ticks, remainderMs } = ticksFor(accMs + frameMs);
+    const { ticks, remainderMs } = ticksFor(accMs + (nowMs < hitStopUntil ? 0 : frameMs));
     for (let i = 0; i < ticks && isPlaying(); i++) {
       prev = curr;
       const base = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
@@ -572,6 +590,11 @@ renderer.setAnimationLoop((nowMs: number) => {
       curr = r.state;
       onEvents(r.events, nowMs);
       fx.ambient(curr);
+      const smokeRate = damageSmoke(curr.ship.hull, upgradedCraft(curr).hullMax);
+      if (smokeRate > 0 && world.ship.visible) {
+        const n = nozzleWorld(curr.craft, curr.ship.pos, curr.ship.rot, world.shipLength);
+        fx.damageSmoke(n.points[0] ?? curr.ship.pos, n.back, world.shipLength * 0.35, smokeRate);
+      }
       if (curr.ship.turbo && thrust > 0.35 && quality.current.name !== 'low') {
         const n = nozzleWorld(curr.craft, curr.ship.pos, curr.ship.rot, world.shipLength);
         fx.thrusterTrail(n.points, n.back, world.shipLength * 0.12);
@@ -600,10 +623,12 @@ renderer.setAnimationLoop((nowMs: number) => {
   camera.rotateY(j.yaw);
   camera.rotateX(j.pitch);
   hitFlash.style.opacity = j.flash.toFixed(3);
+  killFlashEl.style.opacity = (settings.shake ? flashAt(flashPeak, nowMs - flashAtMs) : 0).toFixed(3);
   fov = nextFov(fov, curr.ship, frameMs / 1000);
   camera.fov = fov;
   camera.updateProjectionMatrix();
   world.sky.position.copy(camera.position);
+  nebula.position.copy(camera.position);
   world.earth.rotation.y = nowMs / 1000 / 120;
   if (stationRing) stationRing.material.opacity = 0.35 + 0.3 * Math.sin(nowMs / 400);
   asteroids.update(prev.asteroids, curr.asteroids, alpha, curr.tick);
@@ -621,6 +646,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   touchUi?.show(phase === 'playing');
   touchUi?.syncThrottle(curr.ship.throttle);
   hud.render(hudModel(curr, best));
+  hud.badge(phase === 'playing' ? comboBadge(curr) : { text: '', scale: 1 });
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
   hud.aim(v.z < 1 ? { x: v.x, y: v.y } : null);
   status.textContent = `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
@@ -630,7 +656,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   drawThrusters(pose, frameMs);
   batch.end(camera);
   shockwaves.sync(fx.shockwaves);
-  renderer.render(world.scene, camera);
+  postFx.render(world.scene, camera);
 });
 
 /** Gamepad presses (P19): Start starts, pauses and resumes; the rest go through the keyboard's edge actions. */
@@ -670,6 +696,15 @@ function onEvents(events: readonly SimEvent[], nowMs: number) {
   const e = camera.matrixWorld.elements;
   fx.apply(recipesFor(events, curr), [e[4], e[5], e[6]]);
   jolt = addJolt(jolt, hitStrength(events), nowMs);
+  const stop = hitStopMs(events);
+  if (stop > 0) hitStopUntil = Math.max(hitStopUntil, nowMs + stop);
+  const peak = killFlash(events);
+  if (peak > 0) {
+    flashPeak = peak;
+    flashAtMs = nowMs;
+  }
+  const mark = hitMarker(events);
+  if (mark) hud.marker(mark);
   const a = trackAchievements(achRun, events, curr);
   achRun = a.run;
   if (a.unlocked.length) {

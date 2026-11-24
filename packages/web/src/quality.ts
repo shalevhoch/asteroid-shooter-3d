@@ -8,16 +8,18 @@ export interface QualityLevel {
   readonly name: 'high' | 'medium' | 'low';
   /** The renderer's pixel ratio is min(devicePixelRatio, dprCap). */
   readonly dprCap: number;
+  /** Bloom post-processing (P30): on at high and medium, off at low. */
+  readonly bloom: boolean;
   /** Live FX particles kept; the oldest go first past it. */
   readonly particleCap: number;
 }
 
-const HIGH: QualityLevel = { name: 'high', dprCap: 2, particleCap: MAX_PARTICLES };
+const HIGH: QualityLevel = { name: 'high', dprCap: 2, particleCap: MAX_PARTICLES, bloom: true };
 
 export const QUALITY_LEVELS: readonly QualityLevel[] = [
   HIGH,
-  { name: 'medium', dprCap: 1.5, particleCap: MAX_PARTICLES / 2 },
-  { name: 'low', dprCap: 1, particleCap: MAX_PARTICLES / 4 },
+  { name: 'medium', dprCap: 1.5, particleCap: MAX_PARTICLES / 2, bloom: true },
+  { name: 'low', dprCap: 1, particleCap: MAX_PARTICLES / 4, bloom: false },
 ];
 
 /** Below this average fps over a window, quality steps down one level. */

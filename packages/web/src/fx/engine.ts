@@ -94,6 +94,19 @@ export class FxEngine {
     this.enforceCap();
   }
 
+  /** One tick of a damaged ship's smoke (P30): a grey puff with probability `rate`, plus a spark when badly hurt. */
+  damageSmoke(pos: Vec3, back: Vec3, size: number, rate: number): void {
+    if (rate <= 0 || this.rnd() > rate) return;
+    const p = flare(pos, size * 0.12, noisyDir(back, 0.5, this.rnd), size * (0.5 + 0.3 * this.rnd()), 'flame2', this.rnd);
+    p.r = p.g = p.b = 0.55;
+    p.a = 0.75;
+    p.decay = 0.025;
+    p.spin = 0.02;
+    this.add(p);
+    if (rate > 0.75) this.add(spark(pos, this.rnd));
+    this.enforceCap();
+  }
+
   /** One 40 ms step for every particle; the dead are dropped. */
   tick(): void {
     let w = 0;
