@@ -23,6 +23,7 @@ import { SKY_RADIUS, addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
+import { DAILY_CRAFT, DAILY_DIFFICULTY, DAILY_KEY, DAILY_OPTIONS, dailyBest, dailySeed, recordDaily, utcDate } from './daily.js';
 import { WALLET_KEY, parseWallet, runOptions, shopPanel, upgradeForKey, withRun } from './shop.js';
 import { comboBadge, damageSmoke, flashAt, hitMarker, hitStopMs, killFlash } from './lookfeel.js';
 import { buildNebula } from './nebula.js';
@@ -92,6 +93,10 @@ const saveSettings = () => {
 let top: ScoreEntry[] = parseTop(storage.get(TOP_KEY));
 /** The best score: the stored best, or the top-10's first run if that is higher. */
 let best = Math.max(parseBest(storage.get(BEST_KEY)), top[0]?.score ?? 0);
+/** The daily challenge (P33): this run is today's seeded run. */
+let dailyMode = false;
+const today = () => utcDate(new Date());
+const todaysBest = () => dailyBest(storage.get(DAILY_KEY), today());
 let wallet = parseWallet(storage.get(WALLET_KEY));
 /** Credits at the start of this run, for the game-over summary. */
 let runStartCredits = wallet.credits;
@@ -330,7 +335,7 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
       <p class="dim">Best score: ${String(best)} · ◆ ${String(wallet.credits)} credits</p>${difficultyPicker()}${craftPicker()}
-      <button id="go">${actionPrompt(cardInput(), 'start')}</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
+      <button id="go">${actionPrompt(cardInput(), 'start')}</button><br><button id="daily" class="daily">📅 Daily challenge · ${today()}${todaysBest() > 0 ? ` · best ${String(todaysBest())}` : ''}</button><p class="dim">Same asteroids for everyone today · Normal · Fighter · no upgrades</p><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${actionPrompt(cardInput(), 'resume')}</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
@@ -339,7 +344,7 @@ function renderOverlay() {
       <div class="row"><button id="go">${withStart('Keep going: endless mode', cardInput())}</button><button id="finish">Finish the run</button></div></div>`;
   } else {
     overlay.innerHTML = `<div class="card wide"><h1>${wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over'}</h1>
-      <div class="final">${String(curr.score)}</div>${newBest ? '<div class="newbest">NEW BEST!</div>' : `<p class="dim">Best ${String(best)}</p>`}
+      ${dailyMode ? `<p class="dim">📅 Daily challenge · ${today()}</p>` : ''}<div class="final">${String(curr.score)}</div>${newBest ? `<div class="newbest">${dailyMode ? "NEW DAILY BEST!" : 'NEW BEST!'}</div>` : `<p class="dim">${dailyMode ? `Today's best ${String(todaysBest())}` : `Best ${String(best)}`}</p>`}
       ${runUnlocks.length ? `<p class="unlocked">🏆 Unlocked: ${runUnlocks.map((id) => ACHIEVEMENTS[id].name).join(' · ')}</p>` : ''}
       <div class="summary">${summaryTable()}${topTable()}</div>
       <button id="go">${withStart('Play again', cardInput())}</button>${PORTAL_LINK}</div>`;
@@ -347,6 +352,12 @@ function renderOverlay() {
   document.getElementById('go')?.addEventListener('click', (e) => {
     e.stopPropagation();
     advance();
+  });
+  document.getElementById('daily')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dailyMode = true;
+    newRun();
+    dispatch('start');
   });
   document.getElementById('finish')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -445,9 +456,9 @@ function dispatch(action: FlowAction) {
 }
 
 function newRun() {
-  prev = curr = initialState(Date.now() >>> 0, settings.difficulty, settings.craft, runOptions(wallet, settings.craft));
+  prev = curr = dailyMode ? initialState(dailySeed(today()), DAILY_DIFFICULTY, DAILY_CRAFT, DAILY_OPTIONS) : initialState(Date.now() >>> 0, settings.difficulty, settings.craft, runOptions(wallet, settings.craft));
   runStartCredits = wallet.credits;
-  void world.setCraft(settings.craft);
+  void world.setCraft(curr.craft);
   stats = EMPTY_STATS;
   newBest = false;
   rank = null;
@@ -462,6 +473,7 @@ function newRun() {
 /** The overlay's main button / Enter: start, resume or play again. */
 function advance() {
   if (phase === 'title') {
+    dailyMode = false;
     newRun();
     dispatch('start');
   } else if (phase === 'paused') dispatch('resume');
@@ -510,6 +522,7 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     asteroidPhase: () => phase,
     asteroidWallet: () => wallet,
+    asteroidDaily: () => ({ mode: dailyMode, today: today(), seed: dailySeed(today()), best: todaysBest() }),
     asteroidQuality: () => ({ ...quality.current, pixelRatio: renderer.getPixelRatio(), particles: fx.particles.length }),
     asteroidStart: () => {
       advance();
@@ -645,7 +658,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   hud.show(phase !== 'title');
   touchUi?.show(phase === 'playing');
   touchUi?.syncThrottle(curr.ship.throttle);
-  hud.render(hudModel(curr, best));
+  hud.render(hudModel(curr, dailyMode ? todaysBest() : best));
   hud.badge(phase === 'playing' ? comboBadge(curr) : { text: '', scale: 1 });
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
   hud.aim(v.z < 1 ? { x: v.x, y: v.y } : null);
@@ -668,6 +681,13 @@ function onPadPress(p: PadPress) {
 }
 
 function recordBest() {
+  if (dailyMode) {
+    const d = recordDaily(storage.get(DAILY_KEY), today(), curr.score);
+    newBest = d.isNew;
+    rank = null;
+    if (d.isNew) storage.set(DAILY_KEY, JSON.stringify(d.store));
+    return;
+  }
   const r = updateBest(best, curr.score);
   best = r.best;
   newBest = r.isNew;
