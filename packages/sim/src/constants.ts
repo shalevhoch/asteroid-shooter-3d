@@ -18,6 +18,8 @@ export const STATION_DOCK_RADIUS = 150;
 
 // §3 Ship
 export const SHIP_START: Vec3 = [0, -960, 0];
+/** Player 2's hangar offset (P40): still inside HANGAR_RADIUS. */
+export const SHIP2_OFFSET: Vec3 = [40, 0, 0];
 export const TURN_RATE = 2 * DEG;
 export const THROTTLE_MAX = 4;
 export const THROTTLE_STEP = 1;

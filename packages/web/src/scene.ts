@@ -10,8 +10,11 @@ export interface World {
   readonly scene: THREE.Scene;
   readonly sky: THREE.Object3D;
   readonly ship: THREE.Group;
+  /** Player 2's ship (P40); hidden in single-player. */
+  readonly ship2: THREE.Group;
   /** Swaps the ship's model (P17); other crafts load on first use. */
   setCraft(id: CraftId): Promise<void>;
+  setCraft2(id: CraftId): Promise<void>;
   readonly earth: THREE.Object3D;
   /** Asteroid geometry by size, from astro02 (big) and astro01 (small). */
   readonly asteroidGeometry: { readonly big: THREE.BufferGeometry; readonly small: THREE.BufferGeometry };
@@ -224,23 +227,39 @@ export async function buildWorld(base: string): Promise<World> {
   turned.rotation.y = Math.PI;
   ship.add(turned);
   scene.add(ship);
+  const ship2 = new THREE.Group();
+  const turned2 = new THREE.Group();
+  turned2.rotation.y = Math.PI;
+  ship2.add(turned2);
+  ship2.visible = false;
+  scene.add(ship2);
   const crafts = new Map<CraftId, Promise<THREE.Object3D>>([['fighter', Promise.resolve(fitCraft(shipModel, 'fighter', length))]]);
   let wanted: CraftId = 'fighter';
-  const setCraft = async (id: CraftId): Promise<void> => {
-    wanted = id;
+  let wanted2: CraftId = 'fighter';
+  const loadFitted = (id: CraftId): Promise<THREE.Object3D> => {
     let p = crafts.get(id);
     if (!p) {
       p = loadCraft(base, id).then((m) => fitCraft(m, id, length));
       crafts.set(id, p);
     }
-    const model = await p;
-    // A later pick that finished loading first wins.
+    return p;
+  };
+  const setCraft = async (id: CraftId): Promise<void> => {
+    wanted = id;
+    const model = await loadFitted(id);
     if (wanted !== id) return;
     turned.clear();
     turned.add(model);
   };
+  const setCraft2 = async (id: CraftId): Promise<void> => {
+    wanted2 = id;
+    const model = (await loadFitted(id)).clone(true);
+    if (wanted2 !== id) return;
+    turned2.clear();
+    turned2.add(model);
+  };
   await setCraft('fighter');
 
   const asteroidGeometry = { big: firstGeometry(bigRock).center(), small: firstGeometry(smallRock).center() };
-  return { scene, sky, ship, setCraft, earth, asteroidGeometry, shipLength: length };
+  return { scene, sky, ship, ship2, setCraft, setCraft2, earth, asteroidGeometry, shipLength: length };
 }

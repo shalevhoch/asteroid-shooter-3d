@@ -231,6 +231,7 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
     "Press Start to resume", and the win and game-over buttons Start triggers get "(Start)". They update live on
     connect and disconnect; otherwise "Tap" (touch) or "Click".
   - **Decisions**: no rebinding, rumble or menu navigation by d-pad for now; the mapping is fixed and documented.
+- **Two-player split screen** (P40): when two gamepads are connected, the title card offers a 2-player start. The sim runs two ships (P1, then P2 each tick) against the same Earth, waves and score. Each pad flies one ship; the keyboard still steers P1. The screen splits left (P1) and right (P2), each with its own camera, HUD and radar. A destroyed ship is out; the run ends when Earth falls or both ships are down. Single-player (one pad or none, or the regular start button) is unchanged. Co-op runs are not recorded as replays. Bloom is off in split screen (each half is a scissor view). See [split-screen](docs/spec/split-screen/split-screen.md).
 - **Pause and settings overlay** (P13):
   - Esc (leaving pointer lock, or a plain keypress in the classic layout) or P pauses; click, Enter or P resumes.
     The sim doesn't tick while paused.

@@ -181,6 +181,11 @@ export const HE: Readonly<Record<string, string>> = {
   '{name} · {how}': '{name} · {how}',
   'Need {cost} credits': 'חסרים {cost} קרדיטים',
   "Couldn't buy that paint": 'לא ניתן לקנות את הצבע הזה',
+  // Two-player (P40)
+  '🎮 2 players': '🎮 2 שחקנים',
+  'Two gamepads · shared Earth · split screen': 'שני שלטים · כדור הארץ משותף · מסך מפוצל',
+  'Reconnect a gamepad': 'חברו שלט מחדש',
+  'SHIP DESTROYED': 'החללית הושמדה',
 };
 
 /** The text for `en` in `lang`, with `{name}` placeholders filled from `vars`. */

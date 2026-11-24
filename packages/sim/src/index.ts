@@ -29,7 +29,7 @@ export * from './quat.js';
 export * from './rng.js';
 export { fly, turn, axis } from './flight.js';
 export { MOTHERSHIP_WORLD_BOXES, resolveMothership, sphereHitsBox, pushOut, type Box } from './mothership.js';
-export { step, run } from './step.js';
+export { step, run, runCoop } from './step.js';
 export { makeAsteroid, moveAsteroids, destroyAsteroid, radiusOf, hpOf, earthDamageOf, timeToImpact, mostUrgent } from './asteroids.js';
 export { applyHazards, reloadPoint, HANGAR_CENTRE } from './hazards.js';
 export { pointsFor } from './asteroids.js';

@@ -113,28 +113,52 @@ export function mergePad(base: Input, h: PadHeld, sensitivity: number): Input {
   };
 }
 
-/** Polls the first standard-mapped pad. One `poll()` per frame; `nextHeld()` per tick. */
+/** Up to two connected pads, standard-mapped first, in the order the browser reports them. */
+export function pickPads<T extends { connected: boolean; mapping: string }>(pads: readonly (T | null)[]): T[] {
+  const live = pads.filter((g): g is T => g !== null && g.connected);
+  return [...live.filter((g) => g.mapping === 'standard'), ...live.filter((g) => g.mapping !== 'standard')].slice(0, 2);
+}
+
+/** Polls up to two pads (P19, P40). One `poll()` per frame; `nextHeld()` / `nextHeld2()` per tick. */
 export class GamepadInput {
-  private wasDown = new Set<number>();
-  private last: PadHeld = NO_PAD;
+  private wasDown: [Set<number>, Set<number>] = [new Set(), new Set()];
+  private last: [PadHeld, PadHeld] = [NO_PAD, NO_PAD];
   connected = false;
+  count = 0;
 
   poll(invertY: boolean): PadPress[] {
-    const pads = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function' ? [...navigator.getGamepads()] : [];
-    const pad = pads.find((g) => g?.connected && g.mapping === 'standard') ?? pads.find((g) => g?.connected) ?? null;
-    this.connected = pad !== null;
-    if (!pad) {
-      this.last = NO_PAD;
-      this.wasDown.clear();
-      return [];
+    return this.pollEach(invertY)[0]?.presses ?? [];
+  }
+
+  /** Presses and held state for P1 and (when present) P2 this frame. */
+  pollEach(invertY: boolean): { presses: PadPress[]; held: PadHeld }[] {
+    const raw = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function' ? [...navigator.getGamepads()] : [];
+    const pads = pickPads(raw);
+    this.count = pads.length;
+    this.connected = pads.length > 0;
+    const out: { presses: PadPress[]; held: PadHeld }[] = [];
+    for (let i = 0; i < 2; i++) {
+      const pad = pads[i];
+      if (!pad) {
+        this.last[i] = NO_PAD;
+        this.wasDown[i] = new Set();
+        continue;
+      }
+      const snapshot = pad as PadSnapshot;
+      const h = held(snapshot, invertY);
+      this.last[i] = h;
+      const r = presses(snapshot, this.wasDown[i] ?? new Set());
+      this.wasDown[i] = r.down;
+      out.push({ presses: r.presses, held: h });
     }
-    this.last = held(pad, invertY);
-    const r = presses(pad, this.wasDown);
-    this.wasDown = r.down;
-    return r.presses;
+    return out;
   }
 
   nextHeld(): PadHeld {
-    return this.last;
+    return this.last[0];
+  }
+
+  nextHeld2(): PadHeld {
+    return this.last[1];
   }
 }
