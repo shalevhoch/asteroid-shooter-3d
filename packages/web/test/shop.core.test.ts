@@ -29,11 +29,12 @@ describe('station shop', () => {
     const s = { ...initialState(1), credits: 120 };
     const html = shopPanel(s);
     expect(html).toContain('◆ 120 credits');
-    expect((html.match(/disabled/g) ?? []).length).toBe(0);
-    expect((shopPanel({ ...s, credits: 50 }).match(/disabled/g) ?? []).length).toBe(6);
+    expect((html.match(/disabled/g) ?? []).length).toBe(1); // missiles start at 200
+    expect((shopPanel({ ...s, credits: 50 }).match(/disabled/g) ?? []).length).toBe(7);
     expect(upgradeForKey('Digit1')).toBe('damage');
     expect(upgradeForKey('Digit6')).toBe('perkTime');
-    expect(upgradeForKey('Digit7')).toBeNull();
+    expect(upgradeForKey('Digit7')).toBe('missiles');
+    expect(upgradeForKey('Digit8')).toBeNull();
   });
 
   it('the HUD shows the credits, and the shop key in a lead-in', () => {
@@ -41,5 +42,14 @@ describe('station shop', () => {
     expect(hudModel(s, 0).credits).toBe('◆ 75 · B: STATION SHOP');
     expect(hudModel({ ...s, wave: { ...s.wave, phase: 'active' } }, 0).credits).toBe('◆ 75');
     expect(hudModel({ ...s, earnsCredits: false }, 0).credits).toBe('');
+  });
+});
+
+describe('missiles HUD', () => {
+  it('shows the volley size, then the locks while holding', () => {
+    const s = { ...initialState(1), upgrades: { ...NO_UPGRADES, missiles: 2 } };
+    expect(hudModel(initialState(1), 0).missiles).toBe('');
+    expect(hudModel(s, 0).missiles).toBe('VOLLEY ×3');
+    expect(hudModel({ ...s, missileLock: { ids: [4, 5], timer: 3 } }, 0).missiles).toBe('LOCKING 2/3');
   });
 });

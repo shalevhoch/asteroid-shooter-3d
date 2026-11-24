@@ -18,7 +18,7 @@ import {
 } from './constants.js';
 import { MOTHERSHIP_WORLD_BOXES } from './mothership.js';
 import { SPREAD_ANGLE } from './perks.js';
-import { photonCooldown, photonDamage } from './upgrades.js';
+import { missileVolley, photonCooldown, photonDamage } from './upgrades.js';
 import { fromAxisAngle, multiply, rotate } from './quat.js';
 import { LOCAL_FORWARD, LOCAL_RIGHT, LOCAL_UP, type AsteroidState, type GameState, type Input, type ProjectileState, type SimEvent } from './state.js';
 import { addScaled, distance, dot, normalize, sub, type Vec3 } from './vec3.js';
@@ -72,6 +72,10 @@ export function fire(state: GameState, input: Input, events: SimEvent[], lockCon
     ship = { ...ship, photonSide: ship.photonSide === 1 ? -1 : 1 };
   }
   ship = { ...ship, photonCooldown: cooldown };
+  if (state.upgrades.missiles > 0) {
+    const v = missiles({ ...state, ship, projectiles, nextProjectileId }, input, events, lockCone, (i, n) => addScaled(muzzle(0), right, (i - (n - 1) / 2) * 2 * MUZZLE_SIDE));
+    return v;
+  }
   if (input.fireRocket && ship.rockets > 0) {
     const pos = muzzle(0);
     const target = crosshairTarget(ship.pos, forward, state.asteroids, lockCone);
@@ -81,6 +85,48 @@ export function fire(state: GameState, input: Input, events: SimEvent[], lockCon
     ship = { ...ship, rockets: ship.rockets - 1 };
   }
   return { ...state, ship, projectiles, nextProjectileId };
+}
+
+/** Ticks between missile locks while the rocket button is held (P32): 0.3 s. */
+export const MISSILE_LOCK_TICKS = 8;
+
+/**
+ * Missiles (P32): a rocket press starts locking (the crosshair target at once); holding adds the next-best target in the
+ * lock cone every MISSILE_LOCK_TICKS up to the volley size; releasing fires one homing rocket per lock for one rocket of
+ * ammo. With no lock it fires one unlocked rocket, as before.
+ */
+function missiles(state: GameState, input: Input, events: SimEvent[], lockCone: number, at: (i: number, n: number) => Vec3): GameState {
+  const { ship } = state;
+  const held = input.rocketHeld === true || input.fireRocket;
+  let lock = state.missileLock;
+  if (!lock) {
+    if (!input.fireRocket || ship.rockets <= 0) return state;
+    lock = { ids: [], timer: 0 };
+  }
+  const ids = lock.ids.filter((id) => state.asteroids.some((a) => a.id === id));
+  if (held) {
+    let timer = Math.max(0, lock.timer - 1);
+    if (timer <= 0 && ids.length < missileVolley(state.upgrades)) {
+      const forward = rotate(ship.rot, LOCAL_FORWARD);
+      const t = crosshairTarget(ship.pos, forward, state.asteroids.filter((a) => !ids.includes(a.id)), lockCone);
+      if (t !== null) {
+        ids.push(t);
+        events.push({ type: 'missileLocked', target: t, locks: ids.length });
+      }
+      timer = MISSILE_LOCK_TICKS;
+    }
+    return { ...state, missileLock: { ids, timer } };
+  }
+  const targets: (number | null)[] = ids.length > 0 ? ids : [null];
+  let { projectiles, nextProjectileId } = state;
+  const forward = rotate(ship.rot, LOCAL_FORWARD);
+  targets.forEach((target, i) => {
+    const pos = at(i, targets.length);
+    projectiles = [...projectiles, { id: nextProjectileId, kind: 'rocket', pos, dir: forward, age: 0, target }];
+    events.push({ type: 'rocketFired', id: nextProjectileId, pos, target });
+    nextProjectileId++;
+  });
+  return { ...state, ship: { ...ship, rockets: ship.rockets - 1 }, projectiles, nextProjectileId, missileLock: null };
 }
 
 /** Homing (before moving): keep or find a target, then steer toward it. */

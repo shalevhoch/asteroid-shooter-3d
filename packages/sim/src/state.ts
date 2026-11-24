@@ -60,6 +60,12 @@ export interface AsteroidState {
 
 export type RunEndReason = 'earthDestroyed' | 'shipDestroyed';
 
+/** P32: targets locked so far, and ticks until the next lock. */
+export interface MissileLock {
+  readonly ids: readonly number[];
+  readonly timer: number;
+}
+
 export interface GameState {
   readonly tick: number;
   readonly rng: RngState;
@@ -92,6 +98,8 @@ export interface GameState {
   readonly upgrades: Upgrades;
   /** False for runs that don't earn credits (the daily challenge, P33). */
   readonly earnsCredits: boolean;
+  /** Missile locks being gathered while the rocket button is held (P32), or null when not locking. */
+  readonly missileLock: MissileLock | null;
   /** The run's seed, for its seeded wave missions (P31). */
   readonly missionSeed: number;
   readonly ended: RunEndReason | null;
@@ -117,6 +125,8 @@ export interface Input {
   readonly firePhoton: boolean;
   /** One rocket per tick this is true (the renderer sends one tick per press). */
   readonly fireRocket: boolean;
+  /** The rocket button is held (P32): with missiles bought, holding locks targets and releasing fires the volley. */
+  readonly rocketHeld?: boolean;
 }
 
 export const NO_INPUT: Input = {
@@ -130,6 +140,7 @@ export const NO_INPUT: Input = {
   reverse: false,
   firePhoton: false,
   fireRocket: false,
+  rocketHeld: false,
 };
 
 /** `bomb`: the smart-bomb perk (P26), scored as a rocket kill. */
@@ -145,6 +156,7 @@ export type SimEvent =
   | { readonly type: 'asteroidHit'; readonly id: number; readonly hp: number; readonly pos: Vec3 }
   | { readonly type: 'photonFired'; readonly id: number; readonly pos: Vec3 }
   | { readonly type: 'rocketFired'; readonly id: number; readonly pos: Vec3; readonly target: number | null }
+  | { readonly type: 'missileLocked'; readonly target: number; readonly locks: number }
   | { readonly type: 'rocketLocked'; readonly id: number; readonly target: number }
   | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3; readonly on: 'asteroid' | 'earth' | 'mothership' }
   | { readonly type: 'runEnded'; readonly reason: RunEndReason }
@@ -205,6 +217,7 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal', cr
     upgrades,
     earnsCredits: options.earnsCredits ?? true,
     missionSeed: seed >>> 0,
+    missileLock: null,
     ended: null,
   };
 }

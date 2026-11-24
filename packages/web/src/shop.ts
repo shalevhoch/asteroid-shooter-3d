@@ -42,11 +42,12 @@ export const UPGRADE_LABELS: Readonly<Record<UpgradeId, { readonly name: string;
   shield: { name: 'Earth shield', blurb: '3 s of shield at each wave start' },
   speed: { name: 'Engines', blurb: '+10 % forward speed' },
   perkTime: { name: 'Perk duration', blurb: 'timed perks last 20 % longer' },
+  missiles: { name: 'Lock-on missiles', blurb: 'hold rocket to lock +1 target per level' },
 };
 
 const pips = (n: number): string => '●'.repeat(n) + '○'.repeat(UPGRADE_MAX - n);
 
-/** The shop panel: one button per upgrade (key 1–6), greyed out when capped or too dear. */
+/** The shop panel: one button per upgrade (key 1–7), greyed out when capped or too dear. */
 export function shopPanel(s: GameState): string {
   const rows = UPGRADE_IDS.map((id, i) => {
     const price = priceOf(s.upgrades, id);
@@ -55,7 +56,7 @@ export function shopPanel(s: GameState): string {
     const off = price === null || price > s.credits ? ' disabled' : '';
     return `<button class="buy" data-buy="${id}"${off}><b>${String(i + 1)}</b> ${label.name} <span class="pips">${pips(s.upgrades[id])}</span> <span class="cost">${cost}</span><br><small>${label.blurb}</small></button>`;
   }).join('');
-  return `<div class="shop"><h2>🛰️ Station shop · ◆ ${String(s.credits)} credits</h2><div class="buys">${rows}</div><p class="dim">1–6 or click buys · upgrades stay with this ship · B or Enter flies on</p></div>`;
+  return `<div class="shop"><h2>🛰️ Station shop · ◆ ${String(s.credits)} credits</h2><div class="buys">${rows}</div><p class="dim">1–7 or click buys · upgrades stay with this ship · B or Enter flies on</p></div>`;
 }
 
 /** The upgrade a digit key buys, if any. */

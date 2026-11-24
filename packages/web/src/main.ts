@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, upgradedCraft, type UpgradeId, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, upgradedCraft, UPGRADE_IDS, type UpgradeId, type GameState, type SimEvent } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -373,7 +373,7 @@ function renderOverlay() {
   for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-buy]')) {
     b.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = (['damage', 'fireRate', 'hull', 'shield', 'speed', 'perkTime'] as const).find((x) => x === b.dataset['buy']);
+      const id = UPGRADE_IDS.find((x) => x === b.dataset['buy']);
       if (id) buy(id);
     });
   }
@@ -640,7 +640,7 @@ renderer.setAnimationLoop((nowMs: number) => {
     const rocketTargets = new Set<number>();
     for (const p of curr.projectiles) if (p.kind === 'rocket' && p.target !== null) rocketTargets.add(p.target);
     const aimTarget = curr.ship.rockets > 0 ? crosshairTarget(curr.ship.pos, rotate(curr.ship.rot, LOCAL_FORWARD), curr.asteroids, PRESETS[curr.difficulty].rocketLockCone) : null;
-    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, pickups: curr.pickups.map((p) => ({ pos: p.pos, rgb: PERK_LOOK[p.kind].rgb })) });
+    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, missileLocks: curr.missileLock?.ids ?? [], pickups: curr.pickups.map((p) => ({ pos: p.pos, rgb: PERK_LOOK[p.kind].rgb })) });
   }
   hud.show(phase !== 'title');
   touchUi?.show(phase === 'playing');

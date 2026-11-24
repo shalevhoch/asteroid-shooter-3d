@@ -183,6 +183,7 @@ export function toInput(c: TickControls): Input {
     reverse: held.has('reverse'),
     firePhoton: held.has('firePhoton'),
     fireRocket: c.rocketPresses > 0,
+    rocketHeld: held.has('fireRocket'),
   };
 }
 

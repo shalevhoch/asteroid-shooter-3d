@@ -41,6 +41,8 @@ export interface TouchFrame {
   readonly turbo: boolean;
   /** Rocket taps to spend this tick (at most one fires). */
   readonly rocketTaps: number;
+  /** The rocket button is held (P32). */
+  readonly rocketHeld?: boolean;
 }
 
 export const NO_TOUCH: TouchFrame = { stickX: 0, stickY: 0, throttleTarget: null, fire: false, turbo: false, rocketTaps: 0 };
@@ -61,6 +63,7 @@ export function mergeTouch(base: Input, t: TouchFrame, shipThrottle: number, opt
     turbo: base.turbo || t.turbo,
     firePhoton: base.firePhoton || t.fire,
     fireRocket: base.fireRocket || t.rocketTaps > 0,
+    rocketHeld: base.rocketHeld === true || t.rocketHeld === true,
   };
 }
 
