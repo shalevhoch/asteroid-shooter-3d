@@ -19,7 +19,7 @@ import { TOP_KEY, insertScore, localDate, parseTop, type ScoreEntry } from './le
 import { BEST_KEY, EMPTY_STATS, accuracy, addStats, formatTime, nextPhase, parseBest, updateBest, type FlowAction, type Phase, type RunStats } from './game.js';
 import { Hud, hudModel } from './hud.js';
 import { ACTION_LABELS, LAYOUTS, bindings, keyLabel } from './keymap.js';
-import { SKY_RADIUS, addStation, buildWorld } from './scene.js';
+import { SKY_RADIUS, addStation, applyPaint, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
@@ -41,6 +41,7 @@ import { TouchControls } from './touchControls.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
 import { FILTER_LABELS, FOCUS_LABELS, applyPhotoInput, cycleFilter, cycleFocus, enterPhoto, filterCss, focusOn, photoPose, screenshotName, snapshotCanvas, type PhotoCam, type PhotoFilter } from './photo.js';
+import { PAINT_IDS, PAINTS, PAINT_KEY, buyPaint, chosenPaint, paintUnlocked, parsePaint, selectPaint } from './paint.js';
 
 const base = import.meta.env.BASE_URL;
 const el = (id: string): HTMLElement => {
@@ -113,6 +114,10 @@ let dailyMode = false;
 const today = () => utcDate(new Date());
 const todaysBest = () => dailyBest(storage.get(DAILY_KEY), today());
 let wallet = parseWallet(storage.get(WALLET_KEY));
+let paints = parsePaint(storage.get(PAINT_KEY));
+const savePaints = () => {
+  storage.set(PAINT_KEY, JSON.stringify(paints));
+};
 /** Credits at the start of this run, for the game-over summary. */
 let runStartCredits = wallet.credits;
 const saveWallet = () => {
@@ -293,7 +298,15 @@ let stationRing: Awaited<ReturnType<typeof addStation>> | null = null;
 void addStation(world.scene, base).then((r) => {
   stationRing = r;
 }).catch(() => undefined);
-void world.setCraft(settings.craft);
+const paintShip = (craft = settings.craft) => {
+  applyPaint(world.ship, PAINTS[chosenPaint(paints, craft)].tint);
+};
+const showCraft = (id: typeof settings.craft) => {
+  void world.setCraft(id).then(() => {
+    paintShip(id);
+  });
+};
+showCraft(settings.craft);
 const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
 const atlas = await buildAtlas((p) => assetUrl(base, p));
 const batch = new BillboardBatch(atlas, MAX_PARTICLES + 64);
@@ -396,6 +409,19 @@ function craftPicker(): string {
     <p class="dim">${T(CRAFT_LABELS[settings.craft].blurb)}<br>${T('turn {turn} · fuel {fuel} · hull {hull} · rockets {rockets}', { turn: pct(c.turnRate, f.turnRate), fuel: c.fuelMax, hull: c.hullMax, rockets: c.rocketMax })}</p>`;
 }
 
+function paintPicker(): string {
+  const current = chosenPaint(paints, settings.craft);
+  const swatches = PAINT_IDS.map((id) => {
+    const p = PAINTS[id];
+    const open = paintUnlocked(id, unlocks, paints.bought);
+    const how = p.achievement ? ACHIEVEMENTS[p.achievement].name : '';
+    const label = open ? T(p.name) : p.cost !== undefined ? T('{name} · ◆ {cost}', { name: T(p.name), cost: p.cost }) : T('{name} · {how}', { name: T(p.name), how });
+    const hex = `#${p.tint.toString(16).padStart(6, '0')}`;
+    return `<button type="button" data-paint="${id}" class="swatch${id === current ? ' on' : ''}${open ? '' : ' locked'}" style="--swatch:${hex}" title="${label}" aria-label="${label}">${open ? '' : p.cost !== undefined ? '◆' : '🔒'}</button>`;
+  }).join('');
+  return `<div class="paints">${swatches}</div><p class="dim">${T('Paint: {name} · saved for this ship', { name: T(PAINTS[current].name) })}</p>`;
+}
+
 /** A function, so TypeScript doesn't narrow `phase` across calls that change it. */
 const isPlaying = (): boolean => phase === 'playing';
 /** Whether the title card's settings panel is unfolded (kept across re-renders). */
@@ -415,7 +441,7 @@ function renderOverlay() {
   if (phase === 'title') {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>${T("Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.")}</p>
-      <p class="dim">${T('Best score: {best} · ◆ {credits} credits', { best, credits: wallet.credits })}</p><div class="row lang">${langButtons()}</div>${difficultyPicker()}${craftPicker()}
+      <p class="dim">${T('Best score: {best} · ◆ {credits} credits', { best, credits: wallet.credits })}</p><div class="row lang">${langButtons()}</div>${difficultyPicker()}${craftPicker()}${paintPicker()}
       <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button><br><button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${replayButtons()}${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>${T('Paused')}</h1><button id="go">${T(actionPrompt(cardInput(), 'resume'))}</button><br><button id="photo-open" class="daily">${T('📷 Photo mode (F)')}</button><p class="dim">${T('Score {score} · Enter or P also resumes', { score: curr.score })}</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr, settings.lang) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
@@ -505,7 +531,30 @@ function renderOverlay() {
       const c = CRAFT_IDS.find((x) => x === b.dataset['craft']);
       if (c) settings.craft = c;
       saveSettings();
-      void world.setCraft(settings.craft);
+      showCraft(settings.craft);
+      renderOverlay();
+    });
+  }
+  for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-paint]')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = PAINT_IDS.find((x) => x === b.dataset['paint']);
+      if (!id) return;
+      if (!paintUnlocked(id, unlocks, paints.bought)) {
+        const r = buyPaint(paints, id, wallet.credits);
+        if (!r) {
+          const cost = PAINTS[id].cost;
+          showBanner({ title: T(cost !== undefined ? 'Need {cost} credits' : "Couldn't buy that paint", cost !== undefined ? { cost } : {}), subtitle: T(PAINTS[id].name), durationMs: 1800 });
+          return;
+        }
+        paints = r.store;
+        wallet = { ...wallet, credits: r.credits };
+        savePaints();
+        storage.set(WALLET_KEY, JSON.stringify(wallet));
+      }
+      paints = selectPaint(paints, settings.craft, id, unlocks);
+      savePaints();
+      paintShip();
       renderOverlay();
     });
   }
@@ -670,7 +719,7 @@ function watchReplay(r: Replay) {
 function resetRunView() {
   runStartCredits = wallet.credits;
   tutorialStep = !tutorialDone && !dailyMode && !watching ? 0 : null;
-  void world.setCraft(curr.craft);
+  showCraft(curr.craft);
   stats = EMPTY_STATS;
   newBest = false;
   rank = null;

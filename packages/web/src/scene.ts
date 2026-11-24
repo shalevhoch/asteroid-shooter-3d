@@ -87,6 +87,40 @@ export async function addStation(scene: THREE.Scene, base: string): Promise<THRE
   return ring;
 }
 
+const stockColors = new WeakMap<THREE.Material, number>();
+
+/** Multiplies each mesh's stock colour by `tint` (white leaves the model as authored). Render-only (P39). */
+type ColoredMat = THREE.MeshBasicMaterial | THREE.MeshLambertMaterial | THREE.MeshPhongMaterial | THREE.MeshStandardMaterial;
+const colored = (m: unknown): ColoredMat | undefined =>
+  m instanceof THREE.MeshBasicMaterial || m instanceof THREE.MeshLambertMaterial || m instanceof THREE.MeshPhongMaterial || m instanceof THREE.MeshStandardMaterial ? m : undefined;
+
+export function applyPaint(root: THREE.Object3D, tint: number): void {
+  const mul = new THREE.Color(tint);
+  const tintMat = (m: ColoredMat) => {
+    const color = m.color;
+    let stock = stockColors.get(m);
+    if (stock === undefined) {
+      stock = color.getHex();
+      stockColors.set(m, stock);
+    }
+    color.setHex(stock).multiply(mul);
+  };
+  root.traverse((c) => {
+    if (!(c instanceof THREE.Mesh)) return;
+    const one = colored(c.material);
+    if (one) {
+      tintMat(one);
+      return;
+    }
+    if (Array.isArray(c.material)) {
+      for (const m of c.material as unknown[]) {
+        const cm = colored(m);
+        if (cm) tintMat(cm);
+      }
+    }
+  });
+}
+
 async function loadCraft(base: string, id: CraftId): Promise<THREE.Object3D> {
   const m = CRAFT_MODELS[id];
   if (m.file.endsWith('.glb')) return loadBaked(base, m.file);

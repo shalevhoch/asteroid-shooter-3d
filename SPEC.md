@@ -63,6 +63,7 @@ flying into the mothership's hangar. The run ends when Earth's health or your hu
   - **Decisions**: real trade-offs, with the Fighter unchanged as the default, so no existing tuning knob moves. The
     g_ship models are left out for now; since P25 they're baked to GLB like every 3DS model, so a later packet can add one
     as a craft.
+- **Paint colours** (P39): a title-card picker tints the ship, saved per craft. Stock is always free. Ember, Ice, Gold and Obsidian unlock with First contact, Sharpshooter, Earth is safe and Hardened. Crimson and Azure cost 200 credits, Violet 400. Render-only: the sim never sees the paint. See [paint-colours](docs/spec/paint-colours/paint-colours.md).
 - **Space station** (P18): a second reload point and landmark at `STATION_POS = (1000, 1000, 0)`, above the
   asteroid lane between the spawn line and Earth, on the opposite side from the mothership.
   - Inside `STATION_DOCK_RADIUS = 150` of it, the ship refills exactly as in the hangar. `shipReloaded` carries
