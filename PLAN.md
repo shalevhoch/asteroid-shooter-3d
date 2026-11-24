@@ -63,7 +63,7 @@ Priority order. No player name or logo personalization.
 | [x] | P31: Wave missions | [#78](https://github.com/shalevhoch/asteroid-shooter-3d/issues/78) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#94](https://github.com/shalevhoch/asteroid-shooter-3d/pull/94) |
 | [x] | P32: Lock-on missiles | [#79](https://github.com/shalevhoch/asteroid-shooter-3d/issues/79) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#95](https://github.com/shalevhoch/asteroid-shooter-3d/pull/95) |
 | [x] | P33: Daily challenge | [#80](https://github.com/shalevhoch/asteroid-shooter-3d/issues/80) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#96](https://github.com/shalevhoch/asteroid-shooter-3d/pull/96) |
-| [ ] | P34: Boss waves | [#81](https://github.com/shalevhoch/asteroid-shooter-3d/issues/81) | features | 📋 | | |
+| [x] | P34: Boss waves | [#81](https://github.com/shalevhoch/asteroid-shooter-3d/issues/81) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#97](https://github.com/shalevhoch/asteroid-shooter-3d/pull/97) |
 | [ ] | P35: Fourth ship (g_ship) | [#82](https://github.com/shalevhoch/asteroid-shooter-3d/issues/82) | features | 📋 | | |
 | [ ] | P36: Hebrew and tutorial | [#83](https://github.com/shalevhoch/asteroid-shooter-3d/issues/83) | features | 📋 | | |
 | [ ] | P37: Replays | [#84](https://github.com/shalevhoch/asteroid-shooter-3d/issues/84) | features | 📋 | | |
