@@ -57,7 +57,7 @@ Priority order. No player name or logo personalization.
 |---|---|---|---|---|---|---|
 | [x] | P26: Perks | [#73](https://github.com/shalevhoch/asteroid-shooter-3d/issues/73) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#89](https://github.com/shalevhoch/asteroid-shooter-3d/pull/89) |
 | [x] | P27: Keyboard rockets | [#74](https://github.com/shalevhoch/asteroid-shooter-3d/issues/74) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#90](https://github.com/shalevhoch/asteroid-shooter-3d/pull/90) |
-| [ ] | P28: Hyperdrive thrusters | [#75](https://github.com/shalevhoch/asteroid-shooter-3d/issues/75) | features | 📋 | | |
+| [x] | P28: Hyperdrive thrusters | [#75](https://github.com/shalevhoch/asteroid-shooter-3d/issues/75) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#91](https://github.com/shalevhoch/asteroid-shooter-3d/pull/91) |
 | [ ] | P29: Credits and station shop | [#76](https://github.com/shalevhoch/asteroid-shooter-3d/issues/76) | features | 📋 | | |
 | [ ] | P30: Look and feel | [#77](https://github.com/shalevhoch/asteroid-shooter-3d/issues/77) | features | 📋 | | |
 | [ ] | P31: Wave missions | [#78](https://github.com/shalevhoch/asteroid-shooter-3d/issues/78) | features | 📋 | | |
