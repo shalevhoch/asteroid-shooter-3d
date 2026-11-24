@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -23,6 +23,7 @@ import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
+import { nozzleLook, nozzleWorld, rampThrust } from './thrusters.js';
 import { PERK_LOOK, perkBanner, pickupLook } from './perksUi.js';
 import { LoadProgress } from './loading.js';
 import { QualityGovernor, initialQuality, urlQuality, type QualityLevel } from './quality.js';
@@ -471,6 +472,24 @@ renderHelp();
 document.body.classList.remove('loading');
 
 const v = new THREE.Vector3();
+/** Hyperdrive thrusters (P28): nozzle glow always, a hot plume while the turbo burns. */
+let thrust = 0;
+function drawThrusters(pose: { pos: GameState['ship']['pos']; rot: GameState['ship']['rot'] }, frameMs: number) {
+  thrust = rampThrust(thrust, curr.ship.turbo && phase === 'playing', frameMs / TICK_MS);
+  if (!world.ship.visible || settings.camera === 'classic') return;
+  const L = world.shipLength;
+  const look = nozzleLook(thrust, curr.ship.throttle, THROTTLE_MAX);
+  const { points, back } = nozzleWorld(curr.craft, pose.pos, pose.rot, L);
+  for (const p of points) {
+    batch.push(p[0], p[1], p[2], look.glow * L, 0, 0.55, 0.8, 1, look.glowAlpha, true, 'roundParticle');
+    if (look.flame > 0) {
+      const f = look.flame * L * (0.92 + 0.08 * Math.sin(performance.now() / 23));
+      batch.pushLine(p[0], p[1], p[2], p[0] + back[0] * f, p[1] + back[1] * f, p[2] + back[2] * f, 0.35, 1, 0.62, 0.25, look.flameAlpha, true, 'roundParticle');
+      batch.push(p[0], p[1], p[2], look.glow * L * 0.8, 0, 1, 0.9, 0.7, look.flameAlpha * 0.6, true, 'roundParticle');
+    }
+  }
+}
+
 /** Perk pickups (P26): a coloured glow with a white core, interpolated between ticks. */
 function drawPickups(alpha: number) {
   for (const p of curr.pickups) {
@@ -520,6 +539,10 @@ renderer.setAnimationLoop((nowMs: number) => {
       curr = r.state;
       onEvents(r.events, nowMs);
       fx.ambient(curr);
+      if (curr.ship.turbo && thrust > 0.35 && quality.current.name !== 'low') {
+        const n = nozzleWorld(curr.craft, curr.ship.pos, curr.ship.rot, world.shipLength);
+        fx.thrusterTrail(n.points, n.back, world.shipLength * 0.12);
+      }
     }
     accMs = remainderMs;
   }
@@ -571,6 +594,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   batch.begin();
   fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
   drawPickups(alpha);
+  drawThrusters(pose, frameMs);
   batch.end(camera);
   shockwaves.sync(fx.shockwaves);
   renderer.render(world.scene, camera);

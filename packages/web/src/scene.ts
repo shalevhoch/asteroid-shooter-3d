@@ -15,6 +15,8 @@ export interface World {
   readonly earth: THREE.Object3D;
   /** Asteroid geometry by size, from astro02 (big) and astro01 (small). */
   readonly asteroidGeometry: { readonly big: THREE.BufferGeometry; readonly small: THREE.BufferGeometry };
+  /** Every craft is fitted to this length (the Fighter's), in world units (P28 places the nozzles with it). */
+  readonly shipLength: number;
 }
 
 function firstGeometry(obj: THREE.Object3D): THREE.BufferGeometry {
@@ -205,5 +207,5 @@ export async function buildWorld(base: string): Promise<World> {
   await setCraft('fighter');
 
   const asteroidGeometry = { big: firstGeometry(bigRock).center(), small: firstGeometry(smallRock).center() };
-  return { scene, sky, ship, setCraft, earth, asteroidGeometry };
+  return { scene, sky, ship, setCraft, earth, asteroidGeometry, shipLength: length };
 }

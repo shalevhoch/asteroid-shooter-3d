@@ -194,6 +194,7 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   every flight action has a keyboard key and the game plays 100 % from the keyboard (arrows aim in modern). Touch and
   gamepad already had rocket buttons. Follow-ups in this packet: collecting a perk plays a short synthesised chime,
   and pickups show on the radar as small squares in the perk's colour.
+- **Hyperdrive thrusters** (P28): every craft's nozzles glow with the throttle; holding Shift ramps up a hot plume, a particle trail (not on low quality) and a whoosh. Render-only. See [hyperdrive-thrusters](docs/spec/hyperdrive-thrusters/hyperdrive-thrusters.md).
 - **Touch controls** (P15), for tablets and phones in landscape:
   - Shown during play when the primary pointer is coarse and the device has touch points. `?touch` forces them
     on and `?touch=0` off. The keyboard and mouse keep working alongside.
