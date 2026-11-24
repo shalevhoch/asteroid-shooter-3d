@@ -32,8 +32,8 @@ function turboEvents(was: boolean, now: boolean, fuel: number, drain: number, ev
   if (now && fuel === 0 && drain > 0) events.push({ type: 'fuelEmpty' });
 }
 
-/** `craft` sets the turn rate and fuel cap (P17); the Fighter is §3's numbers. */
-export function fly(ship: ShipState, input: Input, fuelDrain = 1, craft: Craft = CRAFTS.fighter): FlightResult {
+/** `craft` sets the turn rate and fuel cap (P17); the Fighter is §3's numbers. `speed` scales forward flight (P29). */
+export function fly(ship: ShipState, input: Input, fuelDrain = 1, craft: Craft = CRAFTS.fighter, speed = 1): FlightResult {
   const events: SimEvent[] = [];
   const rot = turn(ship.rot, input, craft.turnRate);
   const throttle = Math.max(0, Math.min(THROTTLE_MAX, ship.throttle + unit(input.throttle)));
@@ -45,7 +45,7 @@ export function fly(ship: ShipState, input: Input, fuelDrain = 1, craft: Craft =
   const fuel = burn(ship.fuel, turbo, fuelDrain);
   turboEvents(ship.turbo, turbo, fuel, fuelDrain, events);
 
-  let pos: Vec3 = addScaled(ship.pos, forward, turbo ? TURBO_STEP : throttle * THROTTLE_STEP);
+  let pos: Vec3 = addScaled(ship.pos, forward, (turbo ? TURBO_STEP : throttle * THROTTLE_STEP) * speed);
   pos = addScaled(pos, right, unit(input.strafeX) * STRAFE_STEP);
   pos = addScaled(pos, up, unit(input.strafeY) * STRAFE_STEP);
   if (input.reverse) pos = addScaled(pos, forward, -STRAFE_STEP);

@@ -2,7 +2,7 @@
 import { waveLine } from './waveUi.js';
 import { activePerkLine } from './perksUi.js';
 import { formatImpact, urgency, type Urgency } from './threat.js';
-import { CRAFTS, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
+import { shopOpen, upgradedCraft, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
   readonly score: number;
@@ -25,6 +25,8 @@ export interface HudModel {
   readonly impact: { readonly text: string; readonly urgency: Urgency } | null;
   /** Active perks with seconds left (P26), e.g. "SHIELD 8s · MAGNET 12s"; empty with none. */
   readonly perks: string;
+  /** "◆ 120" (P29), with the shop key while the shop is open; empty for runs that don't earn. */
+  readonly credits: string;
   /** Warnings worth flashing. */
   readonly warnings: readonly string[];
 }
@@ -38,7 +40,7 @@ function impactOf(s: GameState): HudModel['impact'] {
 
 export function hudModel(s: GameState, best: number): HudModel {
   const warnings: string[] = [];
-  const { hullMax, fuelMax, rocketMax } = CRAFTS[s.craft];
+  const { hullMax, fuelMax, rocketMax } = upgradedCraft(s);
   if (s.earthHealth <= EARTH_MAX_HEALTH * 0.3) warnings.push('EARTH CRITICAL');
   if (s.ship.hull < hullMax) warnings.push(s.ship.hull <= hullMax * 0.3 ? 'HULL CRITICAL' : 'HULL DAMAGED');
   if (s.ship.fuel === 0) warnings.push('NO FUEL');
@@ -58,6 +60,7 @@ export function hudModel(s: GameState, best: number): HudModel {
     impact: impactOf(s),
     combo: comboLive(s.combo, s.tick) && s.combo.count >= 2 ? `COMBO ${String(s.combo.count)} · next ×${String(comboMultiplier(s.combo.count + 1))}` : '',
     perks: activePerkLine(s.perks),
+    credits: s.earnsCredits ? `◆ ${String(s.credits)}${shopOpen(s) ? ' · B: STATION SHOP' : ''}` : '',
     warnings,
   };
 }
@@ -65,7 +68,7 @@ export function hudModel(s: GameState, best: number): HudModel {
 export class Hud {
   constructor(private readonly root: HTMLElement) {
     root.innerHTML = `
-      <div class="tl"><div class="score">0</div><div class="best">best 0</div><div class="wave"></div><div class="combo"></div><div class="perks"></div></div>
+      <div class="tl"><div class="score">0</div><div class="best">best 0</div><div class="credits"></div><div class="wave"></div><div class="combo"></div><div class="perks"></div></div>
       <div class="bars">
         <div class="bar earth"><span>EARTH</span><i></i></div>
         <div class="bar hull"><span>HULL</span><i></i></div>
@@ -89,6 +92,7 @@ export class Hud {
     this.q('.wave').textContent = m.wave;
     this.q('.combo').textContent = m.combo;
     this.q('.perks').textContent = m.perks;
+    this.q('.credits').textContent = m.credits;
     for (const k of ['earth', 'hull', 'fuel'] as const) {
       const bar = this.q(`.bar.${k} i`);
       bar.style.width = `${String(Math.round(m[k] * 100))}%`;
