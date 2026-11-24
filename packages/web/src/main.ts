@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, upgradedCraft, UPGRADE_IDS, type UpgradeId, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, upgradedCraft, UPGRADE_IDS, type UpgradeId, type GameState, type SimEvent, NO_INPUT, type Input } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -25,6 +25,7 @@ import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
 import { LANGS, LANG_NAMES, bannerTitle, isRtl, t } from './i18n.js';
 import { TUTORIAL_KEY, TUTORIAL_STEPS, advanceTutorial, tutorialHint } from './tutorial.js';
+import { REPLAY_KEY, REPLAY_STORE_LIMIT, Recorder, applyBuys, parseReplay, replayInputs, replayStart, type Replay } from './replay.js';
 import { DAILY_CRAFT, DAILY_DIFFICULTY, DAILY_KEY, DAILY_OPTIONS, dailyBest, dailySeed, recordDaily, utcDate } from './daily.js';
 import { WALLET_KEY, parseWallet, runOptions, shopPanel, upgradeForKey, withRun } from './shop.js';
 import { comboBadge, damageSmoke, flashAt, hitMarker, hitStopMs, killFlash } from './lookfeel.js';
@@ -113,9 +114,50 @@ let wallet = parseWallet(storage.get(WALLET_KEY));
 /** Credits at the start of this run, for the game-over summary. */
 let runStartCredits = wallet.credits;
 const saveWallet = () => {
+  if (watching) return;
   wallet = withRun(wallet, curr);
   storage.set(WALLET_KEY, JSON.stringify(wallet));
 };
+/** Replays (P37): the run being recorded, the last finished one, and the one being watched. */
+let recorder: Recorder | null = null;
+let lastReplay = parseReplay(storage.get(REPLAY_KEY));
+let watching: { replay: Replay; inputs: Input[]; at: number } | null = null;
+const REPLAY_FILE = 'asteroid-shooter-3d-replay.json';
+/** Keeps the finished run as the last replay (stored when it fits). */
+function keepReplay() {
+  if (!recorder || watching || recorder.length === 0) return;
+  lastReplay = recorder.replay(curr.score, localDate(new Date()));
+  recorder = null;
+  const json = JSON.stringify(lastReplay);
+  if (json.length <= REPLAY_STORE_LIMIT) storage.set(REPLAY_KEY, json);
+}
+function exportReplay() {
+  if (!lastReplay) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(lastReplay)], { type: 'application/json' }));
+  a.download = REPLAY_FILE;
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+  }, 1000);
+}
+function importReplay() {
+  const f = document.createElement('input');
+  f.type = 'file';
+  f.accept = 'application/json,.json';
+  f.addEventListener('change', () => {
+    void f.files?.[0]?.text().then((text) => {
+      const r = parseReplay(text);
+      if (r) {
+        lastReplay = r;
+        watchReplay(r);
+      } else showBanner({ title: T('Not a replay file'), subtitle: '', durationMs: 2500 });
+    });
+  });
+  f.click();
+}
+const replayButtons = (): string =>
+  lastReplay ? `<div class="row"><button id="watch">${T('🎬 Watch replay ({score})', { score: lastReplay.score })}</button><button id="export">${T('⬇ Export replay')}</button><button id="import">${T('⬆ Import')}</button></div>` : `<div class="row"><button id="import">${T('⬆ Import replay')}</button></div>`;
 let unlocks = parseUnlocks(storage.get(ACHIEVEMENTS_KEY));
 let achRun: AchievementRun = NEW_RUN;
 /** Achievements first unlocked during this run, for the game-over card. */
@@ -355,7 +397,7 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>${T("Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.")}</p>
       <p class="dim">${T('Best score: {best} · ◆ {credits} credits', { best, credits: wallet.credits })}</p><div class="row lang">${langButtons()}</div>${difficultyPicker()}${craftPicker()}
-      <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button><br><button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
+      <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button><br><button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${replayButtons()}${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>${T('Paused')}</h1><button id="go">${T(actionPrompt(cardInput(), 'resume'))}</button><p class="dim">${T('Score {score} · Enter or P also resumes', { score: curr.score })}</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr, settings.lang) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
@@ -364,10 +406,10 @@ function renderOverlay() {
       <div class="row"><button id="go">${withStart(T('Keep going: endless mode'), cardInput())}</button><button id="finish">${T('Finish the run')}</button></div></div>`;
   } else {
     overlay.innerHTML = `<div class="card wide"><h1>${T(wonRun ? 'You saved Earth!' : curr.ended ? END_TEXT[curr.ended] : 'Game over')}</h1>
-      ${dailyMode ? `<p class="dim">${T('📅 Daily challenge · {date}', { date: today() })}</p>` : ''}<div class="final">${String(curr.score)}</div>${newBest ? `<div class="newbest">${T(dailyMode ? 'NEW DAILY BEST!' : 'NEW BEST!')}</div>` : `<p class="dim">${dailyMode ? T("Today's best {best}", { best: todaysBest() }) : T('Best {best}', { best })}</p>`}
+      ${watching ? `<p class="dim">${T('🎬 Replay finished')}</p>` : dailyMode ? `<p class="dim">${T('📅 Daily challenge · {date}', { date: today() })}</p>` : ''}<div class="final">${String(curr.score)}</div>${newBest ? `<div class="newbest">${T(dailyMode ? 'NEW DAILY BEST!' : 'NEW BEST!')}</div>` : `<p class="dim">${dailyMode ? T("Today's best {best}", { best: todaysBest() }) : T('Best {best}', { best })}</p>`}
       ${runUnlocks.length ? `<p class="unlocked">${T('🏆 Unlocked: {list}', { list: runUnlocks.map((id) => ACHIEVEMENTS[id].name).join(' · ') })}</p>` : ''}
       <div class="summary">${summaryTable()}${topTable()}</div>
-      <button id="go">${withStart(T('Play again'), cardInput())}</button>${PORTAL_LINK}</div>`;
+      <button id="go">${withStart(T('Play again'), cardInput())}</button>${replayButtons()}${PORTAL_LINK}</div>`;
   }
   document.getElementById('go')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -384,6 +426,17 @@ function renderOverlay() {
       renderHelp();
     });
   }
+  const on = (id: string, f: () => void) => {
+    document.getElementById(id)?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      f();
+    });
+  };
+  on('watch', () => {
+    if (lastReplay) watchReplay(lastReplay);
+  });
+  on('export', exportReplay);
+  on('import', importReplay);
   document.getElementById('tutorial')?.addEventListener('click', (e) => {
     e.stopPropagation();
     tutorialDone = false;
@@ -494,9 +547,29 @@ function dispatch(action: FlowAction) {
 }
 
 function newRun() {
-  prev = curr = dailyMode ? initialState(dailySeed(today()), DAILY_DIFFICULTY, DAILY_CRAFT, DAILY_OPTIONS) : initialState(Date.now() >>> 0, settings.difficulty, settings.craft, runOptions(wallet, settings.craft));
+  const seed = dailyMode ? dailySeed(today()) : Date.now() >>> 0;
+  const [difficulty, craft, options] = dailyMode ? [DAILY_DIFFICULTY, DAILY_CRAFT, DAILY_OPTIONS] : [settings.difficulty, settings.craft, runOptions(wallet, settings.craft)];
+  watching = null;
+  recorder = new Recorder(seed, difficulty, craft, options);
+  prev = curr = initialState(seed, difficulty, craft, options);
+  resetRunView();
+}
+
+/** Starts watching a replay from its first tick. */
+function watchReplay(r: Replay) {
+  const inputs = replayInputs(r);
+  if (!inputs) return;
+  watching = { replay: r, inputs, at: 0 };
+  recorder = null;
+  prev = curr = replayStart(r);
+  resetRunView();
+  if (phase === 'title') dispatch('start');
+  else dispatch('restart');
+}
+
+function resetRunView() {
   runStartCredits = wallet.credits;
-  tutorialStep = !tutorialDone && !dailyMode ? 0 : null;
+  tutorialStep = !tutorialDone && !dailyMode && !watching ? 0 : null;
   void world.setCraft(curr.craft);
   stats = EMPTY_STATS;
   newBest = false;
@@ -537,9 +610,17 @@ function renderTutorial() {
     showBanner({ title: T('Tutorial done. Good luck, pilot!'), subtitle: '', durationMs: 2500 });
   }
   const step = tutorialStep === null ? undefined : TUTORIAL_STEPS[tutorialStep];
-  const show = phase === 'playing' && step !== undefined;
+  const show = phase === 'playing' && (step !== undefined || watching !== null);
   tutorialEl.style.display = show ? '' : 'none';
-  if (!show || tutorialStep === null) return;
+  if (show && watching) {
+    const html = `<b>${T('🎬 REPLAY')}</b> ${formatTime(watching.at)} / ${formatTime(watching.inputs.length)} · ${T('P or Esc pauses')}`;
+    if (tutorialEl.dataset['html'] !== html) {
+      tutorialEl.innerHTML = html;
+      tutorialEl.dataset['html'] = html;
+    }
+    return;
+  }
+  if (!show || tutorialStep === null || step === undefined) return;
   const html = `<b>${T('Tutorial {n}/{total}', { n: tutorialStep + 1, total: TUTORIAL_STEPS.length })}</b> ${T(tutorialHint(step, touchMode))} <button id="skiptut">${T('Skip (K)')}</button>`;
   if (tutorialEl.dataset['html'] !== html) {
     tutorialEl.innerHTML = html;
@@ -553,10 +634,11 @@ function renderTutorial() {
 
 /** Buys an upgrade at the station shop (P29): only while paused in a wave's lead-in. */
 function buy(id: UpgradeId) {
-  if (phase !== 'paused') return;
+  if (phase !== 'paused' || watching) return;
   const next = buyUpgrade(curr, id);
   if (next === curr) return;
   prev = curr = next;
+  recorder?.buy(id);
   saveWallet();
   audio.play([{ sound: 'chime', volume: 0.5 }]);
   renderOverlay();
@@ -590,6 +672,10 @@ if (new URLSearchParams(location.search).has('debug')) {
     },
     asteroidPhase: () => phase,
     asteroidWallet: () => wallet,
+    asteroidReplay: () => ({ last: lastReplay ? { score: lastReplay.score, ticks: replayInputs(lastReplay)?.length } : null, watching: watching ? { at: watching.at, of: watching.inputs.length } : null }),
+    asteroidWatch: () => {
+      if (lastReplay) watchReplay(lastReplay);
+    },
     asteroidTutorial: () => ({ step: tutorialStep, done: tutorialDone }),
     asteroidDaily: () => ({ mode: dailyMode, today: today(), seed: dailySeed(today()), best: todaysBest() }),
     asteroidQuality: () => ({ ...quality.current, pixelRatio: renderer.getPixelRatio(), particles: fx.particles.length }),
@@ -667,7 +753,17 @@ renderer.setAnimationLoop((nowMs: number) => {
     for (let i = 0; i < ticks && isPlaying(); i++) {
       prev = curr;
       const base = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
-      const input = mergePad(base, gamepad.nextHeld(), settings.sensitivity);
+      const live = mergePad(base, gamepad.nextHeld(), settings.sensitivity);
+      const input = watching ? (watching.inputs[watching.at] ?? NO_INPUT) : live;
+      if (watching) {
+        curr = applyBuys(curr, watching.replay, watching.at);
+        prev = curr;
+        if (++watching.at > watching.inputs.length) {
+          recordBest();
+          dispatch('end');
+          break;
+        }
+      } else recorder?.input(input);
       const r = step(curr, input);
       if (tutorialStep !== null) tutorialStep = advanceTutorial(tutorialStep, curr, r.state, r.events);
       curr = r.state;
@@ -752,6 +848,12 @@ function onPadPress(p: PadPress) {
 }
 
 function recordBest() {
+  keepReplay();
+  if (watching) {
+    newBest = false;
+    rank = null;
+    return;
+  }
   if (dailyMode) {
     const d = recordDaily(storage.get(DAILY_KEY), today(), curr.score);
     newBest = d.isNew;
@@ -782,7 +884,7 @@ function onEvents(events: readonly SimEvent[], nowMs: number) {
   const shopHint = curr.earnsCredits && events.some((e) => e.type === 'waveCleared') && !curr.ended;
   if (banner) showBanner(shopHint ? { ...banner, subtitle: `${banner.subtitle} · B opens the station shop` } : banner);
   if (events.some((e) => e.type === 'waveCleared' || e.type === 'runEnded')) saveWallet();
-  if (events.some((e) => e.type === 'campaignWon')) dispatch('win');
+  if (events.some((e) => e.type === 'campaignWon') && !watching) dispatch('win');
   audio.play(cuesFor(events));
   const e = camera.matrixWorld.elements;
   fx.apply(recipesFor(events, curr), [e[4], e[5], e[6]]);
@@ -798,7 +900,7 @@ function onEvents(events: readonly SimEvent[], nowMs: number) {
   if (mark) hud.marker(mark);
   const a = trackAchievements(achRun, events, curr);
   achRun = a.run;
-  if (a.unlocked.length) {
+  if (a.unlocked.length && !watching) {
     const r = recordUnlocks(unlocks, a.unlocked, localDate(new Date()));
     if (r.fresh.length) {
       unlocks = r.store;
