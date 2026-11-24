@@ -40,6 +40,7 @@ import { mergeTouch, wantsTouch } from './touch.js';
 import { TouchControls } from './touchControls.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
+import { FILTER_LABELS, FOCUS_LABELS, applyPhotoInput, cycleFilter, cycleFocus, enterPhoto, filterCss, focusOn, photoPose, screenshotName, snapshotCanvas, type PhotoCam, type PhotoFilter } from './photo.js';
 
 const base = import.meta.env.BASE_URL;
 const el = (id: string): HTMLElement => {
@@ -50,6 +51,7 @@ const el = (id: string): HTMLElement => {
 const host = el('app');
 const help = el('help');
 const overlay = el('overlay');
+const photoBar = el('photo');
 const status = el('status');
 const bannerEl = el('banner');
 let bannerTimer: ReturnType<typeof setTimeout> | undefined;
@@ -238,6 +240,10 @@ const padRows = (): string => (gamepad.connected ? `<tr><th colspan="2">Gamepad<
 const cardInput = () => inputKind(gamepad.connected, touchMode);
 
 function renderHelp(): void {
+  if (photo) {
+    help.style.display = 'none';
+    return;
+  }
   if (touchMode) {
     help.innerHTML = `<h2>Touch controls</h2><table>${TOUCH_HELP.map(([k, v]) => `<tr><td>${k ?? ''}</td><td>${v ?? ''}</td></tr>`).join('')}${padRows()}</table><p>Landscape works best</p>`;
     help.style.display = phase === 'title' || phase === 'paused' ? 'block' : 'none';
@@ -323,6 +329,14 @@ fx.particleCap = quality.current.particleCap;
 let fxAccMs = 0;
 
 let phase: Phase = 'title';
+/** Photo mode (P38): a free camera while the run stays paused. */
+let photo: PhotoCam | null = null;
+let photoFilter: PhotoFilter = 'none';
+const photoHeld = new Set<string>();
+const photoLook = { x: 0, y: 0, zoom: 0 };
+let photoDragging = false;
+let pendingShot = false;
+
 let prev: GameState = initialState(Date.now() >>> 0);
 let curr: GameState = prev;
 let stats: RunStats = EMPTY_STATS;
@@ -388,6 +402,11 @@ const isPlaying = (): boolean => phase === 'playing';
 let settingsOpen = false;
 
 function renderOverlay() {
+  if (photo) {
+    overlay.innerHTML = '';
+    overlay.dataset['phase'] = 'photo';
+    return;
+  }
   overlay.dataset['phase'] = phase;
   if (phase === 'playing') {
     overlay.innerHTML = '';
@@ -399,7 +418,7 @@ function renderOverlay() {
       <p class="dim">${T('Best score: {best} · ◆ {credits} credits', { best, credits: wallet.credits })}</p><div class="row lang">${langButtons()}</div>${difficultyPicker()}${craftPicker()}
       <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button><br><button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${replayButtons()}${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>${T('Paused')}</h1><button id="go">${T(actionPrompt(cardInput(), 'resume'))}</button><p class="dim">${T('Score {score} · Enter or P also resumes', { score: curr.score })}</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr, settings.lang) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
+    overlay.innerHTML = `<div class="card"><h1>${T('Paused')}</h1><button id="go">${T(actionPrompt(cardInput(), 'resume'))}</button><br><button id="photo-open" class="daily">${T('📷 Photo mode (F)')}</button><p class="dim">${T('Score {score} · Enter or P also resumes', { score: curr.score })}</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr, settings.lang) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
     overlay.innerHTML = `<div class="card"><h1>${T('🌍 Earth is safe!')}</h1><p>${T('You cleared all {waves} waves on {difficulty}.', { waves: CAMPAIGN_WAVES, difficulty: T(DIFFICULTY_LABELS[curr.difficulty].name) })}</p>
       <div class="final">${String(curr.score)}</div>
@@ -432,6 +451,7 @@ function renderOverlay() {
       f();
     });
   };
+  on('photo-open', enterPhotoMode);
   on('watch', () => {
     if (lastReplay) watchReplay(lastReplay);
   });
@@ -528,10 +548,90 @@ function topTable(): string {
   return `<table class="stats top"><tr><th colspan="5">Top 10${rank ? ` · you placed #${String(rank)}` : ''}</th></tr>${rows}</table>`;
 }
 
+function closePhoto(render = true) {
+  if (!photo) return;
+  photo = null;
+  photoHeld.clear();
+  photoLook.x = photoLook.y = photoLook.zoom = 0;
+  photoDragging = false;
+  pendingShot = false;
+  host.classList.remove('photo');
+  renderer.domElement.style.filter = '';
+  renderer.domElement.classList.remove('drag');
+  photoBar.classList.remove('on');
+  photoBar.style.visibility = '';
+  photoBar.innerHTML = '';
+  if (render) {
+    renderOverlay();
+    renderHelp();
+  }
+}
+
+function enterPhotoMode() {
+  if (phase !== 'paused' || photo) return;
+  const pose = interpolate(prev.ship, curr.ship, 1);
+  const cam = cameraPose(pose, settings.camera);
+  photo = enterPhoto(cam.eye, curr.ship.pos);
+  photoFilter = 'none';
+  host.classList.add('photo');
+  renderOverlay();
+  renderHelp();
+  renderPhoto();
+}
+
+function snapPhotoFocus() {
+  if (!photo) return;
+  photo = focusOn(photo, cycleFocus(photo.focus), curr.ship.pos, EARTH_POS);
+  renderPhoto();
+}
+
+function savePhoto() {
+  if (!photo || pendingShot) return;
+  photoBar.style.visibility = 'hidden';
+  pendingShot = true;
+}
+
+function renderPhoto() {
+  if (!photo) {
+    photoBar.classList.remove('on');
+    photoBar.innerHTML = '';
+    renderer.domElement.style.filter = '';
+    return;
+  }
+  const css = filterCss(photoFilter);
+  renderer.domElement.style.filter = css === 'none' ? '' : css;
+  const padHint = gamepad.connected ? T('Left stick orbits · bumpers zoom · right stick flies · A saves · Start exits · Y filter · X focus') : '';
+  const hint = T(touchMode ? 'Drag to orbit · buttons save and exit · F focuses · filters on the bar' : 'Drag to orbit · wheel zooms · WASD flies · F focuses · [ ] filters · Enter saves · Esc exits');
+  photoBar.innerHTML = `<div class="bar"><p class="hint">${hint}${padHint ? ` · ${padHint}` : ''}</p>
+    <button type="button" id="photo-save">${T('Save photo (Enter)')}</button>
+    <button type="button" id="photo-filter">${T('Filter: {name}', { name: T(FILTER_LABELS[photoFilter]) })}</button>
+    <button type="button" id="photo-focus">${T('Focus: {name}', { name: T(FOCUS_LABELS[photo.focus]) })}</button>
+    <button type="button" id="photo-exit">${T('Exit (Esc)')}</button></div>`;
+  photoBar.classList.add('on');
+  document.getElementById('photo-save')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    savePhoto();
+  });
+  document.getElementById('photo-filter')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    photoFilter = cycleFilter(photoFilter);
+    renderPhoto();
+  });
+  document.getElementById('photo-focus')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    snapPhotoFocus();
+  });
+  document.getElementById('photo-exit')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closePhoto();
+  });
+}
+
 function dispatch(action: FlowAction) {
   const before = phase;
   phase = nextPhase(phase, action);
   if (phase === before) return;
+  if (photo && phase !== 'paused') closePhoto(false);
   if (phase === 'playing') {
     controls.reset();
     lastMs = performance.now();
@@ -645,6 +745,37 @@ function buy(id: UpgradeId) {
 }
 
 window.addEventListener('keydown', (e) => {
+  if (photo) {
+    if (e.code === 'Enter') {
+      e.preventDefault();
+      if (!e.repeat) savePhoto();
+      return;
+    }
+    if (e.code === 'Escape' || e.code === 'KeyP') {
+      e.preventDefault();
+      if (!e.repeat) closePhoto();
+      return;
+    }
+    if (e.code === 'KeyF') {
+      e.preventDefault();
+      if (!e.repeat) snapPhotoFocus();
+      return;
+    }
+    if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
+      e.preventDefault();
+      if (!e.repeat) {
+        photoFilter = cycleFilter(photoFilter, e.code === 'BracketRight' ? 1 : -1);
+        renderPhoto();
+      }
+      return;
+    }
+    photoHeld.add(e.code);
+    return;
+  }
+  if (e.code === 'KeyF' && phase === 'paused') {
+    enterPhotoMode();
+    return;
+  }
   if (e.code === 'Enter' && phase !== 'playing') advance();
   if (e.code === 'KeyB' && curr.earnsCredits && shopOpen(curr)) dispatch(phase === 'paused' ? 'resume' : 'pause');
   const up = phase === 'paused' ? upgradeForKey(e.code) : null;
@@ -654,6 +785,44 @@ window.addEventListener('keydown', (e) => {
   // Esc pauses in the classic layout too, where there is no pointer lock to leave.
   if (e.code === 'Escape' && phase === 'playing') dispatch('pause');
 });
+window.addEventListener('keyup', (e) => {
+  photoHeld.delete(e.code);
+});
+{
+  const canvas = renderer.domElement;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!photo) return;
+    photoDragging = true;
+    canvas.classList.add('drag');
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!photo || !photoDragging) return;
+    photoLook.x += e.movementX;
+    photoLook.y -= e.movementY;
+  });
+  const endDrag = (e: PointerEvent) => {
+    if (!photoDragging) return;
+    photoDragging = false;
+    canvas.classList.remove('drag');
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch {
+      // Already released.
+    }
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      if (!photo) return;
+      e.preventDefault();
+      photoLook.zoom += e.deltaY > 0 ? -1 : 1;
+    },
+    { passive: false },
+  );
+}
 document.addEventListener('pointerlockchange', () => {
   if (!document.pointerLockElement && phase === 'playing') dispatch('pause');
 });
@@ -745,7 +914,8 @@ renderer.setAnimationLoop((nowMs: number) => {
   if (gamepad.connected !== padShown) {
     padShown = gamepad.connected;
     renderHelp();
-    if (phase !== 'playing') renderOverlay();
+    if (photo) renderPhoto();
+    else if (phase !== 'playing') renderOverlay();
   }
   applyToggles();
   if (phase === 'playing') {
@@ -794,17 +964,47 @@ renderer.setAnimationLoop((nowMs: number) => {
   world.ship.position.set(...pose.pos);
   world.ship.quaternion.set(...pose.rot);
   world.ship.visible = curr.ended !== 'shipDestroyed';
-  const cam = cameraPose(pose, settings.camera);
-  camera.position.set(...cam.eye);
-  camera.up.set(...cam.up);
-  camera.lookAt(v.set(...cam.look));
-  const j = joltAt(jolt, nowMs, settings.shake);
-  camera.rotateY(j.yaw);
-  camera.rotateX(j.pitch);
-  hitFlash.style.opacity = j.flash.toFixed(3);
-  killFlashEl.style.opacity = (settings.shake ? flashAt(flashPeak, nowMs - flashAtMs) : 0).toFixed(3);
-  fov = nextFov(fov, curr.ship, frameMs / 1000);
-  camera.fov = fov;
+  let camEye = pose.pos;
+  if (photo) {
+    const held = gamepad.nextHeld();
+    const moveX = (photoHeld.has('KeyD') ? 1 : 0) - (photoHeld.has('KeyA') ? 1 : 0) + held.strafeX;
+    const moveY = (photoHeld.has('KeyE') ? 1 : 0) - (photoHeld.has('KeyQ') ? 1 : 0) + held.strafeY;
+    const moveZ = (photoHeld.has('KeyW') ? 1 : 0) - (photoHeld.has('KeyS') ? 1 : 0);
+    photo = applyPhotoInput(photo, {
+      lookX: photoLook.x + held.yaw * 400 * (frameMs / 16.67),
+      lookY: photoLook.y + held.pitch * 400 * (frameMs / 16.67),
+      zoom: photoLook.zoom + held.roll * 0.15,
+      moveX: Math.max(-1, Math.min(1, moveX)),
+      moveY: Math.max(-1, Math.min(1, moveY)),
+      moveZ: Math.max(-1, Math.min(1, moveZ)),
+      boost: photoHeld.has('ShiftLeft') || photoHeld.has('ShiftRight') || held.turbo,
+      dt: frameMs / 1000,
+      invertY: settings.invertY,
+      sensitivity: settings.sensitivity,
+    });
+    photoLook.x = photoLook.y = photoLook.zoom = 0;
+    const cam = photoPose(photo);
+    camEye = cam.eye;
+    camera.position.set(...cam.eye);
+    camera.up.set(...cam.up);
+    camera.lookAt(v.set(...cam.look));
+    hitFlash.style.opacity = '0';
+    killFlashEl.style.opacity = '0';
+    camera.fov = FOV_BASE;
+  } else {
+    const cam = cameraPose(pose, settings.camera);
+    camEye = cam.eye;
+    camera.position.set(...cam.eye);
+    camera.up.set(...cam.up);
+    camera.lookAt(v.set(...cam.look));
+    const j = joltAt(jolt, nowMs, settings.shake);
+    camera.rotateY(j.yaw);
+    camera.rotateX(j.pitch);
+    hitFlash.style.opacity = j.flash.toFixed(3);
+    killFlashEl.style.opacity = (settings.shake ? flashAt(flashPeak, nowMs - flashAtMs) : 0).toFixed(3);
+    fov = nextFov(fov, curr.ship, frameMs / 1000);
+    camera.fov = fov;
+  }
   camera.updateProjectionMatrix();
   world.sky.position.copy(camera.position);
   nebula.position.copy(camera.position);
@@ -813,23 +1013,24 @@ renderer.setAnimationLoop((nowMs: number) => {
   asteroids.update(prev.asteroids, curr.asteroids, alpha, curr.tick);
 
   camera.updateMatrixWorld();
-  if (phase === 'title') threat.clear();
+  if (phase === 'title' || photo) threat.clear();
   else {
     viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const rocketTargets = new Set<number>();
     for (const p of curr.projectiles) if (p.kind === 'rocket' && p.target !== null) rocketTargets.add(p.target);
     const aimTarget = curr.ship.rockets > 0 ? crosshairTarget(curr.ship.pos, rotate(curr.ship.rot, LOCAL_FORWARD), curr.asteroids, PRESETS[curr.difficulty].rocketLockCone) : null;
-    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, missileLocks: curr.missileLock?.ids ?? [], pickups: curr.pickups.map((p) => ({ pos: p.pos, rgb: PERK_LOOK[p.kind].rgb })) });
+    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: camEye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, missileLocks: curr.missileLock?.ids ?? [], pickups: curr.pickups.map((p) => ({ pos: p.pos, rgb: PERK_LOOK[p.kind].rgb })) });
   }
-  hud.show(phase !== 'title');
+  hud.show(phase !== 'title' && !photo);
   touchUi?.show(phase === 'playing');
   touchUi?.syncThrottle(curr.ship.throttle);
   hud.render(hudModel(curr, dailyMode ? todaysBest() : best));
   renderTutorial();
-  hud.badge(phase === 'playing' ? comboBadge(curr) : { text: '', scale: 1 });
+  hud.badge(phase === 'playing' && !photo ? comboBadge(curr) : { text: '', scale: 1 });
   v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
-  hud.aim(v.z < 1 ? { x: v.x, y: v.y } : null);
-  status.textContent = `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
+  hud.aim(!photo && v.z < 1 ? { x: v.x, y: v.y } : null);
+  status.style.display = photo ? 'none' : '';
+  status.textContent = photo ? '' : `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
   batch.begin();
   fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
   drawPickups(alpha);
@@ -837,10 +1038,46 @@ renderer.setAnimationLoop((nowMs: number) => {
   batch.end(camera);
   shockwaves.sync(fx.shockwaves);
   postFx.render(world.scene, camera);
+  if (pendingShot) {
+    pendingShot = false;
+    const finish = (ok: boolean, name = '') => {
+      photoBar.style.visibility = '';
+      showBanner({ title: T(ok ? '📷 Photo saved' : "Couldn't save the photo"), subtitle: name, durationMs: 1800 });
+    };
+    try {
+      const baked = snapshotCanvas(renderer.domElement, filterCss(photoFilter));
+      baked.toBlob((blob) => {
+        if (!blob) {
+          finish(false);
+          return;
+        }
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = screenshotName(new Date());
+        a.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 1000);
+        finish(true, a.download);
+      }, 'image/png');
+    } catch {
+      finish(false);
+    }
+  }
 });
 
 /** Gamepad presses (P19): Start starts, pauses and resumes; the rest go through the keyboard's edge actions. */
 function onPadPress(p: PadPress) {
+  if (photo) {
+    if (p === 'start') closePhoto();
+    else if (p === 'rocket') savePhoto();
+    else if (p === 'throttleUp') {
+      photoFilter = cycleFilter(photoFilter);
+      renderPhoto();
+    } else snapPhotoFocus();
+    return;
+  }
   if (p === 'start') {
     if (phase === 'playing') dispatch('pause');
     else advance();

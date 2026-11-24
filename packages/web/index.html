@@ -147,6 +147,15 @@
       #overlay details.ach td { vertical-align: top; padding: 3px 8px; }
       #overlay details.ach tr.locked b { color: #a8c9b0; font-weight: normal; }
       #overlay p.unlocked { color: #f0d9a8; margin: 6px 0; }
+      #photo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; display: none; padding: 12px 16px 16px; background: linear-gradient(transparent, rgba(15, 26, 20, 0.88)); text-align: center; pointer-events: none; }
+      #photo.on { display: block; }
+      #photo .bar { pointer-events: auto; }
+      #photo .hint { margin: 0 0 8px; color: #a8c9b0; font-size: 12px; text-shadow: 0 1px 4px #000; }
+      #photo button { font: inherit; font-size: 14px; padding: 6px 14px; margin: 3px; border-radius: 8px; border: 1px solid #f0d9a8; background: #2b2416; color: #f0d9a8; cursor: pointer; }
+      #photo button:hover { background: #3d331f; }
+      #overlay[data-phase='photo'] { display: none; }
+      #app.photo canvas { cursor: grab; }
+      #app.photo canvas.drag { cursor: grabbing; }
     </style>
   </head>
   <body class="loading">
@@ -160,6 +169,7 @@
     <div id="help"></div>
     <div id="status"></div>
     <div id="banner"><h2></h2><p></p></div>
+    <div id="photo"></div>
     <div id="overlay"><div class="card" id="loading"><h1>☄️ Asteroid Shooter 3D</h1><p>Loading <span id="loadpct">0%</span></p><div class="loadbar"><i></i></div><p class="dim">Asteroids are falling toward Earth. Get ready.</p></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

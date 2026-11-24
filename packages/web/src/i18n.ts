@@ -149,6 +149,24 @@ export const HE: Readonly<Record<string, string>> = {
   'Throttle: slide the throttle up to speed up.': 'מצערת: הזיזו את המצערת למעלה כדי להאיץ.',
   'Reload: fly back into the mothership\'s hangar (or the station) to refill.': 'מילוי: טוסו בחזרה להאנגר של ספינת האם (או לתחנה) כדי להתמלא.',
   'Tutorial done. Good luck, pilot!': 'ההדרכה הסתיימה. בהצלחה, טייסים!',
+  // Photo mode (P38)
+  '📷 Photo mode (F)': '📷 מצב צילום (F)',
+  'Photo mode': 'מצב צילום',
+  'Save photo (Enter)': 'שמירת תמונה (Enter)',
+  'Exit (Esc)': 'יציאה (Esc)',
+  'Filter: {name}': 'מסנן: {name}',
+  'Focus: {name}': 'מיקוד: {name}',
+  'None': 'ללא',
+  'Cinematic': 'קולנועי',
+  'Black and white': 'שחור־לבן',
+  'Vintage': 'וינטג׳',
+  'Ship': 'חללית',
+  'Earth': 'כדור הארץ',
+  '📷 Photo saved': '📷 התמונה נשמרה',
+  "Couldn't save the photo": 'לא ניתן לשמור את התמונה',
+  'Drag to orbit · wheel zooms · WASD flies · F focuses · [ ] filters · Enter saves · Esc exits': 'גרירה לסובב · גלגלת לזום · WASD לטוס · F למיקוד · [ ] למסנן · Enter שומר · Esc יוצא',
+  'Drag to orbit · buttons save and exit · F focuses · filters on the bar': 'גרירה לסובב · הכפתורים שומרים ויוצאים · F למיקוד · המסננים בסרגל',
+  'Left stick orbits · bumpers zoom · right stick flies · A saves · Start exits · Y filter · X focus': 'סטיק שמאלי מסובב · באמפרים לזום · סטיק ימני לטוס · A שומר · Start יוצא · Y מסנן · X מיקוד',
 };
 
 /** The text for `en` in `lang`, with `{name}` placeholders filled from `vars`. */
