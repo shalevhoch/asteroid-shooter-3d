@@ -77,7 +77,7 @@ export class Hud {
       <div class="br"><div class="rockets"></div><div class="speed"></div></div>
       <div class="impact"></div>
       <div class="warn"></div>
-      <div class="crosshair">+</div>`;
+      <div class="crosshair"><span class="ch">+</span><span class="hitmark">✕</span><span class="badge"></span></div>`;
   }
 
   private q(sel: string): HTMLElement {
@@ -114,6 +114,20 @@ export class Hud {
       c.style.left = `${String(((ndc.x + 1) / 2) * 100)}%`;
       c.style.top = `${String(((1 - ndc.y) / 2) * 100)}%`;
     }
+  }
+
+  /** Flashes the hit marker (P30): a white ✕ for a chip, a bigger orange one for a kill. */
+  marker(kind: 'kill' | 'hit'): void {
+    const m = this.q('.hitmark');
+    m.className = `hitmark ${kind}`;
+    m.animate([{ opacity: 1, transform: 'scale(1.35)' }, { opacity: 0, transform: 'scale(0.9)' }], { duration: kind === 'kill' ? 260 : 160, easing: 'ease-out' });
+  }
+
+  /** The combo badge beside the crosshair (P30). */
+  badge(b: { readonly text: string; readonly scale: number }): void {
+    const e = this.q('.badge');
+    if (e.textContent !== b.text) e.textContent = b.text;
+    e.style.transform = `translateY(-50%) scale(${b.scale.toFixed(2)})`;
   }
 
   show(visible: boolean): void {

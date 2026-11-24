@@ -3,7 +3,7 @@ import type { SimEvent } from '@asteroid/sim';
 import { assetUrl } from './assetUrl.js';
 
 /** `chime` (P27 follow-up, the perk pickup) is synthesised, not loaded. */
-export type Sound = 'photon' | 'rocket' | 'kaboom' | 'chime' | 'whoosh';
+export type Sound = 'photon' | 'rocket' | 'kaboom' | 'chime' | 'whoosh' | 'rumble';
 export interface Cue {
   readonly sound: Sound;
   readonly volume: number;
@@ -18,12 +18,15 @@ export function cuesFor(events: readonly SimEvent[]): Cue[] {
   for (const e of events) {
     if (e.type === 'photonFired') cues.push({ sound: 'photon', volume: 0.25 });
     else if (e.type === 'rocketFired') cues.push({ sound: 'rocket', volume: 0.6 });
-    else if (e.type === 'asteroidDestroyed') cues.push({ sound: 'kaboom', volume: e.size === 'big' ? 0.9 : 0.55 });
+    else if (e.type === 'asteroidDestroyed') {
+      cues.push({ sound: 'kaboom', volume: e.size === 'big' ? 0.9 : 0.55 });
+      // P30: big kills get a low rumble under the bang.
+      if (e.size === 'big') cues.push({ sound: 'rumble', volume: 0.8 });
+    }
     else if (e.type === 'earthHit') cues.push({ sound: 'kaboom', volume: 0.7 });
     else if (e.type === 'turboStarted') cues.push({ sound: 'whoosh', volume: 0.45 });
     else if (e.type === 'perkCollected') cues.push({ sound: 'chime', volume: 0.5 });
-    else if (e.type === 'smartBomb') cues.push({ sound: 'kaboom', volume: 1 });
-    else if (e.type === 'runEnded') cues.push({ sound: 'kaboom', volume: 1 });
+    else if (e.type === 'smartBomb' || e.type === 'runEnded') cues.push({ sound: 'kaboom', volume: 1 }, { sound: 'rumble', volume: 1 });
   }
   return cues.slice(0, MAX_CUES_PER_TICK);
 }
@@ -58,6 +61,25 @@ function whoosh(ctx: BaseAudioContext): AudioBuffer {
   return buf;
 }
 
+/** A synthesised explosion rumble (P30): a falling 70 → 30 Hz tone under low-passed noise, decaying over 1.1 s. */
+function rumble(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 1.1), rate);
+  const d = buf.getChannelData(0);
+  let seed = 98765;
+  let lp = 0;
+  let phase = 0;
+  for (let i = 0; i < d.length; i++) {
+    const t = i / d.length;
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    lp += 0.02 * (seed / 4294967296 - 0.5 - lp);
+    phase += (2 * Math.PI * (70 - 40 * t)) / rate;
+    const env = Math.min(1, i / (rate * 0.01)) * Math.exp(-3.2 * t);
+    d[i] = env * (0.55 * Math.sin(phase) + 4 * lp);
+  }
+  return buf;
+}
+
 export class AudioBank {
   private ctx: AudioContext | null = null;
   private readonly buffers = new Map<Sound, AudioBuffer>();
@@ -82,6 +104,7 @@ export class AudioBank {
     this.ctx = ctx;
     this.buffers.set('chime', chime(ctx));
     this.buffers.set('whoosh', whoosh(ctx));
+    this.buffers.set('rumble', rumble(ctx));
     for (const s of ['photon', 'rocket', 'kaboom'] as const) {
       void fetch(assetUrl(this.base, `sounds/${s}.wav`))
         .then((r) => r.arrayBuffer())

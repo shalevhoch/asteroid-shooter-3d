@@ -56,13 +56,20 @@
       #hud .bar.fuel i { background: #f0c060; }
       #hud .bar.low i { background: #ff5a4a; animation: blink 0.8s infinite; }
       #hud .br { position: absolute; right: 16px; bottom: 22px; text-align: right; font-size: 13px; letter-spacing: 0.08em; line-height: 1.6; }
+      #killflash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(255, 255, 240, 0.9) 0%, rgba(255, 250, 230, 0.35) 70%); }
       #hitflash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(255, 60, 30, 0) 35%, rgba(255, 40, 20, 0.95) 100%); }
       #threat { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
       #hud .impact { position: absolute; left: 0; right: 0; top: 12px; text-align: center; font-size: 15px; font-weight: 600; letter-spacing: 0.14em; color: #e8e070; }
       #hud .impact[data-urgency='warning'] { color: #ffb347; }
       #hud .impact[data-urgency='critical'] { color: #ff5a4a; animation: blink 0.7s infinite; }
       #hud .warn { position: absolute; left: 0; right: 0; top: 18%; text-align: center; color: #ff7a5a; font-weight: 600; letter-spacing: 0.12em; animation: blink 1s infinite; }
-      #hud .crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 28px; color: rgba(160, 255, 200, 0.75); }
+      #hud .crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; display: grid; place-items: center; font-size: 28px; color: rgba(160, 255, 200, 0.75); }
+      #hud .crosshair::before, #hud .crosshair::after { content: ''; position: absolute; inset: 0; border: 1.5px solid rgba(160, 255, 200, 0.45); clip-path: polygon(0 0, 30% 0, 30% 8%, 8% 8%, 8% 30%, 0 30%, 0 70%, 8% 70%, 8% 92%, 30% 92%, 30% 100%, 0 100%); border-radius: 4px; }
+      #hud .crosshair::after { transform: scaleX(-1); }
+      #hud .crosshair .ch { grid-area: 1 / 1; }
+      #hud .hitmark { grid-area: 1 / 1; opacity: 0; font-size: 22px; color: #fff; }
+      #hud .hitmark.kill { color: #ffb347; font-size: 30px; }
+      #hud .badge { position: absolute; left: 54px; top: 50%; transform: translateY(-50%); transform-origin: left center; font-size: 22px; font-weight: 700; color: #7fffd4; letter-spacing: 0.04em; white-space: nowrap; }
       @keyframes blink { 50% { opacity: 0.45; } }
       #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
       #overlay[data-phase='playing'] { display: none; }
@@ -136,6 +143,7 @@
   <body class="loading">
     <div id="app"></div>
     <div id="hitflash"></div>
+    <div id="killflash"></div>
     <div id="toast"></div>
     <div id="rotate">↻ Turn your device sideways to play</div>
     <canvas id="threat"></canvas>

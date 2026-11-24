@@ -196,6 +196,7 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   and pickups show on the radar as small squares in the perk's colour.
 - **Hyperdrive thrusters** (P28): every craft's nozzles glow with the throttle; holding Shift ramps up a hot plume, a particle trail (not on low quality) and a whoosh. Render-only. See [hyperdrive-thrusters](docs/spec/hyperdrive-thrusters/hyperdrive-thrusters.md).
 - **Credits and station shop** (P29): kills, objectives and wave clears earn credits (a tenth of their points). In a wave's lead-in, B pauses into the station shop: photon damage, fire rate, hull, Earth shield, engines and perk duration, 3 levels each at 100 / 250 / 450. Credits are saved globally, upgrades per ship. See [credits-shop](docs/spec/credits-shop/credits-shop.md).
+- **Look and feel** (P30): bloom (high and medium quality), a procedural nebula sky, smoke from a ship below half hull, a cockpit reticle with a hit marker and a ×N combo badge, a hit-stop and white flash on big kills, and a synthesised rumble under big explosions. See [look-and-feel](docs/spec/look-and-feel/look-and-feel.md).
 - **Touch controls** (P15), for tablets and phones in landscape:
   - Shown during play when the primary pointer is coarse and the device has touch points. `?touch` forces them
     on and `?touch=0` off. The keyboard and mouse keep working alongside.
