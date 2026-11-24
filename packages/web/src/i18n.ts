@@ -167,6 +167,20 @@ export const HE: Readonly<Record<string, string>> = {
   'Drag to orbit · wheel zooms · WASD flies · F focuses · [ ] filters · Enter saves · Esc exits': 'גרירה לסובב · גלגלת לזום · WASD לטוס · F למיקוד · [ ] למסנן · Enter שומר · Esc יוצא',
   'Drag to orbit · buttons save and exit · F focuses · filters on the bar': 'גרירה לסובב · הכפתורים שומרים ויוצאים · F למיקוד · המסננים בסרגל',
   'Left stick orbits · bumpers zoom · right stick flies · A saves · Start exits · Y filter · X focus': 'סטיק שמאלי מסובב · באמפרים לזום · סטיק ימני לטוס · A שומר · Start יוצא · Y מסנן · X מיקוד',
+  // Paint colours (P39)
+  'Paint: {name} · saved for this ship': 'צבע: {name} · נשמר לחללית הזאת',
+  'Stock': 'מקורי',
+  'Ember': 'גחלת',
+  'Ice': 'קרח',
+  'Gold': 'זהב',
+  'Obsidian': 'אובסידיאן',
+  'Crimson': 'ארגמן',
+  'Azure': 'תכלת',
+  'Violet': 'סגול',
+  '{name} · ◆ {cost}': '{name} · ◆ {cost}',
+  '{name} · {how}': '{name} · {how}',
+  'Need {cost} credits': 'חסרים {cost} קרדיטים',
+  "Couldn't buy that paint": 'לא ניתן לקנות את הצבע הזה',
 };
 
 /** The text for `en` in `lang`, with `{name}` placeholders filled from `vars`. */

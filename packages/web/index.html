@@ -47,6 +47,10 @@
       #overlay .diff { display: flex; gap: 8px; justify-content: center; margin: 10px 0 2px; }
       #overlay .diff button { margin: 0; font-size: 14px; padding: 6px 12px; background: transparent; border-color: #3a9d6e; color: #c8d0dc; }
       #overlay .diff button.on { background: #2b2416; border-color: #f0d9a8; color: #f0d9a8; }
+      #overlay .paints { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 8px 0 2px; }
+      #overlay .paints .swatch { width: 28px; height: 28px; padding: 0; margin: 0; border-radius: 50%; background: var(--swatch); border: 2px solid #3a9d6e; color: #0f1a14; font-size: 12px; line-height: 24px; }
+      #overlay .paints .swatch.on { border-color: #f0d9a8; box-shadow: 0 0 0 2px #f0d9a8; }
+      #overlay .paints .swatch.locked { opacity: 0.45; }
       #overlay details.settings { margin: 12px auto 0; text-align: left; font-size: 14px; }
       #overlay details.settings summary { cursor: pointer; color: #f0d9a8; text-align: center; }
       #overlay details.settings table { margin: 8px auto 0; border-collapse: collapse; }

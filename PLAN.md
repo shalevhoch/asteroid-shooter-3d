@@ -68,7 +68,7 @@ Priority order. No player name or logo personalization.
 | [x] | P36: Hebrew and tutorial | [#83](https://github.com/shalevhoch/asteroid-shooter-3d/issues/83) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#99](https://github.com/shalevhoch/asteroid-shooter-3d/pull/99) |
 | [x] | P37: Replays | [#84](https://github.com/shalevhoch/asteroid-shooter-3d/issues/84) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#100](https://github.com/shalevhoch/asteroid-shooter-3d/pull/100) |
 | [x] | P38: Photo mode | [#85](https://github.com/shalevhoch/asteroid-shooter-3d/issues/85) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#101](https://github.com/shalevhoch/asteroid-shooter-3d/pull/101) |
-| [ ] | P39: Paint colours | [#86](https://github.com/shalevhoch/asteroid-shooter-3d/issues/86) | features | 📋 | | |
+| [x] | P39: Paint colours | [#86](https://github.com/shalevhoch/asteroid-shooter-3d/issues/86) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#102](https://github.com/shalevhoch/asteroid-shooter-3d/pull/102) |
 | [ ] | P40: Two-player split screen | [#87](https://github.com/shalevhoch/asteroid-shooter-3d/issues/87) | features | 📋 | | |
 
 New packets get the next free `PNN`, an issue, and a row here, in the PR that discovers them.
