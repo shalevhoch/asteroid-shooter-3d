@@ -55,7 +55,7 @@ Priority order. No player name or logo personalization.
 
 | Done | Packet | Issue | Milestone | Status | Owner | PR |
 |---|---|---|---|---|---|---|
-| [ ] | P26: Perks | [#73](https://github.com/shalevhoch/asteroid-shooter-3d/issues/73) | features | 📋 | | |
+| [x] | P26: Perks | [#73](https://github.com/shalevhoch/asteroid-shooter-3d/issues/73) | features | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#89](https://github.com/shalevhoch/asteroid-shooter-3d/pull/89) |
 | [ ] | P27: Keyboard rockets | [#74](https://github.com/shalevhoch/asteroid-shooter-3d/issues/74) | features | 📋 | | |
 | [ ] | P28: Hyperdrive thrusters | [#75](https://github.com/shalevhoch/asteroid-shooter-3d/issues/75) | features | 📋 | | |
 | [ ] | P29: Credits and station shop | [#76](https://github.com/shalevhoch/asteroid-shooter-3d/issues/76) | features | 📋 | | |

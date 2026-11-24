@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -23,6 +23,7 @@ import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
+import { perkBanner, pickupLook } from './perksUi.js';
 import { LoadProgress } from './loading.js';
 import { QualityGovernor, initialQuality, urlQuality, type QualityLevel } from './quality.js';
 import { GamepadInput, mergePad, type PadPress } from './gamepad.js';
@@ -213,6 +214,10 @@ const asteroids = new AsteroidView(world.scene, world.asteroidGeometry);
 const atlas = await buildAtlas((p) => assetUrl(base, p));
 const batch = new BillboardBatch(atlas, MAX_PARTICLES + 64);
 const shockwaves = new ShockwaveLayer(world.scene, atlas);
+const earthShield = new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.12, 48, 24), new THREE.MeshBasicMaterial({ color: 0x66c8ff, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false }));
+earthShield.position.set(...EARTH_POS);
+earthShield.visible = false;
+world.scene.add(earthShield);
 const hitFlash = el('hitflash');
 const touchUi = touchMode
   ? new TouchControls(document.body, () => {
@@ -466,6 +471,24 @@ renderHelp();
 document.body.classList.remove('loading');
 
 const v = new THREE.Vector3();
+/** Perk pickups (P26): a coloured glow with a white core, interpolated between ticks. */
+function drawPickups(alpha: number) {
+  for (const p of curr.pickups) {
+    const from = prev.pickups.find((q) => q.id === p.id)?.pos ?? p.pos;
+    const look = pickupLook(p, p.age - 1 + alpha);
+    if (look.alpha <= 0) continue;
+    const x = from[0] + (p.pos[0] - from[0]) * alpha;
+    const y = from[1] + (p.pos[1] - from[1]) * alpha;
+    const z = from[2] + (p.pos[2] - from[2]) * alpha;
+    batch.push(x, y, z, look.size, 0, look.rgb[0], look.rgb[1], look.rgb[2], look.alpha, true, 'roundParticle');
+    batch.push(x, y, z, look.size * 0.4, 0, 1, 1, 1, look.alpha, true, 'roundParticle');
+  }
+  // The shield perk: a pulsing bubble round Earth that flickers in its last 2 s.
+  const left = curr.perks.shield;
+  earthShield.visible = left > 0 && (left > 50 || Math.floor(curr.tick / 3) % 2 === 0);
+  earthShield.material.opacity = 0.16 + 0.06 * Math.sin(performance.now() / 180);
+}
+
 /** Applies a quality step (P20): a lower pixel ratio and particle cap, at once. */
 function applyQuality(q: QualityLevel) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.dprCap));
@@ -547,6 +570,7 @@ renderer.setAnimationLoop((nowMs: number) => {
   status.textContent = `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
   batch.begin();
   fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
+  drawPickups(alpha);
   batch.end(camera);
   shockwaves.sync(fx.shockwaves);
   renderer.render(world.scene, camera);
@@ -580,7 +604,7 @@ function finishWon() {
 
 function onEvents(events: readonly SimEvent[], nowMs: number) {
   stats = addStats(stats, events);
-  const banner = bannerFor(events);
+  const banner = bannerFor(events) ?? perkBanner(events);
   if (banner) showBanner(banner);
   if (events.some((e) => e.type === 'campaignWon')) dispatch('win');
   audio.play(cuesFor(events));

@@ -429,7 +429,30 @@ title card has the full list.
   would add complexity for little gain. P25 baked the LWO and 3DS models to GLB (below). The quality picker landed in
   P23.
 
-## Open
+## 15. Perks (P26)
+
+- **Drops**: each asteroid the player destroys (photon or rocket) drops a pickup with chance `PERK_DROP_CHANCE = 4 %`,
+  or `6 %` while struggling (Earth or hull below half). Smart-bomb kills never drop. The kind is weighted: shield 3,
+  rapid fire 3, spread shot 2, magnet 2, smart bomb 1.
+- Drops draw from a second RNG stream, `perkRng`, seeded from the run's seed (`seed ^ 0x5bd1e995`). The main `rng` is
+  never touched, so a run where no pickup is collected plays exactly as before P26. Same seed + inputs → same drops.
+- **Pickups** drift at 0.6 units per tick in a random direction from the kill. They last `PICKUP_LIFE = 200` ticks
+  (8 s), blinking in the last 2 s and fading in the last 0.5 s. The ship collects one when its centre comes within
+  `SHIP_RADIUS + 40`; collection is checked before expiry. Tick order: after projectiles (step 5), count perks down,
+  move pickups, collect (in id order), expire, then roll this tick's drops.
+- **Perks** (timed ones refresh on a repeat pickup, never stack):
+
+  | Perk | Effect | Duration |
+  |---|---|---|
+  | Shield | Earth impacts do no damage and keep the combo (`shieldBlocked`); a bubble shows round Earth | 10 s |
+  | Rapid fire | Photon cooldown 2 ticks instead of 5 | 10 s |
+  | Spread shot | Each shot adds two photons turned ±0.1 rad about the ship's up axis | 10 s |
+  | Magnet | Pickups within 1500 fly to the ship at 25 units per tick | 15 s |
+  | Smart bomb | Instantly destroys every asteroid within 2500 of the ship: rocket points, no split, no drops | instant |
+
+- **On screen**: pickups are glowing orbs in the perk's colour with a white core. The HUD lists active perks with
+  seconds left; collecting shows a short banner. Existing tuning knobs are unchanged.
+
 
 Game-design questions not yet decided. `/refine-packet` resolves them with Gilad, and `/spec-to-ship` halts on
 any it meets that are still open.

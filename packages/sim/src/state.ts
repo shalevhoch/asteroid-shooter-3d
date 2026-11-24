@@ -5,6 +5,7 @@ import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
 import { NO_COMBO, type ComboState } from './scoring.js';
+import { NO_PERKS, perkSeed, type ActivePerks, type PerkKind, type PickupState, type TimedPerk } from './perks.js';
 import { INITIAL_WAVE, type Difficulty, type Objective, type WaveState } from './waves.js';
 
 /** Ship-local axes: right +X, up +Y, forward −Z (so right = forward × up, SPEC §3). */
@@ -76,6 +77,13 @@ export interface GameState {
   /** The player's ship (P17). */
   readonly craft: CraftId;
   readonly wave: WaveState;
+  /** Perk pickups in flight (P26), sorted by id. */
+  readonly pickups: readonly PickupState[];
+  readonly nextPickupId: number;
+  /** The perk drop stream (P26), separate from `rng` so drops never shift the main sequence. */
+  readonly perkRng: RngState;
+  /** Ticks left on each timed perk; 0 = off. */
+  readonly perks: ActivePerks;
   /** Set on the tick the run ends; `step` is then a no-op. */
   readonly ended: RunEndReason | null;
 }
@@ -115,7 +123,8 @@ export const NO_INPUT: Input = {
   fireRocket: false,
 };
 
-export type KillCause = 'photon' | 'rocket';
+/** `bomb`: the smart-bomb perk (P26), scored as a rocket kill. */
+export type KillCause = 'photon' | 'rocket' | 'bomb';
 
 export type SimEvent =
   | { readonly type: 'mothershipBump' }
@@ -136,7 +145,13 @@ export type SimEvent =
   | { readonly type: 'campaignWon'; readonly wave: number }
   | { readonly type: 'turboStarted' }
   | { readonly type: 'turboEnded' }
-  | { readonly type: 'fuelEmpty' };
+  | { readonly type: 'fuelEmpty' }
+  | { readonly type: 'perkDropped'; readonly id: number; readonly kind: PerkKind; readonly pos: Vec3 }
+  | { readonly type: 'perkCollected'; readonly id: number; readonly kind: PerkKind; readonly pos: Vec3 }
+  | { readonly type: 'perkExpired'; readonly kind: TimedPerk }
+  | { readonly type: 'pickupExpired'; readonly id: number }
+  | { readonly type: 'smartBomb'; readonly pos: Vec3; readonly count: number }
+  | { readonly type: 'shieldBlocked'; readonly id: number; readonly size: AsteroidSize; readonly pos: Vec3 };
 
 export interface StepResult {
   readonly state: GameState;
@@ -162,6 +177,10 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal', cr
     difficulty,
     craft,
     wave: INITIAL_WAVE,
+    pickups: [],
+    nextPickupId: 1,
+    perkRng: perkSeed(seed),
+    perks: NO_PERKS,
     ended: null,
   };
 }
