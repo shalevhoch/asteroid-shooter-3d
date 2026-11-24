@@ -199,6 +199,7 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
 - **Look and feel** (P30): bloom (high and medium quality), a procedural nebula sky, smoke from a ship below half hull, a cockpit reticle with a hit marker and a ×N combo badge, a hit-stop and white flash on big kills, and a synthesised rumble under big explosions. See [look-and-feel](docs/spec/look-and-feel/look-and-feel.md).
 - **Wave missions** (P31): every wave has one mission, its campaign objective or a seeded draw (fast clear, combo chain, no hull burns). Completing it pays 25 + 5 × wave bonus credits. See [wave-missions](docs/spec/wave-missions/wave-missions.md).
 - **Lock-on missiles** (P32): bought in the station shop (200 / 350 / 550). Hold the rocket button to lock up to 1 + level targets (one every 0.3 s) and release to fire a homing volley for one rocket. Numbered red brackets mark the locks. See [lock-on-missiles](docs/spec/lock-on-missiles/lock-on-missiles.md).
+- **Daily challenge** (P33): a title-card button starts the UTC day's seeded run (Normal, Fighter, no upgrades, no credits). Today's best is kept locally, separate from the all-time best and top 10. See [daily-challenge](docs/spec/daily-challenge/daily-challenge.md).
 - **Touch controls** (P15), for tablets and phones in landscape:
   - Shown during play when the primary pointer is coarse and the device has touch points. `?touch` forces them
     on and `?touch=0` off. The keyboard and mouse keep working alongside.
