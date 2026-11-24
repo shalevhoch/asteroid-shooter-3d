@@ -9,6 +9,7 @@ export const NOZZLES: Readonly<Record<CraftId, readonly Vec3[]>> = {
   fighter: [[-0.09, 0.02, 0.47], [0.09, 0.02, 0.47]],
   interceptor: [[-0.08, 0.02, 0.48], [0.08, 0.02, 0.48]],
   shuttle: [[0, 0.03, 0.48]],
+  gship: [[-0.07, 0.02, 0.47], [0.07, 0.02, 0.47]],
 };
 
 /** Ramp per tick: the burn builds fast when the turbo kicks in and dies down more slowly. */

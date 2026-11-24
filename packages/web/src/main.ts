@@ -309,6 +309,7 @@ const CRAFT_LABELS = {
   fighter: { name: 'Fighter', blurb: 'The original ship. Balanced.' },
   interceptor: { name: 'Interceptor', blurb: 'Turns faster; less fuel, hull and one rocket fewer.' },
   shuttle: { name: 'Shuttle', blurb: 'Turns slower; more fuel, a tougher hull and five rockets.' },
+  gship: { name: 'G-Ship', blurb: 'All-rounder: turns a bit faster, more fuel and an extra rocket; thinner hull.' },
 } as const;
 
 /** The craft picker (P17): name, a blurb and the stats against the Fighter. */

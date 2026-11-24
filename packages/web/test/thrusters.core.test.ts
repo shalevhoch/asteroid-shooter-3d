@@ -37,3 +37,11 @@ describe('thrusters', () => {
     expect(cuesFor([{ type: 'turboStarted' }])).toEqual([{ sound: 'whoosh', volume: 0.45 }]);
   });
 });
+
+describe('G-Ship model (P35)', () => {
+  it('uses the mirrored, full model turned to face forward', async () => {
+    const { CRAFT_MODELS } = await import('../src/scene.js');
+    expect(CRAFT_MODELS.gship.file).toBe('models/extras/g-ship/g-ship-04-mirrored.glb');
+    expect(CRAFT_MODELS.gship.euler).toEqual([0, Math.PI, 0]);
+  });
+});

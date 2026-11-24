@@ -6,7 +6,7 @@ import { hudModel } from '../src/hud.js';
 
 describe('station shop', () => {
   it('a missing or broken wallet is empty; a stored one reads back per ship', () => {
-    expect(parseWallet(null)).toEqual({ credits: 0, upgrades: { fighter: NO_UPGRADES, interceptor: NO_UPGRADES, shuttle: NO_UPGRADES } });
+    expect(parseWallet(null)).toEqual({ credits: 0, upgrades: { fighter: NO_UPGRADES, interceptor: NO_UPGRADES, shuttle: NO_UPGRADES, gship: NO_UPGRADES } });
     expect(parseWallet('{oops').credits).toBe(0);
     const w = parseWallet(JSON.stringify({ credits: 340, upgrades: { shuttle: { hull: 2 } } }));
     expect(w.credits).toBe(340);
