@@ -9,7 +9,7 @@ describe('wave banners', () => {
   it('announces a wave with its count and objective', () => {
     const b = bannerFor([{ type: 'waveStarted', wave: 3, count: 9, objective: { kind: 'rocketKills', count: 2 } }]);
     expect(b?.title).toBe(`Wave 3 of ${String(CAMPAIGN_WAVES)}`);
-    expect(b?.subtitle).toMatch(/9 asteroids · Destroy 2 asteroids with rockets/);
+    expect(b?.subtitle).toMatch(/9 asteroids · Mission: Destroy 2 asteroids with rockets/);
     expect(bannerFor([{ type: 'waveStarted', wave: 12, count: 27, objective: null }])?.title).toBe('Endless wave 12');
   });
 

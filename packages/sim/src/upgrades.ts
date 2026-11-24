@@ -71,7 +71,8 @@ export function creditsFor(events: readonly SimEvent[]): number {
     if (e.type === 'asteroidDestroyed' || e.type === 'objectiveMet') points += e.points;
     else if (e.type === 'waveCleared') points += e.clearBonus + e.earthBonus;
   }
-  return Math.floor(points / POINTS_PER_CREDIT);
+  const bonus = events.reduce((n, e) => n + (e.type === 'missionComplete' ? e.credits : 0), 0);
+  return Math.floor(points / POINTS_PER_CREDIT) + bonus;
 }
 
 /** End of a tick: bank its credits (unless the run doesn't earn) and raise the wave-start Earth shield. */
