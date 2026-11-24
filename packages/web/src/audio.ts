@@ -2,7 +2,8 @@
 import type { SimEvent } from '@asteroid/sim';
 import { assetUrl } from './assetUrl.js';
 
-export type Sound = 'photon' | 'rocket' | 'kaboom';
+/** `chime` (P27 follow-up, the perk pickup) is synthesised, not loaded. */
+export type Sound = 'photon' | 'rocket' | 'kaboom' | 'chime';
 export interface Cue {
   readonly sound: Sound;
   readonly volume: number;
@@ -19,10 +20,24 @@ export function cuesFor(events: readonly SimEvent[]): Cue[] {
     else if (e.type === 'rocketFired') cues.push({ sound: 'rocket', volume: 0.6 });
     else if (e.type === 'asteroidDestroyed') cues.push({ sound: 'kaboom', volume: e.size === 'big' ? 0.9 : 0.55 });
     else if (e.type === 'earthHit') cues.push({ sound: 'kaboom', volume: 0.7 });
+    else if (e.type === 'perkCollected') cues.push({ sound: 'chime', volume: 0.5 });
     else if (e.type === 'smartBomb') cues.push({ sound: 'kaboom', volume: 1 });
     else if (e.type === 'runEnded') cues.push({ sound: 'kaboom', volume: 1 });
   }
   return cues.slice(0, MAX_CUES_PER_TICK);
+}
+
+/** A short rising two-note chime (E6 → A6) with a soft decay. */
+function chime(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 0.35), rate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) {
+    const t = i / rate;
+    const f = t < 0.09 ? 1318.5 : 1760;
+    d[i] = Math.sin(2 * Math.PI * f * t) * Math.exp(-t * 9) * 0.5;
+  }
+  return buf;
 }
 
 export class AudioBank {
@@ -47,6 +62,7 @@ export class AudioBank {
     }
     const ctx = new AudioContext();
     this.ctx = ctx;
+    this.buffers.set('chime', chime(ctx));
     for (const s of ['photon', 'rocket', 'kaboom'] as const) {
       void fetch(assetUrl(this.base, `sounds/${s}.wav`))
         .then((r) => r.arrayBuffer())

@@ -26,6 +26,8 @@ export interface ThreatFrame {
   readonly aimTarget: number | null;
   /** What in-flight rockets are chasing. */
   readonly rocketTargets: ReadonlySet<number>;
+  /** Perk pickups for the radar (P27 follow-up). */
+  readonly pickups?: readonly { readonly pos: Vec3; readonly rgb: readonly [number, number, number] }[];
 }
 
 export class ThreatView {
@@ -125,6 +127,12 @@ export class ThreatView {
     ctx.lineTo(st.x - 4, st.y);
     ctx.closePath();
     ctx.fill();
+    // Perk pickups (P27 follow-up): small squares in the perk's colour.
+    for (const p of f.pickups ?? []) {
+      const b = at(p.pos);
+      ctx.fillStyle = `rgb(${p.rgb.map((c) => String(Math.round(c * 255))).join(',')})`;
+      ctx.fillRect(b.x - 2.5, b.y - 2.5, 5, 5);
+    }
     for (const a of f.asteroids) {
       const b = at(a.pos);
       const size = a.size === 'big' ? 3.5 : 2;
