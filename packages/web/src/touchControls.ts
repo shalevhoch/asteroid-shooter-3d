@@ -30,6 +30,7 @@ export class TouchControls {
   private fire = false;
   private turbo = false;
   private rocketTaps = 0;
+  private rocketDown = false;
   private readonly base: HTMLDivElement;
   private readonly knob: HTMLDivElement;
   private readonly thumb: HTMLDivElement;
@@ -90,9 +91,11 @@ export class TouchControls {
     rocket.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       this.rocketTaps = Math.min(this.rocketTaps + 1, 3);
+      this.rocketDown = true;
       rocket.classList.add('on');
     });
-    rocket.addEventListener('pointerup', () => { rocket.classList.remove('on'); });
+    rocket.addEventListener('pointerup', () => { rocket.classList.remove('on'); this.rocketDown = false; });
+    rocket.addEventListener('pointercancel', () => { rocket.classList.remove('on'); this.rocketDown = false; });
     const pause = div('t-pause', this.root, 'Ⅱ');
     pause.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -146,7 +149,7 @@ export class TouchControls {
   next(): TouchFrame {
     if (this.root.style.display === 'none') return NO_TOUCH;
     const a = this.stick.id === -1 ? { x: 0, y: 0 } : stickAxes(this.stick.x - this.stick.ox, this.stick.y - this.stick.oy);
-    const f: TouchFrame = { stickX: a.x, stickY: a.y, throttleTarget: this.throttleTarget, fire: this.fire, turbo: this.turbo, rocketTaps: this.rocketTaps };
+    const f: TouchFrame = { stickX: a.x, stickY: a.y, throttleTarget: this.throttleTarget, fire: this.fire, turbo: this.turbo, rocketTaps: this.rocketTaps, rocketHeld: this.rocketDown };
     if (this.rocketTaps > 0) this.rocketTaps--;
     return f;
   }
@@ -158,6 +161,7 @@ export class TouchControls {
     this.throttleTarget = null;
     this.fire = this.turbo = false;
     this.rocketTaps = 0;
+    this.rocketDown = false;
     for (const b of this.root.querySelectorAll('.on')) b.classList.remove('on');
     this.drawThumb();
   }

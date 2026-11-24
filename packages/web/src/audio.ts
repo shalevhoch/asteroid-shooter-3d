@@ -26,6 +26,7 @@ export function cuesFor(events: readonly SimEvent[]): Cue[] {
     else if (e.type === 'earthHit') cues.push({ sound: 'kaboom', volume: 0.7 });
     else if (e.type === 'turboStarted') cues.push({ sound: 'whoosh', volume: 0.45 });
     else if (e.type === 'perkCollected') cues.push({ sound: 'chime', volume: 0.5 });
+    else if (e.type === 'missileLocked') cues.push({ sound: 'chime', volume: 0.2 });
     else if (e.type === 'smartBomb' || e.type === 'runEnded') cues.push({ sound: 'kaboom', volume: 1 }, { sound: 'rumble', volume: 1 });
   }
   return cues.slice(0, MAX_CUES_PER_TICK);

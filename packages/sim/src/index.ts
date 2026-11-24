@@ -33,7 +33,7 @@ export { step, run } from './step.js';
 export { makeAsteroid, moveAsteroids, destroyAsteroid, radiusOf, hpOf, earthDamageOf, timeToImpact, mostUrgent } from './asteroids.js';
 export { applyHazards, reloadPoint, HANGAR_CENTRE } from './hazards.js';
 export { pointsFor } from './asteroids.js';
-export { fire, moveProjectiles, crosshairTarget, nearestTarget } from './weapons.js';
+export { fire, moveProjectiles, crosshairTarget, nearestTarget, MISSILE_LOCK_TICKS } from './weapons.js';
 export { segmentHitsSphere, segmentHitsBox } from './collide.js';
 export * from './waves.js';
 export * from './scoring.js';

@@ -26,6 +26,8 @@ export interface ThreatFrame {
   readonly aimTarget: number | null;
   /** What in-flight rockets are chasing. */
   readonly rocketTargets: ReadonlySet<number>;
+  /** Missile locks being gathered (P32), in lock order. */
+  readonly missileLocks?: readonly number[];
   /** Perk pickups for the radar (P27 follow-up). */
   readonly pickups?: readonly { readonly pos: Vec3; readonly rgb: readonly [number, number, number] }[];
 }
@@ -73,7 +75,13 @@ export class ThreatView {
         const dist = Math.hypot(a.pos[0] - f.cameraPos[0], a.pos[1] - f.cameraPos[1], a.pos[2] - f.cameraPos[2]);
         const screenR = r * pxPerUnitAt(dist);
         if (screenR < MIN_VISIBLE_PX) ring(ctx, px, py, MIN_VISIBLE_PX + (a.size === 'big' ? 3 : 0), color);
-        if (f.rocketTargets.has(a.id)) brackets(ctx, px, py, Math.max(screenR, 12) + 6, '#ff9a3c', false);
+        const lockAt = f.missileLocks?.indexOf(a.id) ?? -1;
+        if (lockAt >= 0) {
+          brackets(ctx, px, py, Math.max(screenR, 12) + 10, '#ff4d6d', false);
+          ctx.fillStyle = '#ff4d6d';
+          ctx.font = 'bold 12px system-ui, sans-serif';
+          ctx.fillText(String(lockAt + 1), px + Math.max(screenR, 12) + 14, py - Math.max(screenR, 12) - 6);
+        } else if (f.rocketTargets.has(a.id)) brackets(ctx, px, py, Math.max(screenR, 12) + 6, '#ff9a3c', false);
         else if (f.aimTarget === a.id) brackets(ctx, px, py, Math.max(screenR, 12) + 6, '#9fffc8', true);
       } else {
         const arrow = edgeArrow(p);

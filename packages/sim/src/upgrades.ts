@@ -7,15 +7,17 @@ import { CRAFTS, type Craft } from './crafts.js';
 import { RAPID_FIRE_COOLDOWN } from './perks.js';
 import type { GameState, SimEvent } from './state.js';
 
-export const UPGRADE_IDS = ['damage', 'fireRate', 'hull', 'shield', 'speed', 'perkTime'] as const;
+export const UPGRADE_IDS = ['damage', 'fireRate', 'hull', 'shield', 'speed', 'perkTime', 'missiles'] as const;
 export type UpgradeId = (typeof UPGRADE_IDS)[number];
 export type Upgrades = Readonly<Record<UpgradeId, number>>;
-export const NO_UPGRADES: Upgrades = { damage: 0, fireRate: 0, hull: 0, shield: 0, speed: 0, perkTime: 0 };
+export const NO_UPGRADES: Upgrades = { damage: 0, fireRate: 0, hull: 0, shield: 0, speed: 0, perkTime: 0, missiles: 0 };
 
 /** Every upgrade caps at this level. */
 export const UPGRADE_MAX = 3;
 /** The price of level 1, 2 and 3. */
 export const UPGRADE_PRICES: readonly number[] = [100, 250, 450];
+/** Missiles (P32) cost more: they turn one rocket into a volley. */
+export const MISSILE_PRICES: readonly number[] = [200, 350, 550];
 /** Points per credit: a kill worth 30 points earns 3 credits. */
 export const POINTS_PER_CREDIT = 10;
 /** Hull added per hull level. */
@@ -37,7 +39,7 @@ export function parseUpgrades(raw: unknown): Upgrades {
 
 /** The price of the next level, or null at the cap. */
 export function priceOf(upgrades: Upgrades, id: UpgradeId): number | null {
-  return UPGRADE_PRICES[upgrades[id]] ?? null;
+  return (id === 'missiles' ? MISSILE_PRICES : UPGRADE_PRICES)[upgrades[id]] ?? null;
 }
 
 /** The shop is open in a wave's lead-in (before wave 1 too) while the run is live. */
@@ -58,6 +60,8 @@ export function upgradedCraft(s: Pick<GameState, 'craft' | 'upgrades'>): Craft {
   return { ...c, hullMax: c.hullMax + HULL_PER_LEVEL * s.upgrades.hull };
 }
 
+/** Missiles per volley (P32): 1 + level, so level 1 fires 2. */
+export const missileVolley = (u: Upgrades): number => 1 + u.missiles;
 export const photonDamage = (u: Upgrades): number => 1 + u.damage;
 /** Ticks between photons: 5, 4, 3, 2 by level; rapid fire stays the floor. */
 export const photonCooldown = (u: Upgrades, rapid: boolean): number => (rapid ? RAPID_FIRE_COOLDOWN : Math.max(RAPID_FIRE_COOLDOWN, PHOTON_COOLDOWN - u.fireRate));

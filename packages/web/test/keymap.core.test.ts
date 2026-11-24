@@ -67,7 +67,7 @@ describe('keymaps', () => {
 describe('toInput', () => {
   it('maps held actions to axes, cancelling opposites', () => {
     const i = toInput(controls({ held: new Set<Action>(['pitchUp', 'yawLeft', 'rollRight', 'rollLeft', 'strafeRight', 'strafeDown', 'turbo', 'reverse']) }));
-    expect(i).toEqual({ pitch: 1, yaw: -1, roll: 0, throttle: 0, turbo: true, strafeX: 1, strafeY: -1, reverse: true, firePhoton: false, fireRocket: false });
+    expect(i).toEqual({ pitch: 1, yaw: -1, roll: 0, throttle: 0, turbo: true, strafeX: 1, strafeY: -1, reverse: true, firePhoton: false, fireRocket: false, rocketHeld: false });
   });
 
   it('adds the mouse to the keys and clamps', () => {

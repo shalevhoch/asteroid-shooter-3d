@@ -21,7 +21,7 @@ describe('gamepad', () => {
   });
 
   it('right stick strafes, bumpers roll, triggers fire and turbo, B reverses', () => {
-    expect(held(pad([0, 0, 0.9, -0.9], [PAD.RB, PAD.B], { [PAD.RT]: 0.8, [PAD.LT]: 0.7 }), false)).toEqual({ pitch: 0, yaw: 0, roll: 1, strafeX: 1, strafeY: 1, turbo: true, reverse: true, fire: true });
+    expect(held(pad([0, 0, 0.9, -0.9], [PAD.RB, PAD.B], { [PAD.RT]: 0.8, [PAD.LT]: 0.7 }), false)).toEqual({ pitch: 0, yaw: 0, roll: 1, strafeX: 1, strafeY: 1, turbo: true, reverse: true, fire: true, rocket: false });
     expect(held(pad([0, 0, 0, 0], [PAD.LB]), false).roll).toBe(-1);
     expect(held(pad(), false)).toEqual(NO_PAD);
   });

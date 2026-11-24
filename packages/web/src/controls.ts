@@ -28,6 +28,8 @@ export class Controls {
       e.preventDefault();
       if (EDGE_ACTIONS.has(action)) {
         if (!e.repeat) this.press(action);
+        // P32: the rocket key is also tracked as held, for missile locking.
+        if (action === 'fireRocket') this.heldCodes.add(e.code);
       } else this.heldCodes.add(e.code);
     });
     window.addEventListener('keyup', (e) => this.heldCodes.delete(e.code));
@@ -43,7 +45,7 @@ export class Controls {
       const action = code && actionFor(this.settings.layout, code);
       if (!code || !action) return;
       if (EDGE_ACTIONS.has(action)) this.press(action);
-      else this.heldCodes.add(code);
+      if (!EDGE_ACTIONS.has(action) || action === 'fireRocket') this.heldCodes.add(code);
     });
     window.addEventListener('mouseup', (e) => this.heldCodes.delete(e.button === 0 ? MOUSE_LEFT : MOUSE_RIGHT));
     canvas.addEventListener('contextmenu', (e) => {

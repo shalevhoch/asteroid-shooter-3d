@@ -44,9 +44,11 @@ export interface PadHeld {
   readonly turbo: boolean;
   readonly reverse: boolean;
   readonly fire: boolean;
+  /** A is held (P32: missile locking). */
+  readonly rocket: boolean;
 }
 
-export const NO_PAD: PadHeld = { pitch: 0, yaw: 0, roll: 0, strafeX: 0, strafeY: 0, turbo: false, reverse: false, fire: false };
+export const NO_PAD: PadHeld = { pitch: 0, yaw: 0, roll: 0, strafeX: 0, strafeY: 0, turbo: false, reverse: false, fire: false, rocket: false };
 
 /**
  * Held controls: left stick aims (up = nose up unless `invertY`), right stick strafes, bumpers roll, RT fires photons,
@@ -66,6 +68,7 @@ export function held(p: PadSnapshot, invertY: boolean): PadHeld {
     turbo: down(p, PAD.LT),
     reverse: down(p, PAD.B),
     fire: down(p, PAD.RT),
+    rocket: down(p, PAD.A),
   };
 }
 
@@ -106,6 +109,7 @@ export function mergePad(base: Input, h: PadHeld, sensitivity: number): Input {
     turbo: base.turbo || h.turbo,
     reverse: base.reverse || h.reverse,
     firePhoton: base.firePhoton || h.fire,
+    rocketHeld: base.rocketHeld === true || h.rocket,
   };
 }
 

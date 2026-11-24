@@ -2,7 +2,7 @@
 import { waveLine } from './waveUi.js';
 import { activePerkLine } from './perksUi.js';
 import { formatImpact, urgency, type Urgency } from './threat.js';
-import { shopOpen, upgradedCraft, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
+import { missileVolley, shopOpen, upgradedCraft, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
   readonly score: number;
@@ -25,6 +25,8 @@ export interface HudModel {
   readonly impact: { readonly text: string; readonly urgency: Urgency } | null;
   /** Active perks with seconds left (P26), e.g. "SHIELD 8s · MAGNET 12s"; empty with none. */
   readonly perks: string;
+  /** "VOLLEY ×3" with missiles bought, "LOCKING 2/3" while gathering locks (P32); empty otherwise. */
+  readonly missiles: string;
   /** "◆ 120" (P29), with the shop key while the shop is open; empty for runs that don't earn. */
   readonly credits: string;
   /** Warnings worth flashing. */
@@ -36,6 +38,12 @@ const frac = (v: number, max: number) => Math.max(0, Math.min(1, v / max));
 function impactOf(s: GameState): HudModel['impact'] {
   const u = mostUrgent(s.asteroids);
   return u ? { text: `IMPACT ${formatImpact(u.ticks)}`, urgency: urgency(u.ticks) } : null;
+}
+
+function missileLine(s: GameState): string {
+  if (s.upgrades.missiles === 0) return '';
+  const n = missileVolley(s.upgrades);
+  return s.missileLock ? `LOCKING ${String(s.missileLock.ids.length)}/${String(n)}` : `VOLLEY ×${String(n)}`;
 }
 
 export function hudModel(s: GameState, best: number): HudModel {
@@ -60,6 +68,7 @@ export function hudModel(s: GameState, best: number): HudModel {
     impact: impactOf(s),
     combo: comboLive(s.combo, s.tick) && s.combo.count >= 2 ? `COMBO ${String(s.combo.count)} · next ×${String(comboMultiplier(s.combo.count + 1))}` : '',
     perks: activePerkLine(s.perks),
+    missiles: missileLine(s),
     credits: s.earnsCredits ? `◆ ${String(s.credits)}${shopOpen(s) ? ' · B: STATION SHOP' : ''}` : '',
     warnings,
   };
@@ -98,7 +107,7 @@ export class Hud {
       bar.style.width = `${String(Math.round(m[k] * 100))}%`;
       bar.parentElement?.classList.toggle('low', m[k] <= 0.3);
     }
-    this.q('.rockets').textContent = `ROCKETS ${'▲'.repeat(m.rockets)}${'△'.repeat(m.rocketMax - m.rockets)}`;
+    this.q('.rockets').textContent = `${m.missiles ? `${m.missiles} · ` : ''}ROCKETS ${'▲'.repeat(m.rockets)}${'△'.repeat(Math.max(0, m.rocketMax - m.rockets))}`;
     this.q('.speed').textContent = `SPEED ${'■'.repeat(m.speed)}${'□'.repeat(m.speedMax - m.speed)}${m.turbo ? ' TURBO' : ''}`;
     this.q('.warn').textContent = m.warnings.join(' · ');
     const impact = this.q('.impact');
