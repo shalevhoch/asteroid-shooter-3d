@@ -49,6 +49,28 @@ Status: 📋 open · 🔎 refined · 🚧 in progress · ✅ done.
 | [x] | P24: Re-encode the Earth and sky textures for load headroom | [#66](https://github.com/shalevhoch/asteroid-shooter-3d/issues/66) | polish | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#71](https://github.com/shalevhoch/asteroid-shooter-3d/pull/71) |
 | [x] | P25: Convert the LWO/3DS ship models to GLB | [#67](https://github.com/shalevhoch/asteroid-shooter-3d/issues/67) | polish | ✅ | Coder Bot (spec-to-ship, approved by Gilad) | [#72](https://github.com/shalevhoch/asteroid-shooter-3d/pull/72) |
 
+### Features
+
+Priority order. No player name or logo personalization.
+
+| Done | Packet | Issue | Milestone | Status | Owner | PR |
+|---|---|---|---|---|---|---|
+| [ ] | P26: Perks | [#73](https://github.com/shalevhoch/asteroid-shooter-3d/issues/73) | features | 📋 | | |
+| [ ] | P27: Keyboard rockets | [#74](https://github.com/shalevhoch/asteroid-shooter-3d/issues/74) | features | 📋 | | |
+| [ ] | P28: Hyperdrive thrusters | [#75](https://github.com/shalevhoch/asteroid-shooter-3d/issues/75) | features | 📋 | | |
+| [ ] | P29: Credits and station shop | [#76](https://github.com/shalevhoch/asteroid-shooter-3d/issues/76) | features | 📋 | | |
+| [ ] | P30: Look and feel | [#77](https://github.com/shalevhoch/asteroid-shooter-3d/issues/77) | features | 📋 | | |
+| [ ] | P31: Wave missions | [#78](https://github.com/shalevhoch/asteroid-shooter-3d/issues/78) | features | 📋 | | |
+| [ ] | P32: Lock-on missiles | [#79](https://github.com/shalevhoch/asteroid-shooter-3d/issues/79) | features | 📋 | | |
+| [ ] | P33: Daily challenge | [#80](https://github.com/shalevhoch/asteroid-shooter-3d/issues/80) | features | 📋 | | |
+| [ ] | P34: Boss waves | [#81](https://github.com/shalevhoch/asteroid-shooter-3d/issues/81) | features | 📋 | | |
+| [ ] | P35: Fourth ship (g_ship) | [#82](https://github.com/shalevhoch/asteroid-shooter-3d/issues/82) | features | 📋 | | |
+| [ ] | P36: Hebrew and tutorial | [#83](https://github.com/shalevhoch/asteroid-shooter-3d/issues/83) | features | 📋 | | |
+| [ ] | P37: Replays | [#84](https://github.com/shalevhoch/asteroid-shooter-3d/issues/84) | features | 📋 | | |
+| [ ] | P38: Photo mode | [#85](https://github.com/shalevhoch/asteroid-shooter-3d/issues/85) | features | 📋 | | |
+| [ ] | P39: Paint colours | [#86](https://github.com/shalevhoch/asteroid-shooter-3d/issues/86) | features | 📋 | | |
+| [ ] | P40: Two-player split screen | [#87](https://github.com/shalevhoch/asteroid-shooter-3d/issues/87) | features | 📋 | | |
+
 New packets get the next free `PNN`, an issue, and a row here, in the PR that discovers them.
 
 _Issues #1–#21 were authored by `conquarrow-dev` and are hidden while GitHub has that account flagged. P01–P20 were
