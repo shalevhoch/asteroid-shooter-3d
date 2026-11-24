@@ -50,7 +50,7 @@ function addKill(s: RunStats, e: Extract<SimEvent, { type: 'asteroidDestroyed' }
   return {
     ...s,
     kills: s.kills + 1,
-    bigKills: s.bigKills + (e.size === 'big' ? 1 : 0),
+    bigKills: s.bigKills + (e.size === 'small' ? 0 : 1),
     photonHits: s.photonHits + (e.by === 'photon' ? 1 : 0),
     killPoints: s.killPoints + e.base,
     comboPoints: s.comboPoints + e.points - e.base,

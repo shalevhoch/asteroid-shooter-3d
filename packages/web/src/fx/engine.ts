@@ -70,7 +70,7 @@ export class FxEngine {
 
   /** One tick of an asteroid burning through the atmosphere (original ATMOSPHERE collision): a flare tail, plus flames on a big one. */
   atmosphereTail(a: AsteroidState): void {
-    const big = a.size === 'big';
+    const big = a.size !== 'small';
     const back: Vec3 = [-a.dir[0] * (big ? 0.67 : 0.3), -a.dir[1] * (big ? 0.67 : 0.3), -a.dir[2] * (big ? 0.67 : 0.3)];
     for (let i = 0; i < (big ? 16 : 4); i++)
       this.add(flare(a.pos, 9 * (this.rnd() * 0.9 + 0.9), noisyDir(back, big ? 0.075 : 0.05, this.rnd), big ? 50 : 15, 'roundParticle', this.rnd));

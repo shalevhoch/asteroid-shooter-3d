@@ -44,7 +44,7 @@ export interface ProjectileState {
   readonly target: number | null;
 }
 
-export type AsteroidSize = 'big' | 'small';
+export type AsteroidSize = 'big' | 'small' | 'boss';
 
 export interface AsteroidState {
   /** Unique and increasing; every iteration over asteroids goes in id order (SPEC §4). */
@@ -156,6 +156,9 @@ export type SimEvent =
   | { readonly type: 'asteroidHit'; readonly id: number; readonly hp: number; readonly pos: Vec3 }
   | { readonly type: 'photonFired'; readonly id: number; readonly pos: Vec3 }
   | { readonly type: 'rocketFired'; readonly id: number; readonly pos: Vec3; readonly target: number | null }
+  | { readonly type: 'bossSpawned'; readonly id: number; readonly wave: number }
+  | { readonly type: 'bossCalved'; readonly id: number; readonly from: number }
+  | { readonly type: 'bossDefeated'; readonly id: number; readonly wave: number; readonly credits: number }
   | { readonly type: 'missileLocked'; readonly target: number; readonly locks: number }
   | { readonly type: 'rocketLocked'; readonly id: number; readonly target: number }
   | { readonly type: 'projectileSpent'; readonly id: number; readonly kind: ProjectileKind; readonly pos: Vec3; readonly on: 'asteroid' | 'earth' | 'mothership' }

@@ -41,3 +41,4 @@ export * from './achievements.js';
 export * from './crafts.js';
 export * from './perks.js';
 export * from './upgrades.js';
+export * from './boss.js';

@@ -9,7 +9,7 @@ export function hitStopMs(events: readonly SimEvent[]): number {
   let ms = 0;
   for (const e of events) {
     if (e.type === 'smartBomb') ms = Math.max(ms, 90);
-    else if (e.type === 'asteroidDestroyed' && e.size === 'big' && e.by !== 'bomb') ms = Math.max(ms, 70);
+    else if (e.type === 'asteroidDestroyed' && e.size !== 'small' && e.by !== 'bomb') ms = Math.max(ms, e.size === 'boss' ? 160 : 70);
   }
   return ms;
 }
@@ -19,7 +19,7 @@ export function killFlash(events: readonly SimEvent[]): number {
   let a = 0;
   for (const e of events) {
     if (e.type === 'smartBomb') a = Math.max(a, 0.4);
-    else if (e.type === 'asteroidDestroyed' && e.size === 'big' && e.by !== 'bomb') a = Math.max(a, 0.16);
+    else if (e.type === 'asteroidDestroyed' && e.size !== 'small' && e.by !== 'bomb') a = Math.max(a, e.size === 'boss' ? 0.5 : 0.16);
   }
   return a;
 }

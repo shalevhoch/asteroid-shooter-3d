@@ -4,6 +4,7 @@
  */
 import { ASTEROID_SPEED, BIG_CHANCE, EARTH_MAX_HEALTH, ROCKET_LOCK_CONE, SPAWN_INTERVAL, SPAWN_SPREAD_MAX, SPAWN_SPREAD_MIN, SPAWN_X } from './constants.js';
 import { makeAsteroid } from './asteroids.js';
+import { isBossWave, spawnBoss } from './boss.js';
 import { nextFloat, nextRange } from './rng.js';
 import { clearBonus, earthBonus } from './scoring.js';
 import type { AsteroidSize, GameState, SimEvent } from './state.js';
@@ -201,7 +202,8 @@ export function updateWaves(state: GameState, events: SimEvent[]): GameState {
   if (w.phase === 'leadIn') {
     if (w.timer > 1) return { ...state, wave: { ...w, timer: w.timer - 1 } };
     events.push({ type: 'waveStarted', wave: w.number, count: def.count, objective: missionFor(state.missionSeed, w.number) });
-    const s = spawnOne(state, def, preset, events);
+    const first = spawnOne(state, def, preset, events);
+    const s = isBossWave(w.number) ? spawnBoss(first, w.number, def.speed * preset.speedScale, events) : first;
     return { ...s, wave: { ...w, phase: 'active', timer: scaledInterval(def, preset), spawned: 1, sinceSpawn: 0 } };
   }
   if (w.spawned < def.count) {
@@ -245,7 +247,7 @@ export function trackWave(state: GameState, events: readonly SimEvent[]): GameSt
     if (e.type === 'asteroidDestroyed' && e.combo > w.bestCombo) w = { ...w, bestCombo: e.combo };
     if (e.type === 'earthHit') w = { ...w, earthHits: w.earthHits + 1 };
     else if (e.type === 'rocketFired') w = { ...w, rocketsFired: w.rocketsFired + 1 };
-    else if (e.type === 'asteroidDestroyed') w = { ...w, rocketKills: w.rocketKills + (e.by === 'rocket' ? 1 : 0), bigKills: w.bigKills + (e.size === 'big' ? 1 : 0) };
+    else if (e.type === 'asteroidDestroyed') w = { ...w, rocketKills: w.rocketKills + (e.by === 'rocket' ? 1 : 0), bigKills: w.bigKills + (e.size === 'small' ? 0 : 1) };
   }
   return w === state.wave ? state : { ...state, wave: w };
 }
