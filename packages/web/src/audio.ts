@@ -19,9 +19,9 @@ export function cuesFor(events: readonly SimEvent[]): Cue[] {
     if (e.type === 'photonFired') cues.push({ sound: 'photon', volume: 0.25 });
     else if (e.type === 'rocketFired') cues.push({ sound: 'rocket', volume: 0.6 });
     else if (e.type === 'asteroidDestroyed') {
-      cues.push({ sound: 'kaboom', volume: e.size === 'big' ? 0.9 : 0.55 });
+      cues.push({ sound: 'kaboom', volume: e.size === 'small' ? 0.55 : e.size === 'big' ? 0.9 : 1 });
       // P30: big kills get a low rumble under the bang.
-      if (e.size === 'big') cues.push({ sound: 'rumble', volume: 0.8 });
+      if (e.size !== 'small') cues.push({ sound: 'rumble', volume: e.size === 'boss' ? 1 : 0.8 });
     }
     else if (e.type === 'earthHit') cues.push({ sound: 'kaboom', volume: 0.7 });
     else if (e.type === 'turboStarted') cues.push({ sound: 'whoosh', volume: 0.45 });

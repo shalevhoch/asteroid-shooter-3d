@@ -34,6 +34,21 @@ export const BIG_RADIUS = 100;
 export const BIG_HP = 20;
 export const SMALL_RADIUS = 20;
 export const SMALL_HP = 8;
+/** Boss asteroid (P34): a huge, slow rock on every 5th wave. */
+export const BOSS_RADIUS = 220;
+export const BOSS_HP = 120;
+export const BOSS_EARTH_DAMAGE = 40;
+export const BOSS_POINTS = 300;
+/** A rocket or a smart bomb chips a boss instead of destroying it. */
+export const BOSS_ROCKET_DAMAGE = 15;
+export const BOSS_BOMB_DAMAGE = 30;
+/** The boss moves at this fraction of the wave's speed, and sheds a small asteroid every BOSS_CALVE_TICKS. */
+export const BOSS_SPEED_SCALE = 0.45;
+export const BOSS_CALVE_TICKS = 125;
+/** Every BOSS_EVERY-th wave has a boss. */
+export const BOSS_EVERY = 5;
+/** Bonus credits for defeating a boss. */
+export const BOSS_CREDITS = 100;
 export const SPAWN_INTERVAL = 200;
 export const SPAWN_X = -800;
 export const SPAWN_SPREAD_MIN = -500;

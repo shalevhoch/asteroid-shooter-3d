@@ -8,6 +8,10 @@ import {
   SMALL_PHOTON_POINTS,
   SMALL_ROCKET_POINTS,
   BIG_RADIUS,
+  BOSS_EARTH_DAMAGE,
+  BOSS_HP,
+  BOSS_POINTS,
+  BOSS_RADIUS,
   EARTH_POS,
   EARTH_RADIUS,
   SMALL_EARTH_DAMAGE,
@@ -19,12 +23,14 @@ import { NO_COMBO, comboAfterKill, comboMultiplier } from './scoring.js';
 import type { AsteroidSize, AsteroidState, GameState, KillCause, SimEvent } from './state.js';
 import { add, addScaled, distance, normalize, sub, type Vec3 } from './vec3.js';
 
-export const radiusOf = (size: AsteroidSize): number => (size === 'big' ? BIG_RADIUS : SMALL_RADIUS);
-export const hpOf = (size: AsteroidSize): number => (size === 'big' ? BIG_HP : SMALL_HP);
-export const earthDamageOf = (size: AsteroidSize): number => (size === 'big' ? BIG_EARTH_DAMAGE : SMALL_EARTH_DAMAGE);
+const bySize = <T>(size: AsteroidSize, big: T, small: T, boss: T): T => (size === 'big' ? big : size === 'small' ? small : boss);
+export const radiusOf = (size: AsteroidSize): number => bySize(size, BIG_RADIUS, SMALL_RADIUS, BOSS_RADIUS);
+export const hpOf = (size: AsteroidSize): number => bySize(size, BIG_HP, SMALL_HP, BOSS_HP);
+export const earthDamageOf = (size: AsteroidSize): number => bySize(size, BIG_EARTH_DAMAGE, SMALL_EARTH_DAMAGE, BOSS_EARTH_DAMAGE);
 
 /** Points for a kill (SPEC §6). Earth impacts score nothing. */
 export function pointsFor(size: AsteroidSize, by: KillCause): number {
+  if (size === 'boss') return BOSS_POINTS;
   if (size === 'big') return by === 'photon' ? BIG_PHOTON_POINTS : BIG_ROCKET_POINTS;
   return by === 'photon' ? SMALL_PHOTON_POINTS : SMALL_ROCKET_POINTS;
 }

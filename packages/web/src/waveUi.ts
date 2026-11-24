@@ -19,7 +19,9 @@ export function bannerFor(events: readonly SimEvent[]): Banner | null {
       const regen = e.regen > 0 ? `Earth regenerates +${String(e.regen)}` : '';
       const clear = `Clear bonus +${String(e.clearBonus)} · Earth bonus +${String(e.earthBonus)}`;
       banner = { title: `Wave ${String(e.wave)} cleared`, subtitle: [mission, clear, bonus, regen].filter(Boolean).join(' · '), durationMs: 3500 };
-    } else if (e.type === 'waveStarted') {
+    } else if (e.type === 'bossSpawned') banner = { title: '⚠ Boss incoming', subtitle: 'A giant asteroid is heading for Earth, shedding fragments. Rockets and bombs chip it.', durationMs: 3500 };
+    else if (e.type === 'bossDefeated') banner = { title: 'Boss destroyed!', subtitle: `+◆ ${String(e.credits)} bonus credits`, durationMs: 3000 };
+    else if (e.type === 'waveStarted') {
       const label = e.wave > CAMPAIGN_WAVES ? `Endless wave ${String(e.wave)}` : `Wave ${String(e.wave)} of ${String(CAMPAIGN_WAVES)}`;
       banner = { title: label, subtitle: `${String(e.count)} asteroids${e.objective ? ` · Mission: ${describeObjective(e.objective)}` : ''}`, durationMs: 3000 };
     }

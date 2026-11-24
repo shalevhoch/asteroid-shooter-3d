@@ -2,7 +2,7 @@
 import { waveLine } from './waveUi.js';
 import { activePerkLine } from './perksUi.js';
 import { formatImpact, urgency, type Urgency } from './threat.js';
-import { missileVolley, shopOpen, upgradedCraft, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
+import { hpOf, missileVolley, shopOpen, upgradedCraft, comboLive, comboMultiplier, mostUrgent, EARTH_MAX_HEALTH, THROTTLE_MAX, type GameState } from '@asteroid/sim';
 
 export interface HudModel {
   readonly score: number;
@@ -27,6 +27,8 @@ export interface HudModel {
   readonly perks: string;
   /** "VOLLEY ×3" with missiles bought, "LOCKING 2/3" while gathering locks (P32); empty otherwise. */
   readonly missiles: string;
+  /** The boss's health 0..1 while one is alive (P34), else null. */
+  readonly boss: number | null;
   /** "◆ 120" (P29), with the shop key while the shop is open; empty for runs that don't earn. */
   readonly credits: string;
   /** Warnings worth flashing. */
@@ -38,6 +40,11 @@ const frac = (v: number, max: number) => Math.max(0, Math.min(1, v / max));
 function impactOf(s: GameState): HudModel['impact'] {
   const u = mostUrgent(s.asteroids);
   return u ? { text: `IMPACT ${formatImpact(u.ticks)}`, urgency: urgency(u.ticks) } : null;
+}
+
+function bossHealth(s: GameState): number | null {
+  const b = s.asteroids.find((a) => a.size === 'boss');
+  return b ? frac(b.hp, hpOf('boss')) : null;
 }
 
 function missileLine(s: GameState): string {
@@ -69,6 +76,7 @@ export function hudModel(s: GameState, best: number): HudModel {
     combo: comboLive(s.combo, s.tick) && s.combo.count >= 2 ? `COMBO ${String(s.combo.count)} · next ×${String(comboMultiplier(s.combo.count + 1))}` : '',
     perks: activePerkLine(s.perks),
     missiles: missileLine(s),
+    boss: bossHealth(s),
     credits: s.earnsCredits ? `◆ ${String(s.credits)}${shopOpen(s) ? ' · B: STATION SHOP' : ''}` : '',
     warnings,
   };
@@ -84,6 +92,7 @@ export class Hud {
         <div class="bar fuel"><span>FUEL</span><i></i></div>
       </div>
       <div class="br"><div class="rockets"></div><div class="speed"></div></div>
+      <div class="bossbar"><span>BOSS</span><i></i></div>
       <div class="impact"></div>
       <div class="warn"></div>
       <div class="crosshair"><span class="ch">+</span><span class="hitmark">✕</span><span class="badge"></span></div>`;
@@ -102,6 +111,9 @@ export class Hud {
     this.q('.combo').textContent = m.combo;
     this.q('.perks').textContent = m.perks;
     this.q('.credits').textContent = m.credits;
+    const boss = this.q('.bossbar');
+    boss.style.display = m.boss === null ? 'none' : '';
+    if (m.boss !== null) this.q('.bossbar i').style.width = `${String(Math.round(m.boss * 100))}%`;
     for (const k of ['earth', 'hull', 'fuel'] as const) {
       const bar = this.q(`.bar.${k} i`);
       bar.style.width = `${String(Math.round(m[k] * 100))}%`;

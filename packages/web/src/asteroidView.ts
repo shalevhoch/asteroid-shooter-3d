@@ -1,6 +1,6 @@
 /** Draws the sim's asteroids (P05): one mesh per asteroid id, interpolated between ticks, tumbling for show. */
 import * as THREE from 'three';
-import { BIG_RADIUS, SMALL_RADIUS, type AsteroidSize, type AsteroidState } from '@asteroid/sim';
+import { BOSS_RADIUS, BIG_RADIUS, SMALL_RADIUS, type AsteroidSize, type AsteroidState } from '@asteroid/sim';
 
 /** The rock is drawn a bit smaller than its collision sphere, so near misses still count as hits. */
 export const VISUAL_TO_COLLISION = 0.85;
@@ -23,6 +23,8 @@ export class AsteroidView {
   private readonly material = new THREE.MeshStandardMaterial({ color: 0x8a7f72, roughness: 0.95, metalness: 0.05, flatShading: true });
   private readonly scales: Record<AsteroidSize, number>;
   private readonly axis = new THREE.Vector3();
+  /** The boss (P34): the big rock, scaled up and glowing a dull red. */
+  private readonly bossMaterial = new THREE.MeshStandardMaterial({ color: 0x9a7262, emissive: 0x220500, roughness: 0.9, metalness: 0.05, flatShading: true });
 
   constructor(
     private readonly scene: THREE.Scene,
@@ -32,7 +34,7 @@ export class AsteroidView {
       g.computeBoundingSphere();
       return g.boundingSphere?.radius ?? 1;
     };
-    this.scales = { big: (BIG_RADIUS * VISUAL_TO_COLLISION) / radius(geometry.big), small: (SMALL_RADIUS * VISUAL_TO_COLLISION) / radius(geometry.small) };
+    this.scales = { big: (BIG_RADIUS * VISUAL_TO_COLLISION) / radius(geometry.big), small: (SMALL_RADIUS * VISUAL_TO_COLLISION) / radius(geometry.small), boss: (BOSS_RADIUS * VISUAL_TO_COLLISION) / radius(geometry.big) };
   }
 
   /** Syncs meshes to `curr`, placing each between its `prev` and `curr` position by `alpha`. */
@@ -43,7 +45,7 @@ export class AsteroidView {
       alive.add(a.id);
       let mesh = this.meshes.get(a.id);
       if (!mesh) {
-        mesh = new THREE.Mesh(this.geometry[a.size], this.material);
+        mesh = a.size === 'boss' ? new THREE.Mesh(this.geometry.big, this.bossMaterial) : new THREE.Mesh(this.geometry[a.size], this.material);
         mesh.scale.setScalar(this.scales[a.size]);
         this.scene.add(mesh);
         this.meshes.set(a.id, mesh);

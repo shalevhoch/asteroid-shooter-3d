@@ -2,6 +2,7 @@
 import { destroyAsteroid, radiusOf } from './asteroids.js';
 import { segmentHitsBox, segmentHitsSphere } from './collide.js';
 import {
+  BOSS_ROCKET_DAMAGE,
   EARTH_POS,
   EARTH_RADIUS,
   MUZZLE_DOWN,
@@ -172,8 +173,8 @@ export function moveProjectiles(state: GameState, events: SimEvent[]): GameState
 }
 
 function damage(s: GameState, a: AsteroidState, p: ProjectileState, events: SimEvent[]): GameState {
-  const dmg = photonDamage(s.upgrades);
-  if (p.kind === 'rocket' || a.hp <= dmg) return destroyAsteroid(s, a.id, p.kind, events);
+  const dmg = a.size === 'boss' && p.kind === 'rocket' ? BOSS_ROCKET_DAMAGE : photonDamage(s.upgrades);
+  if ((p.kind === 'rocket' && a.size !== 'boss') || a.hp <= dmg) return destroyAsteroid(s, a.id, p.kind, events);
   const hp = a.hp - dmg;
   events.push({ type: 'asteroidHit', id: a.id, hp, pos: a.pos });
   return { ...s, asteroids: s.asteroids.map((x) => (x.id === a.id ? { ...x, hp } : x)) };

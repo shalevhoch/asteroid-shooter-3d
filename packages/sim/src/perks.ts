@@ -3,7 +3,7 @@
  * deterministic. Drops draw from their own RNG stream (`perkRng`), so runs without pickups play exactly as before.
  */
 import { destroyAsteroid } from './asteroids.js';
-import { SHIP_RADIUS } from './constants.js';
+import { BOSS_BOMB_DAMAGE, SHIP_RADIUS } from './constants.js';
 import { nextFloat, nextRange, type RngState } from './rng.js';
 import type { GameState, SimEvent } from './state.js';
 import { perkTicks } from './upgrades.js';
@@ -34,6 +34,15 @@ export const SPREAD_ANGLE = 0.1;
 /** Magnet: pickups within this range fly toward the ship at this speed. */
 export const MAGNET_RANGE = 1500;
 export const MAGNET_SPEED = 25;
+/** A boss (P34) takes BOSS_BOMB_DAMAGE from a smart bomb; anything else is destroyed. */
+function bombHit(s: GameState, id: number, events: SimEvent[]): GameState {
+  const a = s.asteroids.find((x) => x.id === id);
+  if (a?.size !== 'boss' || a.hp <= BOSS_BOMB_DAMAGE) return destroyAsteroid(s, id, 'bomb', events);
+  const hp = a.hp - BOSS_BOMB_DAMAGE;
+  events.push({ type: 'asteroidHit', id, hp, pos: a.pos });
+  return { ...s, asteroids: s.asteroids.map((x) => (x.id === id ? { ...x, hp } : x)) };
+}
+
 /** Smart bomb: destroys every asteroid within this range of the ship (rocket points, no split, no drops). */
 export const SMART_BOMB_RANGE = 2500;
 /** Weights for which perk drops: shield and rapid fire are commoner, the smart bomb rarer. */
@@ -110,7 +119,7 @@ function movePickup(p: PickupState, ship: Vec3, magnet: boolean): PickupState {
 function smartBomb(s: GameState, events: SimEvent[]): GameState {
   const hit = s.asteroids.filter((a) => distance(a.pos, s.ship.pos) <= SMART_BOMB_RANGE).map((a) => a.id);
   let out = s;
-  for (const id of hit) out = destroyAsteroid(out, id, 'bomb', events);
+  for (const id of hit) out = bombHit(out, id, events);
   events.push({ type: 'smartBomb', pos: s.ship.pos, count: hit.length });
   return out;
 }

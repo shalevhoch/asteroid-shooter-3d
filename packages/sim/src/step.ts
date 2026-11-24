@@ -2,6 +2,7 @@
 import { moveAsteroids } from './asteroids.js';
 import { fly } from './flight.js';
 import { applyHazards } from './hazards.js';
+import { bossAttack, bossDefeats } from './boss.js';
 import { updatePerks } from './perks.js';
 import { applyUpgrades, speedScale, upgradedCraft } from './upgrades.js';
 import { fire, moveProjectiles } from './weapons.js';
@@ -21,9 +22,11 @@ export function step(state: GameState, input: Input): StepResult {
   // 2. Ship hazards.
   s = { ...s, ship: applyHazards(s.ship, events, { fuel: craft.fuelMax, hull: craft.hullMax, rockets: craft.rocketMax }) };
   // 3. Waves: lead-in, spawns, wave clear. 4. Move asteroids, resolve Earth impacts.
-  s = moveAsteroids(updateWaves(s, events), events, preset.earthDamageScale);
+  // 3b. Boss attack (P34): a boss sheds small asteroids.
+  s = moveAsteroids(bossAttack(updateWaves(s, events), events), events, preset.earthDamageScale);
   // 5. Move projectiles, resolve hits, expire. 5b. Perks (P26): pickups, collection, drops. 6. Objective tallies, run end.
   s = trackWave(updatePerks(moveProjectiles(s, events), events, craft.hullMax), events);
+  bossDefeats(s, events);
   // 6b. Upgrades (P29): bank credits, wave-start Earth shield.
   s = applyUpgrades(s, events);
   const ended: RunEndReason | null = s.earthHealth <= 0 ? 'earthDestroyed' : s.ship.hull <= 0 ? 'shipDestroyed' : null;

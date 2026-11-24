@@ -2,7 +2,7 @@
  * The sim-event → FX bus (P11): which effects a tick's events and state call for, from the original's collision handlers.
  * Pure, so it's tested; `engine.ts` turns recipes into particles.
  */
-import { ATMOSPHERE_RADIUS, BIG_RADIUS, EARTH_POS, SMALL_RADIUS, distance, normalize, sub, type AsteroidSize, type GameState, type SimEvent, type Vec3 } from '@asteroid/sim';
+import { ATMOSPHERE_RADIUS, BIG_RADIUS, EARTH_POS, radiusOf, distance, normalize, sub, type AsteroidSize, type GameState, type SimEvent, type Vec3 } from '@asteroid/sim';
 
 export type Recipe =
   /** `new Explosion(pos, camera, size, normal)`: flashes and flames now; P12 adds the shockwave on `normal`, smoke and sparks. */
@@ -20,6 +20,7 @@ export type Recipe =
 /** Explosion sizes from the original: big asteroid 3, small 0.25, ship 3, rocket on Earth/mothership 1, photon 0.25. */
 export const EXPLOSION_SIZE = {
   big: 3,
+  boss: 7,
   small: 0.25,
   ship: 3,
   rocket: 1,
@@ -40,10 +41,10 @@ const asteroidExplosion = (size: AsteroidSize, pos: Vec3): Recipe => ({
  * Where a photon chip shows: on the big asteroid's surface, on the side the photon came in (its spent position comes just before
  * the hit event). The original put the sparks at the asteroid's centre, where its depth test hid them.
  */
-export function chipPoint(centre: Vec3, shotAt: Vec3 | null): Vec3 {
+export function chipPoint(centre: Vec3, shotAt: Vec3 | null, radius = BIG_RADIUS): Vec3 {
   if (!shotAt) return centre;
   const d = normalize(sub(shotAt, centre));
-  const r = BIG_RADIUS * 1.02;
+  const r = radius * 1.02;
   return [centre[0] + d[0] * r, centre[1] + d[1] * r, centre[2] + d[2] * r];
 }
 
@@ -52,7 +53,7 @@ export function recipesFor(events: readonly SimEvent[], state: GameState): Recip
   let shotAt: Vec3 | null = null;
   for (const e of events) {
     if (e.type === 'asteroidDestroyed' || e.type === 'earthHit') out.push(asteroidExplosion(e.size, e.pos));
-    else if (e.type === 'asteroidHit') out.push({ kind: 'impact', pos: chipPoint(e.pos, shotAt) });
+    else if (e.type === 'asteroidHit') out.push({ kind: 'impact', pos: chipPoint(e.pos, shotAt, radiusOf(state.asteroids.find((a) => a.id === e.id)?.size ?? 'big')) });
     else if (e.type === 'projectileSpent' && e.on === 'asteroid') shotAt = e.pos;
     else if (e.type === 'projectileSpent') out.push({ kind: 'explosion', pos: e.pos, size: EXPLOSION_SIZE[e.kind], normal: null });
     else if (e.type === 'hullBurning') out.push({ kind: 'embers', pos: state.ship.pos });
@@ -63,5 +64,5 @@ export function recipesFor(events: readonly SimEvent[], state: GameState): Recip
 
 /** Asteroids inside the atmosphere this tick: they trail smoke (the original's ATMOSPHERE collision, every tick). */
 export function inAtmosphere(state: GameState): GameState['asteroids'] {
-  return state.asteroids.filter((a) => distance(a.pos, EARTH_POS) <= ATMOSPHERE_RADIUS + (a.size === 'big' ? BIG_RADIUS : SMALL_RADIUS));
+  return state.asteroids.filter((a) => distance(a.pos, EARTH_POS) <= ATMOSPHERE_RADIUS + radiusOf(a.size));
 }

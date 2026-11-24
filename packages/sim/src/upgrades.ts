@@ -75,7 +75,7 @@ export function creditsFor(events: readonly SimEvent[]): number {
     if (e.type === 'asteroidDestroyed' || e.type === 'objectiveMet') points += e.points;
     else if (e.type === 'waveCleared') points += e.clearBonus + e.earthBonus;
   }
-  const bonus = events.reduce((n, e) => n + (e.type === 'missionComplete' ? e.credits : 0), 0);
+  const bonus = events.reduce((n, e) => n + (e.type === 'missionComplete' || e.type === 'bossDefeated' ? e.credits : 0), 0);
   return Math.floor(points / POINTS_PER_CREDIT) + bonus;
 }
 
