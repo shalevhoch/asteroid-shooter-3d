@@ -1,6 +1,7 @@
 /** Game state, input and events: the sim's whole public data model (ADR 0001). */
 import { EARTH_MAX_HEALTH, SHIP_START } from './constants.js';
-import { CRAFTS, type CraftId } from './crafts.js';
+import type { CraftId } from './crafts.js';
+import { parseUpgrades, upgradedCraft, type Upgrades } from './upgrades.js';
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
 import type { Vec3 } from './vec3.js';
@@ -85,6 +86,12 @@ export interface GameState {
   /** Ticks left on each timed perk; 0 = off. */
   readonly perks: ActivePerks;
   /** Set on the tick the run ends; `step` is then a no-op. */
+  /** Credits (P29): the wallet carried into the run plus what it has earned. */
+  readonly credits: number;
+  /** The ship's shop upgrades (P29). */
+  readonly upgrades: Upgrades;
+  /** False for runs that don't earn credits (the daily challenge, P33). */
+  readonly earnsCredits: boolean;
   readonly ended: RunEndReason | null;
 }
 
@@ -161,8 +168,18 @@ export interface StepResult {
 /** Start facing +Z, out of the hangar bay's open end, with up +Y: local −Z turned 180° about +Y. */
 export const START_ROT: Quat = fromAxisAngle([0, 1, 0], Math.PI);
 
-export function initialState(seed: number, difficulty: Difficulty = 'normal', craft: CraftId = 'fighter'): GameState {
-  const c = CRAFTS[craft];
+/** What a run starts with beyond seed, difficulty and craft (P29). */
+export interface RunOptions {
+  readonly upgrades?: Upgrades;
+  readonly credits?: number;
+  readonly earnsCredits?: boolean;
+}
+
+const startCredits = (c: number | undefined): number => (c !== undefined && Number.isFinite(c) ? Math.max(0, Math.floor(c)) : 0);
+
+export function initialState(seed: number, difficulty: Difficulty = 'normal', craft: CraftId = 'fighter', options: RunOptions = {}): GameState {
+  const upgrades = parseUpgrades(options.upgrades);
+  const c = upgradedCraft({ craft, upgrades });
   return {
     tick: 0,
     rng: seedRng(seed),
@@ -181,6 +198,9 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal', cr
     nextPickupId: 1,
     perkRng: perkSeed(seed),
     perks: NO_PERKS,
+    credits: startCredits(options.credits),
+    upgrades,
+    earnsCredits: options.earnsCredits ?? true,
     ended: null,
   };
 }

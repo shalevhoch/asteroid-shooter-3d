@@ -6,6 +6,7 @@ import { destroyAsteroid } from './asteroids.js';
 import { SHIP_RADIUS } from './constants.js';
 import { nextFloat, nextRange, type RngState } from './rng.js';
 import type { GameState, SimEvent } from './state.js';
+import { perkTicks } from './upgrades.js';
 import { addScaled, distance, normalize, sub, type Vec3 } from './vec3.js';
 
 export const PERK_KINDS = ['shield', 'rapidFire', 'spreadShot', 'magnet', 'smartBomb'] as const;
@@ -116,7 +117,7 @@ function smartBomb(s: GameState, events: SimEvent[]): GameState {
 
 function grant(s: GameState, kind: PerkKind, events: SimEvent[]): GameState {
   if (kind === 'smartBomb') return smartBomb(s, events);
-  return { ...s, perks: { ...s.perks, [kind]: PERK_DURATION[kind] } };
+  return { ...s, perks: { ...s.perks, [kind]: perkTicks(PERK_DURATION[kind], s.upgrades) } };
 }
 
 /** Counts active perks down by a tick, announcing the ones that run out. */

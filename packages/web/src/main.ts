@@ -3,7 +3,7 @@
  * requestAnimationFrame drives `step`; rendering interpolates between the last two ticks.
  */
 import * as THREE from 'three';
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, type GameState, type SimEvent } from '@asteroid/sim';
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, NEW_RUN, trackAchievements, type AchievementId, type AchievementRun, CAMPAIGN_WAVES, CRAFTS, CRAFT_IDS, DIFFICULTIES, LOCAL_FORWARD, PRESETS, crosshairTarget, rotate, TICK_MS, THROTTLE_MAX, EARTH_POS, EARTH_RADIUS, initialState, step, ticksFor, buyUpgrade, shopOpen, type UpgradeId, type GameState, type SimEvent } from '@asteroid/sim';
 import { ACHIEVEMENTS_KEY, parseUnlocks, recordUnlocks, unlockedCount } from './achievementStore.js';
 import { assetUrl } from './assetUrl.js';
 import { AsteroidView } from './asteroidView.js';
@@ -23,6 +23,7 @@ import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
+import { WALLET_KEY, parseWallet, runOptions, shopPanel, upgradeForKey, withRun } from './shop.js';
 import { nozzleLook, nozzleWorld, rampThrust } from './thrusters.js';
 import { PERK_LOOK, perkBanner, pickupLook } from './perksUi.js';
 import { LoadProgress } from './loading.js';
@@ -88,6 +89,13 @@ const saveSettings = () => {
 let top: ScoreEntry[] = parseTop(storage.get(TOP_KEY));
 /** The best score: the stored best, or the top-10's first run if that is higher. */
 let best = Math.max(parseBest(storage.get(BEST_KEY)), top[0]?.score ?? 0);
+let wallet = parseWallet(storage.get(WALLET_KEY));
+/** Credits at the start of this run, for the game-over summary. */
+let runStartCredits = wallet.credits;
+const saveWallet = () => {
+  wallet = withRun(wallet, curr);
+  storage.set(WALLET_KEY, JSON.stringify(wallet));
+};
 let unlocks = parseUnlocks(storage.get(ACHIEVEMENTS_KEY));
 let achRun: AchievementRun = NEW_RUN;
 /** Achievements first unlocked during this run, for the game-over card. */
@@ -305,10 +313,10 @@ function renderOverlay() {
   if (phase === 'title') {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.</p>
-      <p class="dim">Best score: ${String(best)}</p>${difficultyPicker()}${craftPicker()}
+      <p class="dim">Best score: ${String(best)} · ◆ ${String(wallet.credits)} credits</p>${difficultyPicker()}${craftPicker()}
       <button id="go">${actionPrompt(cardInput(), 'start')}</button><p class="dim">${touchMode ? "Ⅱ pauses · landscape works best" : "Enter also starts · Esc or P pauses · H shows the controls · M mutes"}</p>${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
-    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${actionPrompt(cardInput(), 'resume')}</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${settingsPanel(true)}${PORTAL_LINK}</div>`;
+    overlay.innerHTML = `<div class="card"><h1>Paused</h1><button id="go">${actionPrompt(cardInput(), 'resume')}</button><p class="dim">Score ${String(curr.score)} · Enter or P also resumes</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
     overlay.innerHTML = `<div class="card"><h1>🌍 Earth is safe!</h1><p>You cleared all ${String(CAMPAIGN_WAVES)} waves on ${DIFFICULTY_LABELS[curr.difficulty].name}.</p>
       <div class="final">${String(curr.score)}</div>
@@ -346,6 +354,13 @@ function renderOverlay() {
       renderHelp();
     });
   }
+  for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-buy]')) {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = (['damage', 'fireRate', 'hull', 'shield', 'speed', 'perkTime'] as const).find((x) => x === b.dataset['buy']);
+      if (id) buy(id);
+    });
+  }
   for (const b of overlay.querySelectorAll<HTMLButtonElement>('[data-craft]')) {
     b.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -379,6 +394,7 @@ function summaryTable(): string {
     row(`Wave clears (${String(stats.wavesCleared)})`, pts(stats.clearPoints)),
     row('Earth bonus', pts(stats.earthPoints)),
     `<tr class="total"><td>Total</td><td>${String(curr.score)}</td></tr>`,
+    ...(curr.earnsCredits ? [row('Credits earned', `◆ ${String(Math.max(0, curr.credits - runStartCredits))} (wallet ${String(curr.credits)})`)] : []),
     row('Difficulty', DIFFICULTY_LABELS[curr.difficulty].name),
     row('Time', formatTime(curr.tick)),
     row('Photon accuracy', `${String(accuracy(stats))}%`),
@@ -406,13 +422,15 @@ function dispatch(action: FlowAction) {
     if (settings.layout === 'modern' && !touchMode) Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => undefined);
   }
   if (phase !== 'playing' && document.pointerLockElement) document.exitPointerLock();
+  if (phase === 'paused') saveWallet();
   if (phase !== 'playing') bannerEl.classList.remove('on');
   renderOverlay();
   renderHelp();
 }
 
 function newRun() {
-  prev = curr = initialState(Date.now() >>> 0, settings.difficulty, settings.craft);
+  prev = curr = initialState(Date.now() >>> 0, settings.difficulty, settings.craft, runOptions(wallet, settings.craft));
+  runStartCredits = wallet.credits;
   void world.setCraft(settings.craft);
   stats = EMPTY_STATS;
   newBest = false;
@@ -438,8 +456,22 @@ function advance() {
   }
 }
 
+/** Buys an upgrade at the station shop (P29): only while paused in a wave's lead-in. */
+function buy(id: UpgradeId) {
+  if (phase !== 'paused') return;
+  const next = buyUpgrade(curr, id);
+  if (next === curr) return;
+  prev = curr = next;
+  saveWallet();
+  audio.play([{ sound: 'chime', volume: 0.5 }]);
+  renderOverlay();
+}
+
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Enter' && phase !== 'playing') advance();
+  if (e.code === 'KeyB' && curr.earnsCredits && shopOpen(curr)) dispatch(phase === 'paused' ? 'resume' : 'pause');
+  const up = phase === 'paused' ? upgradeForKey(e.code) : null;
+  if (up) buy(up);
   if (e.code === 'KeyP') dispatch(phase === 'paused' ? 'resume' : 'pause');
   // Esc pauses in the classic layout too, where there is no pointer lock to leave.
   if (e.code === 'Escape' && phase === 'playing') dispatch('pause');
@@ -461,6 +493,7 @@ if (new URLSearchParams(location.search).has('debug')) {
       prev = curr = s;
     },
     asteroidPhase: () => phase,
+    asteroidWallet: () => wallet,
     asteroidQuality: () => ({ ...quality.current, pixelRatio: renderer.getPixelRatio(), particles: fx.particles.length }),
     asteroidStart: () => {
       advance();
@@ -629,7 +662,9 @@ function finishWon() {
 function onEvents(events: readonly SimEvent[], nowMs: number) {
   stats = addStats(stats, events);
   const banner = bannerFor(events) ?? perkBanner(events);
-  if (banner) showBanner(banner);
+  const shopHint = curr.earnsCredits && events.some((e) => e.type === 'waveCleared') && !curr.ended;
+  if (banner) showBanner(shopHint ? { ...banner, subtitle: `${banner.subtitle} · B opens the station shop` } : banner);
+  if (events.some((e) => e.type === 'waveCleared' || e.type === 'runEnded')) saveWallet();
   if (events.some((e) => e.type === 'campaignWon')) dispatch('win');
   audio.play(cuesFor(events));
   const e = camera.matrixWorld.elements;

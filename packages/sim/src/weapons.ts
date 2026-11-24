@@ -7,7 +7,6 @@ import {
   MUZZLE_DOWN,
   MUZZLE_FORWARD,
   MUZZLE_SIDE,
-  PHOTON_COOLDOWN,
   PHOTON_LIFE,
   PHOTON_SPEED,
   ROCKET_LIFE,
@@ -18,7 +17,8 @@ import {
   ROCKET_TERMINAL_RANGE,
 } from './constants.js';
 import { MOTHERSHIP_WORLD_BOXES } from './mothership.js';
-import { RAPID_FIRE_COOLDOWN, SPREAD_ANGLE } from './perks.js';
+import { SPREAD_ANGLE } from './perks.js';
+import { photonCooldown, photonDamage } from './upgrades.js';
 import { fromAxisAngle, multiply, rotate } from './quat.js';
 import { LOCAL_FORWARD, LOCAL_RIGHT, LOCAL_UP, type AsteroidState, type GameState, type Input, type ProjectileState, type SimEvent } from './state.js';
 import { addScaled, distance, dot, normalize, sub, type Vec3 } from './vec3.js';
@@ -68,7 +68,7 @@ export function fire(state: GameState, input: Input, events: SimEvent[], lockCon
       events.push({ type: 'photonFired', id: nextProjectileId, pos });
       nextProjectileId++;
     }
-    cooldown = state.perks.rapidFire > 0 ? RAPID_FIRE_COOLDOWN : PHOTON_COOLDOWN;
+    cooldown = photonCooldown(state.upgrades, state.perks.rapidFire > 0);
     ship = { ...ship, photonSide: ship.photonSide === 1 ? -1 : 1 };
   }
   ship = { ...ship, photonCooldown: cooldown };
@@ -126,8 +126,9 @@ export function moveProjectiles(state: GameState, events: SimEvent[]): GameState
 }
 
 function damage(s: GameState, a: AsteroidState, p: ProjectileState, events: SimEvent[]): GameState {
-  if (p.kind === 'rocket' || a.hp <= 1) return destroyAsteroid(s, a.id, p.kind, events);
-  const hp = a.hp - 1;
+  const dmg = photonDamage(s.upgrades);
+  if (p.kind === 'rocket' || a.hp <= dmg) return destroyAsteroid(s, a.id, p.kind, events);
+  const hp = a.hp - dmg;
   events.push({ type: 'asteroidHit', id: a.id, hp, pos: a.pos });
   return { ...s, asteroids: s.asteroids.map((x) => (x.id === a.id ? { ...x, hp } : x)) };
 }
