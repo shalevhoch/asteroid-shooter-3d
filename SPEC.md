@@ -190,6 +190,10 @@ The sim emits **events** for anything the renderer, audio or HUD react to (`turb
   - **classic**: the original's eye point, just behind the ship with the ship low in view.
 - **FOV**: 50°, easing toward 80° while the turbo is moving the ship.
 - The renderer draws the state interpolated between the last two ticks. It never feeds rendering back into the sim.
+- **Keyboard rockets** (P27): V fires a homing rocket in both layouts, alongside right mouse (modern) and R (classic), so
+  every flight action has a keyboard key and the game plays 100 % from the keyboard (arrows aim in modern). Touch and
+  gamepad already had rocket buttons. Follow-ups in this packet: collecting a perk plays a short synthesised chime,
+  and pickups show on the radar as small squares in the perk's colour.
 - **Touch controls** (P15), for tablets and phones in landscape:
   - Shown during play when the primary pointer is coarse and the device has touch points. `?touch` forces them
     on and `?touch=0` off. The keyboard and mouse keep working alongside.

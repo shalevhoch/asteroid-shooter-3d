@@ -67,6 +67,8 @@ export const KEYMAPS: Readonly<Record<Layout, Readonly<Record<string, Action>>>>
     Space: 'firePhoton',
     [MOUSE_LEFT]: 'firePhoton',
     [MOUSE_RIGHT]: 'fireRocket',
+    // P27: a rocket key, so the modern layout plays fully from the keyboard (arrows aim).
+    KeyV: 'fireRocket',
   },
   // The original's keys (MultiKeysAdapter + Game.java): IJKL look, U/O roll, W turbo, S back, A/D/E/Q strafe, 0/9 throttle.
   classic: {
@@ -87,6 +89,7 @@ export const KEYMAPS: Readonly<Record<Layout, Readonly<Record<string, Action>>>>
     Digit9: 'throttleDown',
     Space: 'firePhoton',
     KeyR: 'fireRocket',
+    KeyV: 'fireRocket',
     KeyT: 'toggleLayout',
   },
 };

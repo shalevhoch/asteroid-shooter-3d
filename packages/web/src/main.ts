@@ -23,7 +23,7 @@ import { addStation, buildWorld } from './scene.js';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, changeSetting, cycle, parseSettings, settingRows, type SettingId } from './settings.js';
 import { ThreatView } from './threatView.js';
 import { actionPrompt, inputKind, withStart } from './prompts.js';
-import { perkBanner, pickupLook } from './perksUi.js';
+import { PERK_LOOK, perkBanner, pickupLook } from './perksUi.js';
 import { LoadProgress } from './loading.js';
 import { QualityGovernor, initialQuality, urlQuality, type QualityLevel } from './quality.js';
 import { GamepadInput, mergePad, type PadPress } from './gamepad.js';
@@ -559,7 +559,7 @@ renderer.setAnimationLoop((nowMs: number) => {
     const rocketTargets = new Set<number>();
     for (const p of curr.projectiles) if (p.kind === 'rocket' && p.target !== null) rocketTargets.add(p.target);
     const aimTarget = curr.ship.rockets > 0 ? crosshairTarget(curr.ship.pos, rotate(curr.ship.rot, LOCAL_FORWARD), curr.asteroids, PRESETS[curr.difficulty].rocketLockCone) : null;
-    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets });
+    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: cam.eye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, pickups: curr.pickups.map((p) => ({ pos: p.pos, rgb: PERK_LOOK[p.kind].rgb })) });
   }
   hud.show(phase !== 'title');
   touchUi?.show(phase === 'playing');
