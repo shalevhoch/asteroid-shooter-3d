@@ -5,7 +5,7 @@
 import { destroyAsteroid } from './asteroids.js';
 import { BOSS_BOMB_DAMAGE, SHIP_RADIUS } from './constants.js';
 import { nextFloat, nextRange, type RngState } from './rng.js';
-import type { GameState, SimEvent } from './state.js';
+import { shipsOf, type GameState, type SimEvent } from './state.js';
 import { perkTicks } from './upgrades.js';
 import { addScaled, distance, normalize, sub, type Vec3 } from './vec3.js';
 
@@ -116,16 +116,26 @@ function movePickup(p: PickupState, ship: Vec3, magnet: boolean): PickupState {
 }
 
 /** Smart bomb: destroys every asteroid within range, nearest-first by id order. */
-function smartBomb(s: GameState, events: SimEvent[]): GameState {
-  const hit = s.asteroids.filter((a) => distance(a.pos, s.ship.pos) <= SMART_BOMB_RANGE).map((a) => a.id);
+function nearestShip(s: GameState, at: Vec3): Vec3 {
+  let best = s.ship.pos;
+  let bestD = distance(at, best);
+  for (const ship of shipsOf(s)) {
+    const d = distance(at, ship.pos);
+    if (d < bestD) [best, bestD] = [ship.pos, d];
+  }
+  return best;
+}
+
+function smartBomb(s: GameState, events: SimEvent[], at: Vec3): GameState {
+  const hit = s.asteroids.filter((a) => distance(a.pos, at) <= SMART_BOMB_RANGE).map((a) => a.id);
   let out = s;
   for (const id of hit) out = bombHit(out, id, events);
-  events.push({ type: 'smartBomb', pos: s.ship.pos, count: hit.length });
+  events.push({ type: 'smartBomb', pos: at, count: hit.length });
   return out;
 }
 
-function grant(s: GameState, kind: PerkKind, events: SimEvent[]): GameState {
-  if (kind === 'smartBomb') return smartBomb(s, events);
+function grant(s: GameState, kind: PerkKind, events: SimEvent[], at: Vec3): GameState {
+  if (kind === 'smartBomb') return smartBomb(s, events, at);
   return { ...s, perks: { ...s.perks, [kind]: perkTicks(PERK_DURATION[kind], s.upgrades) } };
 }
 
@@ -147,15 +157,17 @@ export function updatePerks(state: GameState, events: SimEvent[], hullMax: numbe
   const kept: PickupState[] = [];
   const collected: PickupState[] = [];
   for (const p0 of s.pickups) {
-    const p = movePickup(p0, s.ship.pos, magnet);
-    if (distance(p.pos, s.ship.pos) <= PICKUP_RADIUS) collected.push(p);
+    const toward = nearestShip(s, p0.pos);
+    const p = movePickup(p0, toward, magnet);
+    const taken = shipsOf(s).some((ship) => distance(p.pos, ship.pos) <= PICKUP_RADIUS);
+    if (taken) collected.push(p);
     else if (p.age >= PICKUP_LIFE) events.push({ type: 'pickupExpired', id: p.id });
     else kept.push(p);
   }
   s = { ...s, pickups: kept };
   for (const p of collected) {
     events.push({ type: 'perkCollected', id: p.id, kind: p.kind, pos: p.pos });
-    s = grant(s, p.kind, events);
+    s = grant(s, p.kind, events, nearestShip(s, p.pos));
   }
   return rollDrops(s, events, hullMax);
 }

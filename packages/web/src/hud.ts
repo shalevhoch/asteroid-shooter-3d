@@ -54,29 +54,32 @@ function missileLine(s: GameState): string {
   return s.missileLock ? `LOCKING ${String(s.missileLock.ids.length)}/${String(n)}` : `VOLLEY ×${String(n)}`;
 }
 
-export function hudModel(s: GameState, best: number): HudModel {
+export function hudModel(s: GameState, best: number, seat: 0 | 1 = 0): HudModel {
   const warnings: string[] = [];
   const { hullMax, fuelMax, rocketMax } = upgradedCraft(s);
+  const ship = seat === 1 && s.ship2 ? s.ship2 : s.ship;
+  const lock = seat === 1 ? s.missileLock2 : s.missileLock;
   if (s.earthHealth <= EARTH_MAX_HEALTH * 0.3) warnings.push('EARTH CRITICAL');
-  if (s.ship.hull < hullMax) warnings.push(s.ship.hull <= hullMax * 0.3 ? 'HULL CRITICAL' : 'HULL DAMAGED');
-  if (s.ship.fuel === 0) warnings.push('NO FUEL');
-  if (s.ship.rockets === 0) warnings.push('NO ROCKETS: RELOAD AT THE MOTHERSHIP OR STATION');
+  if (ship.hull <= 0) warnings.push('SHIP DESTROYED');
+  else if (ship.hull < hullMax) warnings.push(ship.hull <= hullMax * 0.3 ? 'HULL CRITICAL' : 'HULL DAMAGED');
+  if (ship.fuel === 0) warnings.push('NO FUEL');
+  if (ship.rockets === 0) warnings.push('NO ROCKETS: RELOAD AT THE MOTHERSHIP OR STATION');
   return {
     score: s.score,
     best: Math.max(best, s.score),
     earth: frac(s.earthHealth, EARTH_MAX_HEALTH),
-    hull: frac(s.ship.hull, hullMax),
-    fuel: frac(s.ship.fuel, fuelMax),
-    rockets: s.ship.rockets,
+    hull: frac(ship.hull, hullMax),
+    fuel: frac(ship.fuel, fuelMax),
+    rockets: ship.rockets,
     rocketMax,
-    speed: s.ship.turbo ? THROTTLE_MAX + 1 : s.ship.throttle,
+    speed: ship.turbo ? THROTTLE_MAX + 1 : ship.throttle,
     speedMax: THROTTLE_MAX + 1,
-    turbo: s.ship.turbo,
+    turbo: ship.turbo,
     wave: waveLine(s),
     impact: impactOf(s),
     combo: comboLive(s.combo, s.tick) && s.combo.count >= 2 ? `COMBO ${String(s.combo.count)} · next ×${String(comboMultiplier(s.combo.count + 1))}` : '',
     perks: activePerkLine(s.perks),
-    missiles: missileLine(s),
+    missiles: missileLine({ ...s, missileLock: lock ?? null }),
     boss: bossHealth(s),
     credits: s.earnsCredits ? `◆ ${String(s.credits)}${shopOpen(s) ? ' · B: STATION SHOP' : ''}` : '',
     warnings,

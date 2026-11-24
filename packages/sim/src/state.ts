@@ -1,10 +1,10 @@
 /** Game state, input and events: the sim's whole public data model (ADR 0001). */
-import { EARTH_MAX_HEALTH, SHIP_START } from './constants.js';
+import { EARTH_MAX_HEALTH, SHIP_START, SHIP2_OFFSET } from './constants.js';
 import type { CraftId } from './crafts.js';
 import { parseUpgrades, upgradedCraft, type Upgrades } from './upgrades.js';
 import { fromAxisAngle, type Quat } from './quat.js';
 import { seedRng, type RngState } from './rng.js';
-import type { Vec3 } from './vec3.js';
+import { add, type Vec3 } from './vec3.js';
 import { NO_COMBO, type ComboState } from './scoring.js';
 import { NO_PERKS, perkSeed, type ActivePerks, type PerkKind, type PickupState, type TimedPerk } from './perks.js';
 import { INITIAL_WAVE, type Difficulty, type Objective, type WaveState } from './waves.js';
@@ -70,6 +70,8 @@ export interface GameState {
   readonly tick: number;
   readonly rng: RngState;
   readonly ship: ShipState;
+  /** Player 2's ship in a two-player run (P40). Omitted in single-player, so 1P state stays unchanged. */
+  readonly ship2?: ShipState;
   /** Sorted by id. */
   readonly asteroids: readonly AsteroidState[];
   readonly nextId: number;
@@ -100,6 +102,8 @@ export interface GameState {
   readonly earnsCredits: boolean;
   /** Missile locks being gathered while the rocket button is held (P32), or null when not locking. */
   readonly missileLock: MissileLock | null;
+  /** Player 2's missile locks (P40). Omitted in single-player. */
+  readonly missileLock2?: MissileLock | null;
   /** The run's seed, for its seeded wave missions (P31). */
   readonly missionSeed: number;
   readonly ended: RunEndReason | null;
@@ -191,6 +195,8 @@ export interface RunOptions {
   readonly upgrades?: Upgrades;
   readonly credits?: number;
   readonly earnsCredits?: boolean;
+  /** Two ships, shared Earth (P40). */
+  readonly coop?: boolean;
 }
 
 const startCredits = (c: number | undefined): number => (c !== undefined && Number.isFinite(c) ? Math.max(0, Math.floor(c)) : 0);
@@ -222,5 +228,26 @@ export function initialState(seed: number, difficulty: Difficulty = 'normal', cr
     missionSeed: seed >>> 0,
     missileLock: null,
     ended: null,
+    ...(options.coop === true
+      ? {
+          ship2: {
+            pos: add(SHIP_START, SHIP2_OFFSET),
+            rot: START_ROT,
+            throttle: 0,
+            fuel: c.fuelMax,
+            hull: c.hullMax,
+            turbo: false,
+            rockets: c.rocketMax,
+            photonCooldown: 0,
+            photonSide: 1 as const,
+          },
+          missileLock2: null,
+        }
+      : {}),
   };
+}
+
+/** The living ships in id order (P1, then P2 in co-op). */
+export function shipsOf(s: Pick<GameState, 'ship' | 'ship2'>): readonly ShipState[] {
+  return s.ship2 ? [s.ship, s.ship2] : [s.ship];
 }

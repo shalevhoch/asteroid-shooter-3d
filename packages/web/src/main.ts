@@ -40,6 +40,7 @@ import { mergeTouch, wantsTouch } from './touch.js';
 import { TouchControls } from './touchControls.js';
 import { DIFFICULTY_LABELS, bannerFor, type Banner } from './waveUi.js';
 import { AIM_DISTANCE, CAMERA_MODES, FOV_BASE, aimPoint, cameraPose, interpolate, nextFov } from './view.js';
+import { canStartCoop, splitViewports } from './coop.js';
 import { FILTER_LABELS, FOCUS_LABELS, applyPhotoInput, cycleFilter, cycleFocus, enterPhoto, filterCss, focusOn, photoPose, screenshotName, snapshotCanvas, type PhotoCam, type PhotoFilter } from './photo.js';
 import { PAINT_IDS, PAINTS, PAINT_KEY, buyPaint, chosenPaint, paintUnlocked, parsePaint, selectPaint } from './paint.js';
 
@@ -217,18 +218,22 @@ const PAD_HELP = [
   ['Start', 'start · pause · resume'],
 ];
 let padShown = false;
+let padCountShown = -1;
 const audio = new AudioBank(base);
 audio.muted = settings.muted;
 audio.volume = settings.volume;
 const hud = new Hud(el('hud'));
+const hud2 = new Hud(el('hud2'));
 /** Applies the language: the page's lang and direction, and the HUD's labels. */
 function applyLang() {
   document.documentElement.lang = settings.lang;
   document.documentElement.dir = isRtl(settings.lang) ? 'rtl' : 'ltr';
   hud.setLang(settings.lang);
+  hud2.setLang(settings.lang);
 }
 applyLang();
 const threat = new ThreatView(el('threat') as HTMLCanvasElement);
+const threat2 = new ThreatView(el('threat2') as HTMLCanvasElement);
 const viewProj = new THREE.Matrix4();
 
 const TOUCH_HELP = [
@@ -299,7 +304,9 @@ void addStation(world.scene, base).then((r) => {
   stationRing = r;
 }).catch(() => undefined);
 const paintShip = (craft = settings.craft) => {
-  applyPaint(world.ship, PAINTS[chosenPaint(paints, craft)].tint);
+  const tint = PAINTS[chosenPaint(paints, craft)].tint;
+  applyPaint(world.ship, tint);
+  applyPaint(world.ship2, tint);
 };
 const showCraft = (id: typeof settings.craft) => {
   void world.setCraft(id).then(() => {
@@ -342,6 +349,12 @@ fx.particleCap = quality.current.particleCap;
 let fxAccMs = 0;
 
 let phase: Phase = 'title';
+/** Two-player split screen (P40): set when starting with the 2-player button. */
+let coop = false;
+let p2Rocket = 0;
+let p2Throttle = 0;
+let thrust2 = 0;
+let coopUi = false;
 /** Photo mode (P38): a free camera while the run stays paused. */
 let photo: PhotoCam | null = null;
 let photoFilter: PhotoFilter = 'none';
@@ -442,7 +455,7 @@ function renderOverlay() {
     overlay.innerHTML = `<div class="card"><h1>☄️ Asteroid Shooter 3D</h1>
       <p>${T("Asteroids are falling toward Earth. Shoot them down. Photons chip, rockets home in. Reload at the mothership's hangar.")}</p>
       <p class="dim">${T('Best score: {best} · ◆ {credits} credits', { best, credits: wallet.credits })}</p><div class="row lang">${langButtons()}</div>${difficultyPicker()}${craftPicker()}${paintPicker()}
-      <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button><br><button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${replayButtons()}${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
+      <button id="go">${T(actionPrompt(cardInput(), 'start'))}</button>${canStartCoop(gamepad.count) ? `<br><button id="coop" class="daily">${T('🎮 2 players')}</button><p class="dim">${T('Two gamepads · shared Earth · split screen')}</p>` : '<br>'}<button id="daily" class="daily">${T('📅 Daily challenge · {date}', { date: today() })}${todaysBest() > 0 ? T(' · best {best}', { best: todaysBest() }) : ''}</button><p class="dim">${T('Same asteroids for everyone today · Normal · Fighter · no upgrades')}</p><p class="dim">${T(touchMode ? 'Ⅱ pauses · landscape works best' : 'Enter also starts · Esc or P pauses · H shows the controls · M mutes')}</p>${replayButtons()}${tutorialDone ? `<button id="tutorial" class="daily">${T('🎓 Replay the tutorial')}</button>` : ''}${settingsPanel(false)}${achievementsPanel()}${PORTAL_LINK}</div>`;
   } else if (phase === 'paused') {
     overlay.innerHTML = `<div class="card"><h1>${T('Paused')}</h1><button id="go">${T(actionPrompt(cardInput(), 'resume'))}</button><br><button id="photo-open" class="daily">${T('📷 Photo mode (F)')}</button><p class="dim">${T('Score {score} · Enter or P also resumes', { score: curr.score })}</p>${shopOpen(curr) && curr.earnsCredits ? shopPanel(curr, settings.lang) : ''}${settingsPanel(true)}${PORTAL_LINK}</div>`;
   } else if (phase === 'won') {
@@ -478,6 +491,7 @@ function renderOverlay() {
     });
   };
   on('photo-open', enterPhotoMode);
+  on('coop', startCoop);
   on('watch', () => {
     if (lastReplay) watchReplay(lastReplay);
   });
@@ -695,11 +709,21 @@ function dispatch(action: FlowAction) {
   renderHelp();
 }
 
+function startCoop() {
+  if (!canStartCoop(gamepad.count)) return;
+  dailyMode = false;
+  coop = true;
+  newRun();
+  dispatch('start');
+}
+
 function newRun() {
   const seed = dailyMode ? dailySeed(today()) : Date.now() >>> 0;
-  const [difficulty, craft, options] = dailyMode ? [DAILY_DIFFICULTY, DAILY_CRAFT, DAILY_OPTIONS] : [settings.difficulty, settings.craft, runOptions(wallet, settings.craft)];
+  const baseOpts = dailyMode ? DAILY_OPTIONS : runOptions(wallet, settings.craft);
+  const options = !dailyMode && coop ? { ...baseOpts, coop: true } : baseOpts;
+  const [difficulty, craft] = dailyMode ? [DAILY_DIFFICULTY, DAILY_CRAFT] : [settings.difficulty, settings.craft];
   watching = null;
-  recorder = new Recorder(seed, difficulty, craft, options);
+  recorder = coop ? null : new Recorder(seed, difficulty, craft, options);
   prev = curr = initialState(seed, difficulty, craft, options);
   resetRunView();
 }
@@ -720,6 +744,10 @@ function resetRunView() {
   runStartCredits = wallet.credits;
   tutorialStep = !tutorialDone && !dailyMode && !watching ? 0 : null;
   showCraft(curr.craft);
+  world.ship2.visible = Boolean(curr.ship2);
+  if (curr.ship2) void world.setCraft2(curr.craft).then(() => {
+    paintShip(curr.craft);
+  });
   stats = EMPTY_STATS;
   newBest = false;
   rank = null;
@@ -735,6 +763,7 @@ function resetRunView() {
 function advance() {
   if (phase === 'title') {
     dailyMode = false;
+    coop = false;
     newRun();
     dispatch('start');
   } else if (phase === 'paused') dispatch('resume');
@@ -909,11 +938,11 @@ document.body.classList.remove('loading');
 const v = new THREE.Vector3();
 /** Hyperdrive thrusters (P28): nozzle glow always, a hot plume while the turbo burns. */
 let thrust = 0;
-function drawThrusters(pose: { pos: GameState['ship']['pos']; rot: GameState['ship']['rot'] }, frameMs: number) {
-  thrust = rampThrust(thrust, curr.ship.turbo && phase === 'playing', frameMs / TICK_MS);
-  if (!world.ship.visible || settings.camera === 'classic') return;
+function drawThrusters(pose: { pos: GameState['ship']['pos']; rot: GameState['ship']['rot'] }, frameMs: number, ship = curr.ship, mesh = world.ship, level = thrust): number {
+  const next = rampThrust(level, ship.turbo && phase === 'playing', frameMs / TICK_MS);
+  if (!mesh.visible || settings.camera === 'classic') return next;
   const L = world.shipLength;
-  const look = nozzleLook(thrust, curr.ship.throttle, THROTTLE_MAX);
+  const look = nozzleLook(next, ship.throttle, THROTTLE_MAX);
   const { points, back } = nozzleWorld(curr.craft, pose.pos, pose.rot, L);
   for (const p of points) {
     batch.push(p[0], p[1], p[2], look.glow * L, 0, 0.55, 0.8, 1, look.glowAlpha, true, 'roundParticle');
@@ -923,6 +952,7 @@ function drawThrusters(pose: { pos: GameState['ship']['pos']; rot: GameState['sh
       batch.push(p[0], p[1], p[2], look.glow * L * 0.8, 0, 1, 0.9, 0.7, look.flameAlpha * 0.6, true, 'roundParticle');
     }
   }
+  return next;
 }
 
 /** Perk pickups (P26): a coloured glow with a white core, interpolated between ticks. */
@@ -959,9 +989,16 @@ renderer.setAnimationLoop((nowMs: number) => {
   }
   const frameMs = Math.min(Math.max(nowMs - lastMs, 0), 250);
   lastMs = nowMs;
-  for (const p of gamepad.poll(settings.invertY)) onPadPress(p);
-  if (gamepad.connected !== padShown) {
+  const seats = gamepad.pollEach(settings.invertY);
+  for (const p of seats[0]?.presses ?? []) onPadPress(p, 0);
+  for (const p of seats[1]?.presses ?? []) onPadPress(p, 1);
+  if (coop && phase === 'playing' && gamepad.count < 2) {
+    dispatch('pause');
+    showBanner({ title: T('Reconnect a gamepad'), subtitle: T('Two gamepads · shared Earth · split screen'), durationMs: 2500 });
+  }
+  if (gamepad.connected !== padShown || gamepad.count !== padCountShown) {
     padShown = gamepad.connected;
+    padCountShown = gamepad.count;
     renderHelp();
     if (photo) renderPhoto();
     else if (phase !== 'playing') renderOverlay();
@@ -973,7 +1010,11 @@ renderer.setAnimationLoop((nowMs: number) => {
       prev = curr;
       const base = touchUi ? mergeTouch(controls.nextInput(), touchUi.next(), curr.ship.throttle, settings) : controls.nextInput();
       const live = mergePad(base, gamepad.nextHeld(), settings.sensitivity);
+      const live2 = mergePad({ ...NO_INPUT, fireRocket: p2Rocket > 0, throttle: p2Throttle }, gamepad.nextHeld2(), settings.sensitivity);
+      if (p2Rocket > 0) p2Rocket -= 1;
+      p2Throttle = 0;
       const input = watching ? (watching.inputs[watching.at] ?? NO_INPUT) : live;
+      const input2 = watching || !curr.ship2 ? NO_INPUT : live2;
       if (watching) {
         curr = applyBuys(curr, watching.replay, watching.at);
         prev = curr;
@@ -983,19 +1024,22 @@ renderer.setAnimationLoop((nowMs: number) => {
           break;
         }
       } else recorder?.input(input);
-      const r = step(curr, input);
+      const r = step(curr, input, input2);
       if (tutorialStep !== null) tutorialStep = advanceTutorial(tutorialStep, curr, r.state, r.events);
       curr = r.state;
       onEvents(r.events, nowMs);
       fx.ambient(curr);
-      const smokeRate = damageSmoke(curr.ship.hull, upgradedCraft(curr).hullMax);
-      if (smokeRate > 0 && world.ship.visible) {
-        const n = nozzleWorld(curr.craft, curr.ship.pos, curr.ship.rot, world.shipLength);
-        fx.damageSmoke(n.points[0] ?? curr.ship.pos, n.back, world.shipLength * 0.35, smokeRate);
-      }
-      if (curr.ship.turbo && thrust > 0.35 && quality.current.name !== 'low') {
-        const n = nozzleWorld(curr.craft, curr.ship.pos, curr.ship.rot, world.shipLength);
-        fx.thrusterTrail(n.points, n.back, world.shipLength * 0.12);
+      const hullMax = upgradedCraft(curr).hullMax;
+      for (const [mesh, ship] of (curr.ship2 ? [[world.ship, curr.ship], [world.ship2, curr.ship2]] as const : [[world.ship, curr.ship]] as const)) {
+        const smokeRate = damageSmoke(ship.hull, hullMax);
+        if (smokeRate > 0 && mesh.visible) {
+          const n = nozzleWorld(curr.craft, ship.pos, ship.rot, world.shipLength);
+          fx.damageSmoke(n.points[0] ?? ship.pos, n.back, world.shipLength * 0.35, smokeRate);
+        }
+        if (ship.turbo && quality.current.name !== 'low') {
+          const n = nozzleWorld(curr.craft, ship.pos, ship.rot, world.shipLength);
+          fx.thrusterTrail(n.points, n.back, world.shipLength * 0.12);
+        }
       }
     }
     accMs = remainderMs;
@@ -1013,6 +1057,19 @@ renderer.setAnimationLoop((nowMs: number) => {
   world.ship.position.set(...pose.pos);
   world.ship.quaternion.set(...pose.rot);
   world.ship.visible = curr.ended !== 'shipDestroyed';
+  const pose2 = curr.ship2 ? interpolate(prev.ship2 ?? curr.ship2, curr.ship2, alpha) : null;
+  if (pose2 && curr.ship2) {
+    world.ship2.position.set(...pose2.pos);
+    world.ship2.quaternion.set(...pose2.rot);
+    world.ship2.visible = true;
+  } else world.ship2.visible = false;
+  const split = Boolean(curr.ship2) && phase !== 'title' && !photo;
+  if (split !== coopUi) {
+    coopUi = split;
+    document.body.classList.toggle('coop', split);
+    threat.resize();
+    threat2.resize();
+  }
   let camEye = pose.pos;
   if (photo) {
     const held = gamepad.nextHeld();
@@ -1062,31 +1119,84 @@ renderer.setAnimationLoop((nowMs: number) => {
   asteroids.update(prev.asteroids, curr.asteroids, alpha, curr.tick);
 
   camera.updateMatrixWorld();
-  if (phase === 'title' || photo) threat.clear();
-  else {
+  const paintFrame = (p = pose, extra = pose2) => {
+    batch.begin();
+    fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
+    drawPickups(alpha);
+    thrust = drawThrusters(p, frameMs, curr.ship, world.ship, thrust);
+    if (extra && curr.ship2) thrust2 = drawThrusters(extra, frameMs, curr.ship2, world.ship2, thrust2);
+    batch.end(camera);
+    shockwaves.sync(fx.shockwaves);
+  };
+  const threatFor = (view: ThreatView, p: typeof pose, ship: typeof curr.ship, lock: typeof curr.missileLock, eye: typeof camEye) => {
     viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const rocketTargets = new Set<number>();
-    for (const p of curr.projectiles) if (p.kind === 'rocket' && p.target !== null) rocketTargets.add(p.target);
-    const aimTarget = curr.ship.rockets > 0 ? crosshairTarget(curr.ship.pos, rotate(curr.ship.rot, LOCAL_FORWARD), curr.asteroids, PRESETS[curr.difficulty].rocketLockCone) : null;
-    threat.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: camEye, shipPos: pose.pos, shipRot: pose.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, missileLocks: curr.missileLock?.ids ?? [], pickups: curr.pickups.map((p) => ({ pos: p.pos, rgb: PERK_LOOK[p.kind].rgb })) });
+    for (const pr of curr.projectiles) if (pr.kind === 'rocket' && pr.target !== null) rocketTargets.add(pr.target);
+    const aimTarget = ship.rockets > 0 ? crosshairTarget(ship.pos, rotate(ship.rot, LOCAL_FORWARD), curr.asteroids, PRESETS[curr.difficulty].rocketLockCone) : null;
+    view.draw({ viewProj: viewProj.elements, fovDeg: camera.fov, cameraPos: eye, shipPos: p.pos, shipRot: p.rot, asteroids: curr.asteroids, aimTarget, rocketTargets, missileLocks: lock?.ids ?? [], pickups: curr.pickups.map((x) => ({ pos: x.pos, rgb: PERK_LOOK[x.kind].rgb })) });
+  };
+  const aimHud = (h: Hud, p: typeof pose, seat: 0 | 1) => {
+    h.show(phase !== 'title' && !photo);
+    h.render(hudModel(curr, dailyMode ? todaysBest() : best, seat));
+    h.badge(phase === 'playing' && !photo ? comboBadge(curr) : { text: '', scale: 1 });
+    v.set(...aimPoint(p, AIM_DISTANCE)).project(camera);
+    h.aim(!photo && v.z < 1 ? { x: v.x, y: v.y } : null);
+  };
+  if (split && curr.ship2 && pose2) {
+    const rects = splitViewports(window.innerWidth, window.innerHeight);
+    const views = [
+      { rect: rects[0], pose, ship: curr.ship, hud, threat, lock: curr.missileLock, seat: 0 as const },
+      { rect: rects[1], pose: pose2, ship: curr.ship2, hud: hud2, threat: threat2, lock: curr.missileLock2 ?? null, seat: 1 as const },
+    ];
+    hitFlash.style.opacity = '0';
+    killFlashEl.style.opacity = '0';
+    renderer.setScissorTest(true);
+    for (const view of views) {
+      const cam = cameraPose(view.pose, settings.camera);
+      camera.aspect = view.rect.w / view.rect.h;
+      camera.fov = FOV_BASE;
+      camera.position.set(...cam.eye);
+      camera.up.set(...cam.up);
+      camera.lookAt(v.set(...cam.look));
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld();
+      world.sky.position.copy(camera.position);
+      nebula.position.copy(camera.position);
+      renderer.setViewport(view.rect.x, view.rect.y, view.rect.w, view.rect.h);
+      renderer.setScissor(view.rect.x, view.rect.y, view.rect.w, view.rect.h);
+      paintFrame(pose, pose2);
+      renderer.render(world.scene, camera);
+      threatFor(view.threat, view.pose, view.ship, view.lock, cam.eye);
+      aimHud(view.hud, view.pose, view.seat);
+    }
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    hud2.show(true);
+  } else {
+    if (phase === 'title' || photo) {
+      threat.clear();
+      threat2.clear();
+    } else {
+      threatFor(threat, pose, curr.ship, curr.missileLock, camEye);
+      threat2.clear();
+    }
+    hud.show(phase !== 'title' && !photo);
+    hud2.show(false);
+    hud.render(hudModel(curr, dailyMode ? todaysBest() : best));
+    renderTutorial();
+    hud.badge(phase === 'playing' && !photo ? comboBadge(curr) : { text: '', scale: 1 });
+    v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
+    hud.aim(!photo && v.z < 1 ? { x: v.x, y: v.y } : null);
+    paintFrame(pose, pose2);
+    postFx.render(world.scene, camera);
   }
-  hud.show(phase !== 'title' && !photo);
-  touchUi?.show(phase === 'playing');
+  touchUi?.show(phase === 'playing' && !curr.ship2);
   touchUi?.syncThrottle(curr.ship.throttle);
-  hud.render(hudModel(curr, dailyMode ? todaysBest() : best));
   renderTutorial();
-  hud.badge(phase === 'playing' && !photo ? comboBadge(curr) : { text: '', scale: 1 });
-  v.set(...aimPoint(pose, AIM_DISTANCE)).project(camera);
-  hud.aim(!photo && v.z < 1 ? { x: v.x, y: v.y } : null);
-  status.style.display = photo ? 'none' : '';
-  status.textContent = photo ? '' : `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
-  batch.begin();
-  fx.draw(batch, fxAccMs / TICK_MS, prev.projectiles, curr.projectiles, alpha);
-  drawPickups(alpha);
-  drawThrusters(pose, frameMs);
-  batch.end(camera);
-  shockwaves.sync(fx.shockwaves);
-  postFx.render(world.scene, camera);
+  status.style.display = photo || split ? 'none' : '';
+  status.textContent = photo || split ? '' : `camera ${settings.camera} [C] · layout ${settings.layout} [${settings.layout === 'classic' ? 'T' : 'L'}] · help [H] · sound ${settings.muted ? 'off' : 'on'} [M]`;
   if (pendingShot) {
     pendingShot = false;
     const finish = (ok: boolean, name = '') => {
@@ -1117,7 +1227,17 @@ renderer.setAnimationLoop((nowMs: number) => {
 });
 
 /** Gamepad presses (P19): Start starts, pauses and resumes; the rest go through the keyboard's edge actions. */
-function onPadPress(p: PadPress) {
+function onPadPress(p: PadPress, seat = 0) {
+  if (seat === 1 && !photo) {
+    if (p === 'start') {
+      if (phase === 'playing') dispatch('pause');
+      else advance();
+    } else if (p === 'rocket') p2Rocket += 1;
+    else if (p === 'throttleUp') p2Throttle = 1;
+    else if (p === 'throttleDown') p2Throttle = -1;
+    else controls.press(PAD_ACTIONS.camera);
+    return;
+  }
   if (photo) {
     if (p === 'start') closePhoto();
     else if (p === 'rocket') savePhoto();

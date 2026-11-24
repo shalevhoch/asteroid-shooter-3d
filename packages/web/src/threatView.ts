@@ -46,10 +46,12 @@ export class ThreatView {
     });
   }
 
-  private resize(): void {
+  resize(): void {
     this.dpr = Math.min(window.devicePixelRatio, 2);
-    this.canvas.width = Math.round(window.innerWidth * this.dpr);
-    this.canvas.height = Math.round(window.innerHeight * this.dpr);
+    const w = this.canvas.clientWidth || window.innerWidth;
+    const h = this.canvas.clientHeight || window.innerHeight;
+    this.canvas.width = Math.round(w * this.dpr);
+    this.canvas.height = Math.round(h * this.dpr);
   }
 
   clear(): void {
@@ -61,8 +63,8 @@ export class ThreatView {
     this.clear();
     const { ctx } = this;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = this.canvas.clientWidth || window.innerWidth;
+    const h = this.canvas.clientHeight || window.innerHeight;
     const toPx = (x: number, y: number): [number, number] => [((x + 1) / 2) * w, ((1 - y) / 2) * h];
     const pxPerUnitAt = (dist: number) => h / 2 / (Math.tan(((f.fovDeg / 2) * Math.PI) / 180) * Math.max(dist, 1));
 
